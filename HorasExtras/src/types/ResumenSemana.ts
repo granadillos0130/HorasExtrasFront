@@ -1,4 +1,3 @@
-// src/types/resumenSemana.ts
 export interface ResumenSemana {
   trabajadorId: number;
   semana: number;

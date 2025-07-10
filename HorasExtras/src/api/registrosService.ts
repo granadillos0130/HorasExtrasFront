@@ -1,9 +1,9 @@
-// src/api/registrosService.ts
 import { api } from "./api";
 import type { Registro } from "../types/registros";
+import type { ResumenSemana } from "../types/ResumenSemana";
 
 export const registrosService = {
-  // Buscar registros detallados
+  // Endpoint que devuelve la LISTA de registros
   async buscarPorTrabajadorMesSemana(
     trabajadorId: number,
     mes: number,
@@ -15,13 +15,13 @@ export const registrosService = {
     return res.data;
   },
 
-  // Buscar resumen semanal
+  // Endpoint que devuelve el RESUMEN
   async buscarPorSemana(
     trabajadorId: number,
     mes: number,
     semana: number
-  ): Promise<any> {
-    const res = await api.get("/registros/porSemana", {
+  ): Promise<ResumenSemana> {
+    const res = await api.get<ResumenSemana>("/registros/porSemana", {
       params: { trabajadorId, mes, semana },
     });
     return res.data;

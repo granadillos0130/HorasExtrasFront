@@ -1,6 +1,6 @@
 // src/components/registros/ResumenSemanaTable.tsx
 import React from "react";
-import type { ResumenSemana } from "../../types/resumenSemana";
+import type { ResumenSemana } from "../../types/ResumenSemana";
 import "../../styles/components/ResumenSemana.css"
 
 interface Props {
