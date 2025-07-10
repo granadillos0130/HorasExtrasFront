@@ -1,15 +1,438 @@
 .registros-page {
-  padding: 20px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 40px 20px;
+}
+
+.page-container {
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.page-header {
+  text-align: center;
+  margin-bottom: 40px;
+  color: white;
+}
+
+.page-header h1 {
+  font-size: 3rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.page-subtitle {
+  font-size: 1.1rem;
+  opacity: 0.9;
+  font-weight: 300;
+}
+
+.filters-card {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  margin-bottom: 30px;
+}
+
+.filters-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+  color: #333;
+}
+
+.filters-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.filters-icon {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 10px;
+  border-radius: 50%;
+  font-size: 1.2rem;
 }
 
 .filtros-form {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  align-items: end;
 }
 
-.filtros-form input,
-.filtros-form select,
-.filtros-form button {
-  padding: 5px;
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-label {
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-select {
+  padding: 15px 20px;
+  border: 2px solid #e1e8ed;
+  border-radius: 15px;
+  font-size: 1rem;
+  background: #f8fafb;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: #667eea;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.btn-search {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  border: none;
+  padding: 15px 30px;
+  border-radius: 15px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.btn-search:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+}
+
+.results-section {
+  display: grid;
+  gap: 30px;
+}
+
+.results-card {
+  background: white;
+  border-radius: 20px;
+  padding: 30px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.results-title {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  color: #333;
+}
+
+.results-title h3 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.results-icon {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  color: white;
+  padding: 8px;
+  border-radius: 50%;
+  font-size: 1rem;
+}
+
+.results-count {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.table-container {
+  overflow-x: auto;
+  border-radius: 15px;
+  border: 1px solid #e1e8ed;
+}
+
+.registros-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  font-size: 0.9rem;
+}
+
+.registros-table th {
+  background: linear-gradient(135deg, #f8fafb, #e1e8ed);
+  color: #333;
+  font-weight: 600;
+  padding: 15px 12px;
+  text-align: left;
+  border-bottom: 2px solid #e1e8ed;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.registros-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+
+.registros-table tbody tr:hover {
+  background: #f8fafb;
+}
+
+.registros-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Estilos específicos para columnas */
+.col-fecha {
+  font-weight: 600;
+  color: #667eea;
+}
+
+.col-trabajador {
+  font-weight: 600;
+  color: #333;
+}
+
+.col-horas {
+  text-align: center;
+  font-weight: 600;
+}
+
+.col-horas-normales {
+  color: #27ae60;
+}
+
+.col-horas-extras {
+  color: #f39c12;
+}
+
+.col-horas-nocturnas {
+  color: #8e44ad;
+}
+
+.col-total {
+  background: #f8fafb;
+  font-weight: 700;
+  color: #333;
+}
+
+.resumen-semana-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.resumen-semana-table th {
+  background: linear-gradient(135deg, #43e97b, #38f9d7);
+  color: white;
+  font-weight: 600;
+  padding: 15px 12px;
+  text-align: center;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.resumen-semana-table td {
+  padding: 15px 12px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1rem;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.resumen-semana-table tbody tr {
+  background: linear-gradient(135deg, #f8fafb, #ffffff);
+}
+
+.loading-message, .error-message {
+  text-align: center;
+  padding: 40px;
+  font-size: 1.1rem;
+  border-radius: 15px;
+  margin: 20px 0;
+}
+
+.loading-message {
+  background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
+  color: #667eea;
+  border-left: 4px solid #667eea;
+}
+
+.error-message {
+  background: linear-gradient(135deg, #ffebee, #fce4ec);
+  color: #e53e3e;
+  border-left: 4px solid #e53e3e;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #666;
+}
+
+.empty-state-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: 1.3rem;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.empty-state p {
+  font-size: 1rem;
+  line-height: 1.6;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* Badges para tipos de horas */
+.hours-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: center;
+  min-width: 40px;
+}
+
+.hours-normal {
+  background: #d4edda;
+  color: #155724;
+}
+
+.hours-extra-diurna {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.hours-extra-nocturna {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.hours-dominical {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.hours-total {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  font-weight: 700;
+}
+
+/* Animaciones */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.results-card {
+  animation: fadeInUp 0.6s ease forwards;
+}
+
+.registros-table tbody tr {
+  animation: fadeInUp 0.4s ease forwards;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .filtros-form {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+  
+  .registros-table {
+    font-size: 0.8rem;
+  }
+  
+  .registros-table th,
+  .registros-table td {
+    padding: 8px 6px;
+  }
+}
+
+@media (max-width: 768px) {
+  .registros-page {
+    padding: 20px 15px;
+  }
+  
+  .page-header h1 {
+    font-size: 2.5rem;
+  }
+  
+  .filtros-form {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  
+  .results-header {
+    flex-direction: column;
+    gap: 15px;
+    text-align: center;
+  }
+  
+  .table-container {
+    font-size: 0.75rem;
+  }
+  
+  .registros-table th,
+  .registros-table td {
+    padding: 6px 4px;
+  }
+  
+  /* Scroll horizontal para tablas en móvil */
+  .table-container::after {
+    content: "Desliza horizontalmente para ver más →";
+    display: block;
+    text-align: center;
+    padding: 10px;
+    font-size: 0.8rem;
+    color: #666;
+    background: #f8fafb;
+    border-top: 1px solid #e1e8ed;
+  }
+}
+
+@media (max-width: 480px) {
+  .registros-table {
+    min-width: 800px; /* Fuerza scroll horizontal */
+  }
 }
