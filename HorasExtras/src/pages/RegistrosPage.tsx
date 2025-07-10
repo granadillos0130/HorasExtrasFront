@@ -3,6 +3,7 @@ import { useRegistros } from "../hooks/useRegistros";
 import { useResumenSemana } from "../hooks/useResumenSemana";
 import RegistrosTable from "../components/registros/RegistrosTable";
 import ResumenSemanaTable from "../components/registros/ResumenSemanaTable";
+import RegistrosForm from "../components/registros/RegistrosForm";
 import "../styles/pages/RegistroPage.css";
 import { api } from "../api/api";
 import type { Trabajador } from "../types/trabajadores";
@@ -28,6 +29,7 @@ const RegistrosPage: React.FC = () => {
   const [mes, setMes] = useState<number>(new Date().getMonth() + 1);
   const [semana, setSemana] = useState<number>(1);
   const [hasSearched, setHasSearched] = useState(false);
+  const [showForm, setShowForm] = useState(false);
 
   // Cargar trabajadores cuando carga la página
   useEffect(() => {
@@ -84,6 +86,12 @@ const RegistrosPage: React.FC = () => {
           <div className="filters-header">
             <div className="filters-icon">🔍</div>
             <h2>Filtros de Búsqueda</h2>
+            <button 
+              className="btn-nuevo-registro" 
+              onClick={() => setShowForm(!showForm)}
+            >
+              {showForm ? "❌ Cancelar" : "➕ Nuevo Registro"}
+            </button>
           </div>
           
           <form onSubmit={handleSubmit} className="filtros-form">
@@ -141,6 +149,12 @@ const RegistrosPage: React.FC = () => {
             </button>
           </form>
         </div>
+
+        {showForm && (
+          <div className="form-card">
+            <RegistrosForm onSuccess={() => setShowForm(false)} />
+          </div>
+        )}
 
         {hasSearched && (
           <div className="results-section">

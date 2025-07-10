@@ -1,3 +1,15 @@
+// Agregar al archivo src/types/registros.ts
+
+export interface RegistroInputDto {
+  Trabajador_ID: number;
+  Centro_ID: number;
+  Orden_Compra_ID: number;
+  Fecha: string; // formato: "YYYY-MM-DD"
+  Hora_Ingreso: string; // formato: "HH:mm"
+  Hora_Salida: string; // formato: "HH:mm"
+  Tiempo_Almuerzo: string; // formato: "HH:mm"
+}
+
 export interface Registro {
   id: number;
   trabajadorId: number;
