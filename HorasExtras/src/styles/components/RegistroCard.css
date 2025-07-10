@@ -1,0 +1,10 @@
+.registro-card {
+  border: 1px solid #ddd;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 12px;
+  background-color: #f9f9f9;
+}
+.registro-card h3 {
+  margin-top: 0;
+}

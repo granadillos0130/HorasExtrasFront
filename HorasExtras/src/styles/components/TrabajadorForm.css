@@ -1,0 +1,8 @@
+.trabajador-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+.trabajador-form input {
+  flex: 1;
+}
