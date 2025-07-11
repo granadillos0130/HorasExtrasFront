@@ -10,6 +10,6 @@ export interface TrabajadorEstadistica {
 }
 
 export interface Centro {
-  id: number;
+  id: string;
   nombreCentro: string;
 }

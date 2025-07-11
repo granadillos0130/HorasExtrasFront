@@ -6,22 +6,28 @@ export const centrosService = {
     const res = await api.get<Centro[]>("/centros");
     return res.data;
   },
-   getById(id: number): Promise<Centro> {
+
+  getById(id: string): Promise<Centro> {
     return api.get(`/centros/${id}`).then(res => res.data);
   },
+
   crear(data: Centro): Promise<void> {
     return api.post("/centros", data);
   },
-  actualizar(id: number, data: Centro): Promise<void> {
+
+  actualizar(id: string, data: Centro): Promise<void> {
     return api.put(`/centros/${id}`, data);
   },
-  eliminar(id: number): Promise<void> {
+
+  eliminar(id: string): Promise<void> {
     return api.delete(`/centros/${id}`);
   },
-  asignarTrabajador(centroId: number, trabajadorId: number): Promise<void> {
+
+  asignarTrabajador(centroId: string, trabajadorId: number): Promise<void> {
     return api.post(`/centros/${centroId}/asignarTrabajador/${trabajadorId}`);
   },
-  getEstadisticas(params: { centroId?: number; nombre?: string }): Promise<any> {
+
+  getEstadisticas(params: { centroId?: string; nombre?: string }): Promise<any> {
     return api.get(`/centros/estadisticas`, { params }).then(res => res.data);
   }
 };
