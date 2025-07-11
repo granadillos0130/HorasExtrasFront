@@ -1,0 +1,26 @@
+.horarios-page {
+  padding: 20px;
+}
+
+.horarios-page h1 {
+  margin-bottom: 15px;
+}
+
+.filtros {
+  margin-bottom: 20px;
+}
+
+.horarios-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.horarios-table th,
+.horarios-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.horarios-table th {
+  background: #f5f5f5;
+}

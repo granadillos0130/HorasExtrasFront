@@ -1,0 +1,30 @@
+.horarios-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.horarios-form select,
+.horarios-form input {
+  padding: 6px 8px;
+  font-size: 14px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.horarios-form button {
+  background-color: #3b82f6;
+  border: none;
+  color: white;
+  padding: 8px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.horarios-form button:hover {
+  background-color: #2563eb;
+}

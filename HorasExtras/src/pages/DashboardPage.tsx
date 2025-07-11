@@ -37,6 +37,14 @@ const DashboardPage: React.FC = () => {
       icon: "📈",
       path: "/estadisticas",
       className: "estadisticas"
+    },
+    {
+      id: "horarios",
+      title: "Horarios de Trabajo",
+      description: "Asigna y administra los horarios de los trabajadores",
+      icon: "⏰",
+      path: "/horarios",
+      className: "horarios"
     }
   ];
 

@@ -1,11 +1,346 @@
+/* Contenedor principal de la tabla */
+.table-container {
+  overflow-x: auto;
+  border-radius: 15px;
+  border: 1px solid #e1e8ed;
+  background: white;
+  position: relative;
+}
+
+.table-wrapper {
+  min-width: 100%;
+  overflow-x: auto;
+}
+
+/* Tabla principal */
 .registros-table {
   width: 100%;
   border-collapse: collapse;
+  background: white;
+  font-size: 0.85rem;
+  min-width: 1200px; /* Asegura scroll horizontal en pantallas pequeñas */
 }
 
-.registros-table th,
+/* Encabezados de la tabla */
+.registros-table th {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  font-weight: 600;
+  padding: 10px 8px;
+  text-align: center;
+  border-bottom: 2px solid #5a6fd8;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+/* Celdas de la tabla */
 .registros-table td {
-  border: 1px solid #ccc;
-  padding: 8px;
+  padding: 8px 6px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+  text-align: center;
+  font-size: 0.8rem;
+}
+
+.registros-table tbody tr {
+  transition: all 0.2s ease;
+  animation: fadeInRow 0.4s ease forwards;
+}
+
+.registros-table tbody tr:hover {
+  background: linear-gradient(135deg, #f8fafb, #e8f4f8);
+  transform: scale(1.001);
+}
+
+.registros-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Estilos específicos para columnas */
+.col-fecha {
+  font-weight: 600;
+  color: #667eea;
+  min-width: 50px;
+}
+
+.col-dia {
+  font-weight: 500;
+  color: #666;
+  font-size: 0.75rem;
+  min-width: 40px;
+}
+
+.col-trabajador {
+  font-weight: 600;
+  color: #333;
   text-align: left;
+  min-width: 120px;
+  max-width: 150px;
+}
+
+.col-centro {
+  color: #555;
+  text-align: left;
+  min-width: 100px;
+  max-width: 120px;
+}
+
+.col-orden {
+  font-weight: 500;
+  color: #667eea;
+  min-width: 60px;
+}
+
+.col-hora {
+  font-family: 'Courier New', monospace;
+  font-weight: 500;
+  color: #444;
+  min-width: 50px;
+}
+
+.col-horas {
+  text-align: center;
+  font-weight: 600;
+  min-width: 65px;
+}
+
+.col-total {
+  background: linear-gradient(135deg, #f8fafb, #e8f4f8);
+  font-weight: 700;
+  min-width: 70px;
+}
+
+.col-acciones {
+  min-width: 80px;
+  padding: 6px 4px;
+}
+
+/* Badges para horas */
+.hours-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-align: center;
+  min-width: 35px;
+  white-space: nowrap;
+}
+
+.hours-zero {
+  background: #f8f9fa;
+  color: #6c757d;
+}
+
+.hours-normal {
+  background: #d4edda;
+  color: #155724;
+}
+
+.hours-extra-diurna {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.hours-extra-nocturna {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+.hours-dominical {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.hours-total {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  font-weight: 700;
+  padding: 3px 8px;
+}
+
+/* Botones de acción */
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-action {
+  background: none;
+  border: none;
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 28px;
+}
+
+.btn-edit {
+  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  color: white;
+}
+
+.btn-edit:hover {
+  background: linear-gradient(135deg, #3d8bfe, #00d4fe);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
+}
+
+.btn-delete {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+  color: white;
+}
+
+.btn-delete:hover {
+  background: linear-gradient(135deg, #ff5252, #e53935);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
+}
+
+.btn-action:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Indicador de scroll */
+.scroll-indicator {
+  display: none;
+  text-align: center;
+  padding: 8px;
+  background: linear-gradient(135deg, #f8fafb, #e8f4f8);
+  color: #666;
+  font-size: 0.75rem;
+  border-top: 1px solid #e1e8ed;
+}
+
+/* Estado vacío */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+}
+
+.empty-state-icon {
+  font-size: 3rem;
+  margin-bottom: 15px;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: 1.2rem;
+  margin-bottom: 8px;
+  color: #333;
+}
+
+.empty-state p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+/* Animaciones */
+@keyframes fadeInRow {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .registros-table {
+    font-size: 0.8rem;
+  }
+  
+  .registros-table th,
+  .registros-table td {
+    padding: 6px 4px;
+  }
+  
+  .hours-badge {
+    font-size: 0.65rem;
+    padding: 1px 4px;
+    min-width: 30px;
+  }
+  
+  .btn-action {
+    min-width: 24px;
+    height: 24px;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .scroll-indicator {
+    display: block;
+  }
+  
+  .registros-table {
+    font-size: 0.75rem;
+  }
+  
+  .registros-table th {
+    padding: 8px 3px;
+    font-size: 0.7rem;
+  }
+  
+  .registros-table td {
+    padding: 6px 3px;
+  }
+  
+  .col-trabajador,
+  .col-centro {
+    max-width: 80px;
+  }
+  
+  .hours-badge {
+    font-size: 0.6rem;
+    padding: 1px 3px;
+    min-width: 25px;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .btn-action {
+    min-width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .registros-table {
+    min-width: 900px;
+    font-size: 0.7rem;
+  }
+  
+  .registros-table th,
+  .registros-table td {
+    padding: 4px 2px;
+  }
+  
+  .hours-badge {
+    font-size: 0.55rem;
+    min-width: 22px;
+  }
 }
