@@ -1,9 +1,16 @@
+// src/api/registrosService.ts
 import { api } from "./api";
 import type { Registro } from "../types/registros";
 import type { RegistroInputDto } from "../types/registros";
 import type { ResumenSemana } from "../types/ResumenSemana";
 
 export const registrosService = {
+  // Obtener todos los registros
+  async obtenerTodos(): Promise<Registro[]> {
+    const res = await api.get<Registro[]>("/registros");
+    return res.data;
+  },
+
   // Crear registro
   async crear(data: RegistroInputDto): Promise<void> {
     await api.post("/registros", data);
