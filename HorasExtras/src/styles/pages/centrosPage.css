@@ -1,0 +1,29 @@
+.centros-page {
+  padding: 20px;
+}
+
+.centros-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+.centros-table th,
+.centros-table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+.centros-table th {
+  background: #f0f0f0;
+}
+
+.btn-nuevo {
+  margin-bottom: 10px;
+}
+
+.asignar-form {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { horariosService } from "../api/horariosService";
 import { trabajadoresService } from "../api/trabajadoresService";
 import { useNavigate } from "react-router-dom";
+import HorariosTable from "../components/horarios/HorariosTable";
 import type { Horario } from "../types/horarios";
 import type { Trabajador } from "../types/trabajadores";
 import "../styles/pages/HorariosPage.css";
@@ -10,26 +11,77 @@ const HorariosPage: React.FC = () => {
   const [horarios, setHorarios] = useState<Horario[]>([]);
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
   const [filtroTrabajador, setFiltroTrabajador] = useState<number>(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
   const cargarTodos = async () => {
-  const data = await horariosService.getAll();
-  setHorarios(data);
-};
+    try {
+      setLoading(true);
+      const data = await horariosService.getAll();
+      setHorarios(data);
+      setError(null);
+    } catch (err) {
+      setError("Error al cargar los horarios");
+      console.error("Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-const cargarPorTrabajador = async (id: number) => {
-  if (id === 0) {
-    cargarTodos();
-  } else {
-    const data = await horariosService.getByTrabajador(id);
-    setHorarios(data);
-  }
-};
+  const cargarPorTrabajador = async (id: number) => {
+    try {
+      setLoading(true);
+      if (id === 0) {
+        const data = await horariosService.getAll();
+        setHorarios(data);
+      } else {
+        const data = await horariosService.getByTrabajador(id);
+        setHorarios(data);
+      }
+      setError(null);
+    } catch (err) {
+      setError("Error al cargar los horarios");
+      console.error("Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  const handleDelete = async (id: number) => {
+    try {
+      await horariosService.eliminar(id);
+      // Recargar horarios después de eliminar
+      if (filtroTrabajador === 0) {
+        cargarTodos();
+      } else {
+        cargarPorTrabajador(filtroTrabajador);
+      }
+    } catch (err) {
+      setError("Error al eliminar el horario");
+      console.error("Error:", err);
+    }
+  };
 
   useEffect(() => {
-    cargarTodos();
-    trabajadoresService.getAll().then(setTrabajadores);
+    const cargarDatos = async () => {
+      try {
+        const [horariosData, trabajadoresData] = await Promise.all([
+          horariosService.getAll(),
+          trabajadoresService.getAll()
+        ]);
+        setHorarios(horariosData);
+        setTrabajadores(trabajadoresData);
+        setError(null);
+      } catch (err) {
+        setError("Error al cargar los datos");
+        console.error("Error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    cargarDatos();
   }, []);
 
   const handleFiltroChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -38,54 +90,142 @@ const cargarPorTrabajador = async (id: number) => {
     cargarPorTrabajador(id);
   };
 
+  const getSelectedWorkerName = () => {
+    if (filtroTrabajador === 0) return "Todos los trabajadores";
+    const worker = trabajadores.find(t => t.id === filtroTrabajador);
+    return worker ? worker.nombre : "Trabajador seleccionado";
+  };
+
+  const getStats = () => {
+    const totalHorarios = horarios.length;
+    const trabajadoresConHorarios = new Set(horarios.map(h => h.trabajadorId)).size;
+    const diasUnicos = new Set(horarios.map(h => h.dia)).size;
+    const horasPromedio = horarios.length > 0 
+      ? horarios.reduce((acc, h) => acc + h.intensidadHoraria, 0) / horarios.length 
+      : 0;
+
+    return {
+      totalHorarios,
+      trabajadoresConHorarios,
+      diasUnicos,
+      horasPromedio: horasPromedio.toFixed(1)
+    };
+  };
+
+  const stats = getStats();
+
+  if (loading) {
+    return (
+      <div className="horarios-page">
+        <div className="page-container">
+          <div className="content-card">
+            <div className="loading-message">
+              🔄 Cargando horarios...
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="horarios-page">
-      <h2>Horarios Asignados</h2>
+      <div className="page-container">
+        <div className="page-header">
+          <h1>Gestión de Horarios</h1>
+          <p className="page-subtitle">
+            Administra los horarios de trabajo de tu equipo
+          </p>
+        </div>
 
-      <div className="horarios-toolbar">
-        <button
-          className="btn-nuevo"
-          onClick={() => navigate("/horarios/crear")}
-        >
-          ➕ Registrar Horario
-        </button>
+        <div className="content-card">
+          <div className="horarios-toolbar">
+            <div className="toolbar-left">
+              <h2 className="toolbar-title">Horarios Asignados</h2>
+              <button
+                className="btn-nuevo"
+                onClick={() => navigate("/horarios/crear")}
+              >
+                ➕ Nuevo Horario
+              </button>
+            </div>
 
-        <select value={filtroTrabajador} onChange={handleFiltroChange}>
-          <option value={0}>Todos los trabajadores</option>
-          {trabajadores.map((t) => (
-            <option key={t.id} value={t.id}>
-              {t.nombre}
-            </option>
-          ))}
-        </select>
+            <div className="filter-group">
+              <label className="filter-label">Filtrar por Trabajador</label>
+              <select 
+                value={filtroTrabajador} 
+                onChange={handleFiltroChange}
+                className="filter-select"
+              >
+                <option value={0}>Todos los trabajadores</option>
+                {trabajadores.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Estadísticas */}
+          <div className="horarios-stats">
+            <div className="stat-card">
+              <div className="stat-number">{stats.totalHorarios}</div>
+              <div className="stat-label">Total Horarios</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-number">{stats.trabajadoresConHorarios}</div>
+              <div className="stat-label">Trabajadores</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-number">{stats.diasUnicos}</div>
+              <div className="stat-label">Días Configurados</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-number">{stats.horasPromedio}h</div>
+              <div className="stat-label">Promedio Horas</div>
+            </div>
+          </div>
+
+          {error && (
+            <div className="error-message">
+              ❌ {error}
+            </div>
+          )}
+
+          <div className="horarios-content">
+            <div className="content-header">
+              <h3 className="content-title">
+                {getSelectedWorkerName()}
+                <span className="horarios-count">
+                  {horarios.length} horario{horarios.length !== 1 ? 's' : ''}
+                </span>
+              </h3>
+            </div>
+
+            {horarios.length === 0 ? (
+              <div className="empty-state">
+                <div className="empty-state-icon">⏰</div>
+                <h3>No hay horarios asignados</h3>
+                <p>
+                  {filtroTrabajador === 0 
+                    ? "Aún no se han creado horarios en el sistema. Comienza asignando horarios a tus trabajadores."
+                    : "Este trabajador no tiene horarios asignados. Puedes crear uno nuevo."
+                  }
+                </p>
+                <button
+                  className="empty-state-action"
+                  onClick={() => navigate("/horarios/crear")}
+                >
+                  ➕ Crear Primer Horario
+                </button>
+              </div>
+            ) : (
+              <HorariosTable horarios={horarios} onDelete={handleDelete} />
+            )}
+          </div>
+        </div>
       </div>
-
-      {horarios.length === 0 ? (
-        <p>No hay horarios registrados.</p>
-      ) : (
-        <table className="horarios-table">
-          <thead>
-            <tr>
-              <th>Trabajador</th>
-              <th>Día</th>
-              <th>Hora Inicio</th>
-              <th>Hora Fin</th>
-              <th>Intensidad Horaria</th>
-            </tr>
-          </thead>
-          <tbody>
-            {horarios.map((h) => (
-              <tr key={h.id}>
-                <td>{h.trabajadorNombre}</td>
-                <td>{h.dia}</td>
-                <td>{h.horaInicio}</td>
-                <td>{h.horaFin}</td>
-                <td>{h.intensidadHoraria}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
     </div>
   );
 };

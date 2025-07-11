@@ -1,0 +1,27 @@
+.estadisticas-page {
+  padding: 2rem;
+}
+
+.estadisticas-toolbar {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.estadisticas-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 2rem;
+}
+
+.estadisticas-table th,
+.estadisticas-table td {
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  text-align: center;
+}
+
+.estadisticas-chart {
+  max-width: 900px;
+  margin: 0 auto;
+}
