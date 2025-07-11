@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
-import { api } from "../../api/api";
 import { trabajadoresService } from "../../api/trabajadoresService";
 import { centrosService } from "../../api/centrosService";
 import { ordenesService } from "../../api/ordenesService";
+import { registrosService } from "../../api/registrosService";
 import type { Trabajador } from "../../types/trabajadores";
 import type { Centro } from "../../types/centros";
 import type { OrdenCompra } from "../../types/ordenes";
 import type { RegistroInputDto } from "../../types/registros";
-import "../../styles/components/RegistroForm.css"
+import "../../styles/components/RegistroForm.css";
 
 interface Props {
   onSuccess: () => void;
@@ -18,15 +18,15 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
   const [centros, setCentros] = useState<Centro[]>([]);
   const [ordenes, setOrdenes] = useState<OrdenCompra[]>([]);
   const [loading, setLoading] = useState(false);
-  
+
   const [formData, setFormData] = useState<RegistroInputDto>({
     Trabajador_ID: 0,
     Centro_ID: 0,
     Orden_Compra_ID: 0,
-    Fecha: new Date().toISOString().split('T')[0],
+    Fecha: new Date().toISOString().split("T")[0],
     Hora_Ingreso: "08:00",
     Hora_Salida: "17:00",
-    Tiempo_Almuerzo: "01:00"
+    Tiempo_Almuerzo: "01:00",
   });
 
   useEffect(() => {
@@ -35,7 +35,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
         const [trabajadoresData, centrosData, ordenesData] = await Promise.all([
           trabajadoresService.getAll(),
           centrosService.getAll(),
-          ordenesService.getAll()
+          ordenesService.getAll(),
         ]);
         setTrabajadores(trabajadoresData);
         setCentros(centrosData);
@@ -50,15 +50,19 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (formData.Trabajador_ID === 0 || formData.Centro_ID === 0 || formData.Orden_Compra_ID === 0) {
+
+    if (
+      formData.Trabajador_ID === 0 ||
+      formData.Centro_ID === 0 ||
+      formData.Orden_Compra_ID === 0
+    ) {
       alert("Por favor complete todos los campos");
       return;
     }
 
     setLoading(true);
     try {
-      await api.post("/registros", formData);
+      await registrosService.crear(formData);
       alert("Registro creado correctamente");
       onSuccess();
     } catch (error) {
@@ -70,9 +74,9 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
   };
 
   const handleInputChange = (field: keyof RegistroInputDto, value: string | number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -89,8 +93,10 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
               required
             >
               <option value={0}>Seleccione trabajador</option>
-              {trabajadores.map(t => (
-                <option key={t.id} value={t.id}>{t.nombre}</option>
+              {trabajadores.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.nombre}
+                </option>
               ))}
             </select>
           </div>
@@ -103,8 +109,10 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
               required
             >
               <option value={0}>Seleccione centro</option>
-              {centros.map(c => (
-                <option key={c.id} value={c.id}>{c.nombreCentro}</option>
+              {centros.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.nombreCentro}
+                </option>
               ))}
             </select>
           </div>
@@ -119,8 +127,10 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
               required
             >
               <option value={0}>Seleccione orden</option>
-              {ordenes.map(o => (
-                <option key={o.id} value={o.id}>{o.numero} - {o.descripcion}</option>
+              {ordenes.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.numero} - {o.descripcion}
+                </option>
               ))}
             </select>
           </div>

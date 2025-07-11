@@ -1,9 +1,25 @@
 import { api } from "./api";
 import type { Registro } from "../types/registros";
+import type { RegistroInputDto } from "../types/registros";
 import type { ResumenSemana } from "../types/ResumenSemana";
 
 export const registrosService = {
-  // Endpoint que devuelve la LISTA de registros
+  // Crear registro
+  async crear(data: RegistroInputDto): Promise<void> {
+    await api.post("/registros", data);
+  },
+
+  // Actualizar registro
+  async actualizar(id: number, data: RegistroInputDto): Promise<void> {
+    await api.put(`/registros/${id}`, data);
+  },
+
+  // Eliminar registro
+  async eliminar(id: number): Promise<void> {
+    await api.delete(`/registros/${id}`);
+  },
+
+  // Obtener registros por trabajador, mes y semana
   async buscarPorTrabajadorMesSemana(
     trabajadorId: number,
     mes: number,
@@ -15,7 +31,7 @@ export const registrosService = {
     return res.data;
   },
 
-  // Endpoint que devuelve el RESUMEN
+  // Obtener resumen de semana
   async buscarPorSemana(
     trabajadorId: number,
     mes: number,
