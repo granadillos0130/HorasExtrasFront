@@ -4,9 +4,11 @@ import { useResumenSemana } from "../hooks/useResumenSemana";
 import RegistrosTable from "../components/registros/RegistrosTable";
 import ResumenSemanaTable from "../components/registros/ResumenSemanaTable";
 import RegistrosForm from "../components/registros/RegistrosForm";
+import RegistroModal from "../components/registros/RegistroModal";
 import "../styles/pages/RegistroPage.css";
 import { api } from "../api/api";
 import type { Trabajador } from "../types/trabajadores";
+import type { Registro, RegistroInputDto } from "../types/registros";
 
 const RegistrosPage: React.FC = () => {
   const {
@@ -30,8 +32,9 @@ const RegistrosPage: React.FC = () => {
   const [semana, setSemana] = useState<number>(1);
   const [hasSearched, setHasSearched] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [registroSeleccionado, setRegistroSeleccionado] = useState<Registro | null>(null);
 
-  // Cargar trabajadores cuando carga la página
+  // Cargar trabajadores al inicio
   useEffect(() => {
     const cargarTrabajadores = async () => {
       try {
@@ -70,6 +73,39 @@ const RegistrosPage: React.FC = () => {
   const getSelectedWorkerName = () => {
     const worker = trabajadores.find(t => t.id === trabajadorId);
     return worker ? worker.nombre : "";
+  };
+
+  const handleEditar = (registro: Registro) => {
+    setRegistroSeleccionado(registro);
+  };
+
+  const handleEliminar = async (id: number) => {
+    if (confirm("¿Estás seguro de eliminar este registro?")) {
+      try {
+        await api.delete(`/registros/${id}`);
+        if (trabajadorId > 0) {
+          buscarRegistros(trabajadorId, mes, semana);
+          buscarResumen(trabajadorId, mes, semana);
+        }
+      } catch (error) {
+        console.error("Error al eliminar registro:", error);
+        alert("Ocurrió un error al eliminar el registro.");
+      }
+    }
+  };
+
+  const handleGuardar = async (id: number, data: RegistroInputDto) => {
+    try {
+      await api.put(`/registros/${id}`, data);
+      setRegistroSeleccionado(null);
+      if (trabajadorId > 0) {
+        buscarRegistros(trabajadorId, mes, semana);
+        buscarResumen(trabajadorId, mes, semana);
+      }
+    } catch (error) {
+      console.error("Error al actualizar registro:", error);
+      alert("Ocurrió un error al guardar los cambios.");
+    }
   };
 
   return (
@@ -208,7 +244,7 @@ const RegistrosPage: React.FC = () => {
                 </div>
                 {registros.length > 0 && (
                   <div className="results-count">
-                    {registros.length} registro{registros.length !== 1 ? 's' : ''} encontrado{registros.length !== 1 ? 's' : ''}
+                    {registros.length} registro{registros.length !== 1 ? "s" : ""} encontrado{registros.length !== 1 ? "s" : ""}
                   </div>
                 )}
               </div>
@@ -227,7 +263,11 @@ const RegistrosPage: React.FC = () => {
               
               {registros.length > 0 && !loadingRegistros && (
                 <div className="table-container">
-                  <RegistrosTable registros={registros} />
+                  <RegistrosTable
+                    registros={registros}
+                    onEdit={handleEditar}
+                    onDelete={handleEliminar}
+                  />
                 </div>
               )}
               
@@ -250,6 +290,14 @@ const RegistrosPage: React.FC = () => {
               <p>Utiliza los filtros de arriba para encontrar los registros de horas trabajadas de cualquier empleado en una semana específica.</p>
             </div>
           </div>
+        )}
+
+        {registroSeleccionado && (
+          <RegistroModal
+            registro={registroSeleccionado}
+            onClose={() => setRegistroSeleccionado(null)}
+            onSave={handleGuardar}
+          />
         )}
       </div>
     </div>

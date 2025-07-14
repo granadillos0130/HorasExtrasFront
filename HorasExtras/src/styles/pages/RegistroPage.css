@@ -1,6 +1,6 @@
 .registros-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--gradient-primary);
   padding: 40px 20px;
 }
 
@@ -20,20 +20,26 @@
   font-weight: 700;
   margin-bottom: 10px;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(45deg, #FFFFFF, #F1F5F9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .page-subtitle {
   font-size: 1.1rem;
-  opacity: 0.9;
+  opacity: 0.95;
   font-weight: 300;
+  color: white;
 }
 
 .filters-card {
   background: white;
-  border-radius: 20px;
+  border-radius: var(--radius-2xl);
   padding: 30px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-xl);
   margin-bottom: 30px;
+  border: 1px solid var(--border-light);
 }
 
 .filters-header {
@@ -41,7 +47,7 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 25px;
-  color: #333;
+  color: var(--text-color);
 }
 
 .filters-header > div:first-child {
@@ -53,41 +59,48 @@
 .filters-header h2 {
   margin: 0;
   font-size: 1.5rem;
+  font-weight: 600;
 }
 
 .btn-nuevo-registro {
-  background: linear-gradient(135deg, #43e97b, #38f9d7);
+  background: var(--gradient-orange);
   color: white;
   border: none;
   padding: 12px 24px;
-  border-radius: 15px;
+  border-radius: var(--radius-lg);
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
 .btn-nuevo-registro:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(67, 233, 123, 0.3);
+  box-shadow: 0 10px 25px rgba(249, 115, 22, 0.3);
 }
 
 .form-card {
   background: white;
-  border-radius: 20px;
+  border-radius: var(--radius-2xl);
   padding: 30px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-xl);
   margin-bottom: 30px;
+  border: 1px solid var(--border-light);
 }
 
 .filters-icon {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--gradient-primary);
   color: white;
   padding: 10px;
   border-radius: 50%;
   font-size: 1.2rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .filtros-form {
@@ -105,7 +118,7 @@
 
 .form-label {
   font-weight: 600;
-  color: #333;
+  color: var(--text-color);
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -113,31 +126,32 @@
 
 .form-select {
   padding: 15px 20px;
-  border: 2px solid #e1e8ed;
-  border-radius: 15px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
   font-size: 1rem;
-  background: #f8fafb;
-  transition: all 0.3s ease;
+  background: var(--background-secondary);
+  transition: all var(--transition-normal);
   cursor: pointer;
+  color: var(--text-color);
 }
 
 .form-select:focus {
   outline: none;
-  border-color: #667eea;
+  border-color: var(--primary-green);
   background: white;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
 }
 
 .btn-search {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--gradient-primary);
   color: white;
   border: none;
   padding: 15px 30px;
-  border-radius: 15px;
+  border-radius: var(--radius-lg);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -148,7 +162,7 @@
 
 .btn-search:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3);
 }
 
 .results-section {
@@ -158,9 +172,10 @@
 
 .results-card {
   background: white;
-  border-radius: 20px;
+  border-radius: var(--radius-2xl);
   padding: 30px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-light);
 }
 
 .results-header {
@@ -169,14 +184,14 @@
   justify-content: space-between;
   margin-bottom: 25px;
   padding-bottom: 15px;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 2px solid var(--border-light);
 }
 
 .results-title {
   display: flex;
   align-items: center;
   gap: 15px;
-  color: #333;
+  color: var(--text-color);
 }
 
 .results-title h3 {
@@ -186,15 +201,20 @@
 }
 
 .results-icon {
-  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  background: var(--gradient-orange);
   color: white;
   padding: 8px;
   border-radius: 50%;
   font-size: 1rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .results-count {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--gradient-primary);
   color: white;
   padding: 8px 16px;
   border-radius: 20px;
@@ -204,37 +224,51 @@
 
 .table-container {
   overflow-x: auto;
-  border-radius: 15px;
-  border: 1px solid #e1e8ed;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  background: white;
 }
 
+/* Tabla de registros actualizada */
 .registros-table {
   width: 100%;
   border-collapse: collapse;
   background: white;
-  font-size: 0.9rem;
+  font-size: 0.8rem;
+  min-width: 1200px;
 }
 
 .registros-table th {
-  background: linear-gradient(135deg, #f8fafb, #e1e8ed);
-  color: #333;
+  background: var(--gradient-primary);
+  color: white;
   font-weight: 600;
-  padding: 15px 12px;
-  text-align: left;
-  border-bottom: 2px solid #e1e8ed;
-  font-size: 0.8rem;
+  padding: 12px 8px;
+  text-align: center;
+  border: none;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .registros-table td {
-  padding: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--border-light);
   vertical-align: middle;
+  text-align: center;
+  font-size: 0.8rem;
+  color: var(--text-color);
+}
+
+.registros-table tbody tr {
+  transition: all var(--transition-fast);
+  animation: fadeInRow 0.4s ease forwards;
 }
 
 .registros-table tbody tr:hover {
-  background: #f8fafb;
+  background: var(--light-green);
 }
 
 .registros-table tbody tr:last-child td {
@@ -244,90 +278,187 @@
 /* Estilos específicos para columnas */
 .col-fecha {
   font-weight: 600;
-  color: #667eea;
+  color: var(--primary-green);
+  min-width: 80px;
+}
+
+.col-dia {
+  font-weight: 600;
+  color: var(--primary-orange);
+  min-width: 60px;
 }
 
 .col-trabajador {
   font-weight: 600;
-  color: #333;
+  color: var(--text-color);
+  text-align: left;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.col-centro {
+  color: var(--text-secondary);
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.col-orden {
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  max-width: 80px;
+}
+
+.col-hora {
+  font-family: 'Courier New', monospace;
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 0.75rem;
+  min-width: 60px;
 }
 
 .col-horas {
-  text-align: center;
   font-weight: 600;
-}
-
-.col-horas-normales {
-  color: #27ae60;
-}
-
-.col-horas-extras {
-  color: #f39c12;
-}
-
-.col-horas-nocturnas {
-  color: #8e44ad;
+  min-width: 70px;
 }
 
 .col-total {
-  background: #f8fafb;
+  background: var(--light-green);
   font-weight: 700;
-  color: #333;
+  color: var(--primary-green);
 }
 
-.resumen-semana-table {
-  width: 100%;
-  border-collapse: collapse;
-  background: white;
+.col-acciones {
+  min-width: 80px;
+  padding: 8px;
 }
 
-.resumen-semana-table th {
-  background: linear-gradient(135deg, #43e97b, #38f9d7);
+.action-buttons {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-action {
+  background: none;
+  border: none;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 0.8rem;
+  transition: all var(--transition-fast);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+}
+
+.btn-edit {
+  color: var(--primary-green);
+  background: var(--light-green);
+}
+
+.btn-edit:hover {
+  background: var(--primary-green);
   color: white;
+  transform: scale(1.1);
+}
+
+.btn-delete {
+  color: var(--danger-color);
+  background: #FEF2F2;
+}
+
+.btn-delete:hover {
+  background: var(--danger-color);
+  color: white;
+  transform: scale(1.1);
+}
+
+/* Badges para tipos de horas actualizados */
+.hours-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.7rem;
   font-weight: 600;
-  padding: 15px 12px;
   text-align: center;
-  font-size: 0.9rem;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  min-width: 35px;
 }
 
-.resumen-semana-table td {
-  padding: 15px 12px;
+.hours-normal {
+  background: var(--light-green);
+  color: var(--primary-green);
+}
+
+.hours-extra-diurna {
+  background: var(--light-orange);
+  color: var(--primary-orange);
+}
+
+.hours-extra-nocturna {
+  background: #E0E7FF;
+  color: #3730A3;
+}
+
+.hours-dominical {
+  background: #FEF2F2;
+  color: var(--danger-color);
+}
+
+.hours-total {
+  background: var(--gradient-primary);
+  color: white;
+  font-weight: 700;
+}
+
+.hours-zero {
+  background: var(--background-secondary);
+  color: var(--text-light);
+}
+
+/* Scroll indicator actualizado */
+.scroll-indicator {
+  display: none;
   text-align: center;
-  font-weight: 600;
-  font-size: 1rem;
-  border-bottom: 1px solid #f0f0f0;
+  padding: 10px;
+  background: var(--background-secondary);
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  border-top: 1px solid var(--border-color);
+  font-style: italic;
 }
 
-.resumen-semana-table tbody tr {
-  background: linear-gradient(135deg, #f8fafb, #ffffff);
-}
-
-.loading-message, .error-message {
+/* Estados comunes actualizados */
+.loading-message {
   text-align: center;
   padding: 40px;
   font-size: 1.1rem;
-  border-radius: 15px;
-  margin: 20px 0;
-}
-
-.loading-message {
-  background: linear-gradient(135deg, #e3f2fd, #f3e5f5);
-  color: #667eea;
-  border-left: 4px solid #667eea;
+  color: var(--primary-green);
+  background: var(--light-green);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--primary-green);
 }
 
 .error-message {
-  background: linear-gradient(135deg, #ffebee, #fce4ec);
-  color: #e53e3e;
-  border-left: 4px solid #e53e3e;
+  text-align: center;
+  padding: 40px;
+  font-size: 1.1rem;
+  color: var(--danger-color);
+  background: #FEF2F2;
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--danger-color);
 }
 
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .empty-state-icon {
@@ -339,7 +470,8 @@
 .empty-state h3 {
   font-size: 1.3rem;
   margin-bottom: 10px;
-  color: #333;
+  color: var(--text-color);
+  font-weight: 600;
 }
 
 .empty-state p {
@@ -347,43 +479,7 @@
   line-height: 1.6;
   max-width: 500px;
   margin: 0 auto;
-}
-
-/* Badges para tipos de horas */
-.hours-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 8px;
-  font-size: 0.8rem;
-  font-weight: 600;
-  text-align: center;
-  min-width: 40px;
-}
-
-.hours-normal {
-  background: #d4edda;
-  color: #155724;
-}
-
-.hours-extra-diurna {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.hours-extra-nocturna {
-  background: #d1ecf1;
-  color: #0c5460;
-}
-
-.hours-dominical {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.hours-total {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  font-weight: 700;
+  color: var(--text-secondary);
 }
 
 /* Animaciones */
@@ -398,12 +494,23 @@
   }
 }
 
+@keyframes fadeInRow {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 .results-card {
   animation: fadeInUp 0.6s ease forwards;
 }
 
 .registros-table tbody tr {
-  animation: fadeInUp 0.4s ease forwards;
+  animation: fadeInRow 0.4s ease forwards;
 }
 
 /* Responsive */
@@ -413,7 +520,7 @@
   }
   
   .registros-table {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
   }
   
   .registros-table th,
@@ -442,8 +549,8 @@
     text-align: center;
   }
   
-  .table-container {
-    font-size: 0.75rem;
+  .scroll-indicator {
+    display: block;
   }
   
   .registros-table th,
@@ -451,21 +558,27 @@
     padding: 6px 4px;
   }
   
-  /* Scroll horizontal para tablas en móvil */
-  .table-container::after {
-    content: "Desliza horizontalmente para ver más →";
-    display: block;
-    text-align: center;
-    padding: 10px;
-    font-size: 0.8rem;
-    color: #666;
-    background: #f8fafb;
-    border-top: 1px solid #e1e8ed;
+  .action-buttons {
+    flex-direction: column;
+    gap: 2px;
+  }
+  
+  .btn-action {
+    width: 24px;
+    height: 24px;
+    font-size: 0.7rem;
   }
 }
 
 @media (max-width: 480px) {
   .registros-table {
-    min-width: 800px; /* Fuerza scroll horizontal */
+    min-width: 800px;
+    font-size: 0.7rem;
+  }
+  
+  .hours-badge {
+    font-size: 0.6rem;
+    padding: 1px 4px;
+    min-width: 30px;
   }
 }

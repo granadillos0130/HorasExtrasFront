@@ -1,6 +1,6 @@
 .trabajadores-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+  background: var(--gradient-primary);
   padding: 40px 20px;
 }
 
@@ -20,43 +20,55 @@
   font-weight: 700;
   margin-bottom: 10px;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  background: linear-gradient(45deg, #FFFFFF, #F1F5F9);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .page-subtitle {
   font-size: 1.1rem;
-  opacity: 0.9;
+  opacity: 0.95;
   font-weight: 300;
+  color: white;
 }
 
 .content-card {
   background: white;
-  border-radius: 20px;
+  border-radius: var(--radius-2xl);
   padding: 30px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-xl);
   margin-bottom: 30px;
+  border: 1px solid var(--border-light);
 }
 
 .form-section {
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-light);
   padding-bottom: 30px;
   margin-bottom: 30px;
 }
 
 .form-section h2 {
-  color: #333;
+  color: var(--text-color);
   font-size: 1.5rem;
   margin-bottom: 20px;
   display: flex;
   align-items: center;
   gap: 10px;
+  font-weight: 600;
 }
 
 .form-section h2::before {
   content: "➕";
-  background: linear-gradient(135deg, #f093fb, #f5576c);
+  background: var(--gradient-green);
   padding: 8px;
   border-radius: 50%;
   font-size: 0.8rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .trabajador-form {
@@ -70,30 +82,31 @@
   flex: 1;
   min-width: 250px;
   padding: 15px 20px;
-  border: 2px solid #e1e8ed;
-  border-radius: 15px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
   font-size: 1rem;
-  transition: all 0.3s ease;
-  background: #f8fafb;
+  transition: all var(--transition-normal);
+  background: var(--background-secondary);
+  color: var(--text-color);
 }
 
 .form-input:focus {
   outline: none;
-  border-color: #f093fb;
+  border-color: var(--primary-green);
   background: white;
-  box-shadow: 0 0 0 3px rgba(240, 147, 251, 0.1);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #f093fb, #f5576c);
+  background: var(--gradient-primary);
   color: white;
   border: none;
   padding: 15px 30px;
-  border-radius: 15px;
+  border-radius: var(--radius-lg);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -101,9 +114,9 @@
   letter-spacing: 0.5px;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(240, 147, 251, 0.3);
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3);
 }
 
 .btn-primary:disabled {
@@ -113,20 +126,26 @@
 }
 
 .list-section h2 {
-  color: #333;
+  color: var(--text-color);
   font-size: 1.5rem;
   margin-bottom: 25px;
   display: flex;
   align-items: center;
   gap: 10px;
+  font-weight: 600;
 }
 
 .list-section h2::before {
   content: "👥";
-  background: linear-gradient(135deg, #4facfe, #00f2fe);
+  background: var(--gradient-orange);
   padding: 8px;
   border-radius: 50%;
   font-size: 0.8rem;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .trabajadores-grid {
@@ -136,13 +155,15 @@
 }
 
 .trabajador-card {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  border-radius: 15px;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-xl);
   padding: 25px;
   color: white;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
   position: relative;
   overflow: hidden;
+  box-shadow: var(--shadow-md);
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .trabajador-card::before {
@@ -154,7 +175,7 @@
   bottom: 0;
   background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity var(--transition-normal);
 }
 
 .trabajador-card:hover::before {
@@ -163,7 +184,7 @@
 
 .trabajador-card:hover {
   transform: translateY(-5px);
-  box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 20px 40px rgba(34, 197, 94, 0.3);
 }
 
 .card-content {
@@ -190,6 +211,7 @@
   justify-content: center;
   font-size: 1.5rem;
   font-weight: bold;
+  border: 2px solid rgba(255, 255, 255, 0.3);
 }
 
 .worker-details h3 {
@@ -205,45 +227,50 @@
 }
 
 .btn-delete {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(239, 68, 68, 0.9);
   color: white;
   border: none;
   padding: 10px 15px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
   font-size: 0.9rem;
   display: flex;
   align-items: center;
   gap: 5px;
+  font-weight: 500;
 }
 
 .btn-delete:hover {
-  background: #ff4757;
+  background: #dc2626;
   transform: scale(1.05);
-}
-
-.loading-message, .error-message {
-  text-align: center;
-  padding: 40px;
-  font-size: 1.1rem;
+  box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
 }
 
 .loading-message {
-  color: #667eea;
+  text-align: center;
+  padding: 40px;
+  font-size: 1.1rem;
+  color: var(--primary-green);
+  background: var(--light-green);
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--primary-green);
 }
 
 .error-message {
-  color: #ff4757;
-  background: #ffe6e6;
-  border-radius: 10px;
-  border-left: 4px solid #ff4757;
+  text-align: center;
+  padding: 40px;
+  font-size: 1.1rem;
+  color: var(--danger-color);
+  background: #FEF2F2;
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--danger-color);
 }
 
 .empty-state {
   text-align: center;
   padding: 60px 20px;
-  color: #666;
+  color: var(--text-secondary);
 }
 
 .empty-state-icon {
@@ -255,12 +282,14 @@
 .empty-state h3 {
   font-size: 1.3rem;
   margin-bottom: 10px;
-  color: #333;
+  color: var(--text-color);
+  font-weight: 600;
 }
 
 .empty-state p {
   font-size: 1rem;
   line-height: 1.6;
+  color: var(--text-secondary);
 }
 
 /* Animaciones */

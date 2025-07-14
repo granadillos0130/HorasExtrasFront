@@ -49,29 +49,50 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (
-      formData.Trabajador_ID === 0 ||
-      formData.Centro_ID === 0 ||
-      formData.Orden_Compra_ID === 0
-    ) {
-      alert("Por favor complete todos los campos");
-      return;
-    }
+  if (
+    formData.Trabajador_ID === 0 ||
+    formData.Centro_ID === 0 ||
+    formData.Orden_Compra_ID === 0
+  ) {
+    alert("Por favor complete todos los campos");
+    return;
+  }
 
-    setLoading(true);
-    try {
-      await registrosService.crear(formData);
-      alert("Registro creado correctamente");
-      onSuccess();
-    } catch (error) {
-      console.error("Error al crear registro:", error);
+  setLoading(true);
+
+  try {
+    // Normalizar el tiempo de almuerzo a HH:mm:ss
+    const normalizarHora = (hora: string) => {
+      return hora.length === 5 ? `${hora}:00` : hora;
+    };
+
+    const payload = {
+      ...formData,
+      Tiempo_Almuerzo: normalizarHora(formData.Tiempo_Almuerzo),
+    };
+    console.log("Datos del registro a crear:", payload);
+    await registrosService.crear(payload);
+    alert("Registro creado correctamente");
+    onSuccess();
+  } catch (error: any) {
+    console.error("Error al crear registro:", error);
+
+    if (error.response && error.response.data) {
+      console.log("Detalle del error del backend:", error.response.data);
+      alert(
+        "Error del servidor:\n" +
+          JSON.stringify(error.response.data, null, 2)
+      );
+    } else {
       alert("Error al crear el registro");
-    } finally {
-      setLoading(false);
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleInputChange = (field: keyof RegistroInputDto, value: string | number) => {
     setFormData((prev) => ({
@@ -102,20 +123,21 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
           </div>
 
           <div className="form-group">
-            <label>Centro</label>
-            <select
-              value={formData.Centro_ID}
-              onChange={(e) => handleInputChange("Centro_ID", Number(e.target.value))}
-              required
-            >
-              <option value={0}>Seleccione centro</option>
-              {centros.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.nombreCentro}
-                </option>
-              ))}
-            </select>
-          </div>
+  <label>Centro</label>
+  <select
+    value={formData.Centro_ID}
+    onChange={(e) => handleInputChange("Centro_ID", e.target.value)} // quitas el Number()
+    required
+  >
+    <option value="">Seleccione centro</option>
+    {centros.map((c) => (
+      <option key={c.id} value={String(c.id)}> {/* Aquí garantizas que sea string */}
+        {c.nombreCentro}
+      </option>
+    ))}
+  </select>
+</div>
+
         </div>
 
         <div className="form-row">
@@ -168,14 +190,26 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
           </div>
 
           <div className="form-group">
-            <label>Tiempo Almuerzo</label>
-            <input
-              type="time"
-              value={formData.Tiempo_Almuerzo}
-              onChange={(e) => handleInputChange("Tiempo_Almuerzo", e.target.value)}
-              required
-            />
-          </div>
+  <label>Tiempo Almuerzo</label>
+  <select
+  value={formData.Tiempo_Almuerzo}
+  onChange={(e) => {
+    // Si ya tiene ":"
+    const v = e.target.value.includes(":") && e.target.value.split(":").length === 2
+      ? e.target.value + ":00"
+      : e.target.value;
+    handleInputChange("Tiempo_Almuerzo", v);
+  }}
+  required
+>
+  <option value="00:00">Sin almuerzo</option>
+  <option value="00:30">30 minutos</option>
+  <option value="01:00">1 hora</option>
+  <option value="01:30">1 hora 30 minutos</option>
+  <option value="02:00">2 horas</option>
+</select>
+
+</div>
         </div>
 
         <button type="submit" disabled={loading} className="btn-submit">
