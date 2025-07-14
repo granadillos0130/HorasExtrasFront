@@ -17,7 +17,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const EstadisticasPage: React.FC = () => {
   const [centros, setCentros] = useState<Centro[]>([]);
-  const [centroId, setCentroId] = useState<number>(0);
+  const [centroId, setCentroId] = useState<string>("");
   const [estadisticas, setEstadisticas] = useState<TrabajadorEstadistica[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingCentros, setLoadingCentros] = useState(true);
@@ -142,7 +142,7 @@ const EstadisticasPage: React.FC = () => {
   };
 
   const getSelectedCentroName = () => {
-  const centro = centros.find(c => Number(c.id) === centroId);
+  const centro = centros.find(c => String(c.id) === centroId);
   return centro ? centro.nombreCentro : "";
 };
 
@@ -199,7 +199,7 @@ const EstadisticasPage: React.FC = () => {
               <label className="form-label">Centro de Trabajo</label>
               <select 
                 value={centroId} 
-                onChange={e => setCentroId(Number(e.target.value))}
+                onChange={e => setCentroId(String(e.target.value))}
                 className="form-select"
                 disabled={loadingCentros}
               >
