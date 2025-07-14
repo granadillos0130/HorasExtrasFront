@@ -193,20 +193,14 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
   <label>Tiempo Almuerzo</label>
   <select
   value={formData.Tiempo_Almuerzo}
-  onChange={(e) => {
-    // Si ya tiene ":"
-    const v = e.target.value.includes(":") && e.target.value.split(":").length === 2
-      ? e.target.value + ":00"
-      : e.target.value;
-    handleInputChange("Tiempo_Almuerzo", v);
-  }}
+  onChange={(e) => handleInputChange("Tiempo_Almuerzo", e.target.value)}
   required
 >
-  <option value="00:00">Sin almuerzo</option>
-  <option value="00:30">30 minutos</option>
-  <option value="01:00">1 hora</option>
-  <option value="01:30">1 hora 30 minutos</option>
-  <option value="02:00">2 horas</option>
+  <option value="00:00:00">Sin almuerzo</option>
+  <option value="00:30:00">30 minutos</option>
+  <option value="01:00:00">1 hora</option>
+  <option value="01:30:00">1 hora 30 minutos</option>
+  <option value="02:00:00">2 horas</option>
 </select>
 
 </div>
