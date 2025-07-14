@@ -1,346 +1,306 @@
-/* Contenedor principal de la tabla */
-.table-container {
-  overflow-x: auto;
+.resumen-container {
+  background: white;
+  border-radius: 15px;
+  overflow: hidden;
+}
+
+.resumen-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 25px;
+  background: linear-gradient(135deg, #43e97b, #38f9d7);
+  color: white;
+  margin-bottom: 25px;
+}
+
+.resumen-header h4 {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 600;
+}
+
+.total-badge {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.hours-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 30px;
+  padding: 0 25px;
+}
+
+.hours-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid #e1e8ed;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+.hours-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.hours-card-header {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.hours-icon {
+  font-size: 1.1rem;
+}
+
+.hours-title {
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hours-value {
+  padding: 20px 16px;
+  text-align: center;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #333;
+  background: #f8fafb;
+}
+
+.progress-section {
+  padding: 0 25px 25px;
+}
+
+.progress-section h5 {
+  margin: 0 0 20px 0;
+  color: #333;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.chart-container {
+  height: 300px;
+  padding: 20px;
+  background: #f8fafb;
   border-radius: 15px;
   border: 1px solid #e1e8ed;
-  background: white;
-  position: relative;
 }
 
-.table-wrapper {
-  min-width: 100%;
-  overflow-x: auto;
+.progress-list {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
 }
 
-/* Tabla principal */
-.registros-table {
+.progress-item {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.progress-label {
+  min-width: 120px;
+  font-weight: 600;
+  color: #555;
+  font-size: 0.9rem;
+}
+
+.progress-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.progress-bar {
+  flex: 1;
+  height: 8px;
+  background: #e1e8ed;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s ease;
+  background: linear-gradient(90deg, currentColor, rgba(255,255,255,0.3));
+}
+
+.progress-text {
+  min-width: 50px;
+  text-align: right;
+  font-weight: 600;
+  color: #333;
+  font-size: 0.9rem;
+}
+
+.table-container-backup {
+  margin-top: 30px;
+  padding: 0 25px 25px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 25px;
+}
+
+.table-container-backup h5 {
+  margin: 0 0 15px 0;
+  color: #666;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.resumen-semana-table {
   width: 100%;
   border-collapse: collapse;
   background: white;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e1e8ed;
+}
+
+.resumen-semana-table th {
+  background: linear-gradient(135deg, #43e97b, #38f9d7);
+  color: white;
+  font-weight: 600;
+  padding: 12px 10px;
+  text-align: center;
   font-size: 0.85rem;
-  min-width: 1200px; /* Asegura scroll horizontal en pantallas pequeñas */
-}
-
-/* Encabezados de la tabla */
-.registros-table th {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  font-weight: 600;
-  padding: 10px 8px;
-  text-align: center;
-  border-bottom: 2px solid #5a6fd8;
-  font-size: 0.75rem;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
-  white-space: nowrap;
-  position: sticky;
-  top: 0;
-  z-index: 10;
+  letter-spacing: 0.5px;
 }
 
-/* Celdas de la tabla */
-.registros-table td {
-  padding: 8px 6px;
+.resumen-semana-table td {
+  padding: 12px 10px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.95rem;
   border-bottom: 1px solid #f0f0f0;
-  vertical-align: middle;
-  text-align: center;
-  font-size: 0.8rem;
-}
-
-.registros-table tbody tr {
-  transition: all 0.2s ease;
-  animation: fadeInRow 0.4s ease forwards;
-}
-
-.registros-table tbody tr:hover {
-  background: linear-gradient(135deg, #f8fafb, #e8f4f8);
-  transform: scale(1.001);
-}
-
-.registros-table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-/* Estilos específicos para columnas */
-.col-fecha {
-  font-weight: 600;
-  color: #667eea;
-  min-width: 50px;
-}
-
-.col-dia {
-  font-weight: 500;
-  color: #666;
-  font-size: 0.75rem;
-  min-width: 40px;
-}
-
-.col-trabajador {
-  font-weight: 600;
-  color: #333;
-  text-align: left;
-  min-width: 120px;
-  max-width: 150px;
-}
-
-.col-centro {
-  color: #555;
-  text-align: left;
-  min-width: 100px;
-  max-width: 120px;
-}
-
-.col-orden {
-  font-weight: 500;
-  color: #667eea;
-  min-width: 60px;
-}
-
-.col-hora {
-  font-family: 'Courier New', monospace;
-  font-weight: 500;
-  color: #444;
-  min-width: 50px;
-}
-
-.col-horas {
-  text-align: center;
-  font-weight: 600;
-  min-width: 65px;
-}
-
-.col-total {
-  background: linear-gradient(135deg, #f8fafb, #e8f4f8);
-  font-weight: 700;
-  min-width: 70px;
-}
-
-.col-acciones {
-  min-width: 80px;
-  padding: 6px 4px;
-}
-
-/* Badges para horas */
-.hours-badge {
-  display: inline-block;
-  padding: 2px 6px;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  text-align: center;
-  min-width: 35px;
-  white-space: nowrap;
-}
-
-.hours-zero {
-  background: #f8f9fa;
-  color: #6c757d;
-}
-
-.hours-normal {
-  background: #d4edda;
-  color: #155724;
-}
-
-.hours-extra-diurna {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.hours-extra-nocturna {
-  background: #d1ecf1;
-  color: #0c5460;
-}
-
-.hours-dominical {
-  background: #f8d7da;
-  color: #721c24;
-}
-
-.hours-total {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  font-weight: 700;
-  padding: 3px 8px;
-}
-
-/* Botones de acción */
-.action-buttons {
-  display: flex;
-  gap: 4px;
-  justify-content: center;
-  align-items: center;
-}
-
-.btn-action {
-  background: none;
-  border: none;
-  padding: 4px 6px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 28px;
-}
-
-.btn-edit {
-  background: linear-gradient(135deg, #4facfe, #00f2fe);
-  color: white;
-}
-
-.btn-edit:hover {
-  background: linear-gradient(135deg, #3d8bfe, #00d4fe);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(79, 172, 254, 0.3);
-}
-
-.btn-delete {
-  background: linear-gradient(135deg, #ff6b6b, #ee5a52);
-  color: white;
-}
-
-.btn-delete:hover {
-  background: linear-gradient(135deg, #ff5252, #e53935);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
-}
-
-.btn-action:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* Indicador de scroll */
-.scroll-indicator {
-  display: none;
-  text-align: center;
-  padding: 8px;
-  background: linear-gradient(135deg, #f8fafb, #e8f4f8);
-  color: #666;
-  font-size: 0.75rem;
-  border-top: 1px solid #e1e8ed;
-}
-
-/* Estado vacío */
-.empty-state {
-  text-align: center;
-  padding: 40px 20px;
-  color: #666;
-}
-
-.empty-state-icon {
-  font-size: 3rem;
-  margin-bottom: 15px;
-  opacity: 0.5;
-}
-
-.empty-state h3 {
-  font-size: 1.2rem;
-  margin-bottom: 8px;
   color: #333;
 }
 
-.empty-state p {
-  font-size: 0.9rem;
-  line-height: 1.5;
+.resumen-semana-table tbody tr {
+  background: linear-gradient(135deg, #f8fafb, #ffffff);
+  transition: background 0.3s ease;
+}
+
+.resumen-semana-table tbody tr:hover {
+  background: linear-gradient(135deg, #e8f4f8, #f0f8ff);
 }
 
 /* Animaciones */
-@keyframes fadeInRow {
+@keyframes slideInUp {
   from {
     opacity: 0;
-    transform: translateX(-10px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: translateY(0);
   }
 }
 
-/* Responsive Design */
-@media (max-width: 1200px) {
-  .registros-table {
-    font-size: 0.8rem;
+@keyframes progressFill {
+  from {
+    width: 0%;
   }
-  
-  .registros-table th,
-  .registros-table td {
-    padding: 6px 4px;
-  }
-  
-  .hours-badge {
-    font-size: 0.65rem;
-    padding: 1px 4px;
-    min-width: 30px;
-  }
-  
-  .btn-action {
-    min-width: 24px;
-    height: 24px;
-    font-size: 0.8rem;
+  to {
+    width: var(--target-width);
   }
 }
 
+.hours-card {
+  animation: slideInUp 0.5s ease forwards;
+}
+
+.progress-fill {
+  animation: progressFill 1.5s ease forwards;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
-  .scroll-indicator {
-    display: block;
-  }
-  
-  .registros-table {
-    font-size: 0.75rem;
-  }
-  
-  .registros-table th {
-    padding: 8px 3px;
-    font-size: 0.7rem;
-  }
-  
-  .registros-table td {
-    padding: 6px 3px;
-  }
-  
-  .col-trabajador,
-  .col-centro {
-    max-width: 80px;
-  }
-  
-  .hours-badge {
-    font-size: 0.6rem;
-    padding: 1px 3px;
-    min-width: 25px;
-  }
-  
-  .action-buttons {
+  .resumen-header {
     flex-direction: column;
-    gap: 2px;
+    gap: 15px;
+    text-align: center;
+    padding: 15px 20px;
   }
   
-  .btn-action {
-    min-width: 20px;
-    height: 20px;
-    font-size: 0.7rem;
+  .hours-grid {
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    padding: 0 20px;
+  }
+  
+  .hours-value {
+    font-size: 1.5rem;
+    padding: 15px 12px;
+  }
+  
+  .progress-section {
+    padding: 0 20px 20px;
+  }
+  
+  .chart-container {
+    height: 250px;
+    padding: 15px;
+  }
+  
+  .progress-item {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  
+  .progress-label {
+    min-width: unset;
+    text-align: center;
+  }
+  
+  .progress-container {
+    gap: 8px;
+  }
+  
+  .table-container-backup {
+    padding: 20px 15px 20px;
+  }
+  
+  .resumen-semana-table {
+    font-size: 0.8rem;
+  }
+  
+  .resumen-semana-table th,
+  .resumen-semana-table td {
+    padding: 8px 4px;
   }
 }
 
 @media (max-width: 480px) {
-  .registros-table {
-    min-width: 900px;
-    font-size: 0.7rem;
+  .hours-grid {
+    grid-template-columns: 1fr;
   }
   
-  .registros-table th,
-  .registros-table td {
-    padding: 4px 2px;
+  .resumen-header h4 {
+    font-size: 1.1rem;
   }
   
-  .hours-badge {
-    font-size: 0.55rem;
-    min-width: 22px;
+  .total-badge {
+    font-size: 1rem;
+    padding: 6px 12px;
+  }
+  
+  .chart-container {
+    height: 200px;
+    padding: 10px;
   }
 }

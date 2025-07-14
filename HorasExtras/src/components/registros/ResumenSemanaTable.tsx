@@ -1,6 +1,18 @@
 import React from "react";
+import { Bar } from "react-chartjs-2";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from "chart.js";
 import type { ResumenSemana } from "../../types/ResumenSemana";
 import "../../styles/components/ResumenSemana.css";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 interface Props {
   resumen: ResumenSemana;
@@ -12,24 +24,6 @@ const ResumenSemanaTable: React.FC<Props> = ({ resumen }) => {
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
     return `${h}:${m.toString().padStart(2, '0')}`;
-  };
-
-  const getProgressBar = (hours: number, total: number, color: string) => {
-    const percentage = total > 0 ? (hours / total) * 100 : 0;
-    return (
-      <div className="progress-container">
-        <div className="progress-bar">
-          <div 
-            className="progress-fill" 
-            style={{ 
-              width: `${percentage}%`, 
-              backgroundColor: color 
-            }}
-          />
-        </div>
-        <span className="progress-text">{formatHours(hours)}</span>
-      </div>
-    );
   };
 
   const getHoursCard = (title: string, hours: number, color: string, icon: string) => {
@@ -44,6 +38,96 @@ const ResumenSemanaTable: React.FC<Props> = ({ resumen }) => {
         </div>
       </div>
     );
+  };
+
+  const getChartData = () => {
+    return {
+      labels: ['Horas Normales', 'Extras Diurnas', 'Extras Nocturnas', 'Dom. Diurnas', 'Dom. Nocturnas'],
+      datasets: [
+        {
+          label: 'Horas',
+          data: [
+            resumen.horasNormales,
+            resumen.extrasDiurnas,
+            resumen.extrasNocturnas,
+            resumen.extrasDomDiurnas,
+            resumen.extrasDomNocturnas
+          ],
+          backgroundColor: [
+            '#27ae60',
+            '#f39c12',
+            '#8e44ad',
+            '#e74c3c',
+            '#c0392b'
+          ],
+          borderColor: [
+            '#219a52',
+            '#e67e22',
+            '#7d3c98',
+            '#dc3545',
+            '#a93226'
+          ],
+          borderWidth: 2,
+          borderRadius: 8,
+          borderSkipped: false,
+        }
+      ]
+    };
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        display: false
+      },
+      title: {
+        display: true,
+        text: 'Distribución de Horas de la Semana',
+        font: {
+          size: 16,
+          weight: 600
+        },
+        padding: 20
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context: any) {
+            const hours = context.parsed.y;
+            return `${context.label}: ${formatHours(hours)}`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        grid: {
+          display: false
+        },
+        ticks: {
+          font: {
+            size: 11,
+            weight: 500
+          }
+        }
+      },
+      y: {
+        beginAtZero: true,
+        grid: {
+          color: 'rgba(0,0,0,0.1)'
+        },
+        ticks: {
+          font: {
+            size: 11,
+            weight: 500
+          },
+          callback: function(value: any) {
+            return formatHours(value);
+          }
+        }
+      }
+    }
   };
 
   return (
@@ -65,27 +149,8 @@ const ResumenSemanaTable: React.FC<Props> = ({ resumen }) => {
 
       <div className="progress-section">
         <h5>Distribución de Horas</h5>
-        <div className="progress-list">
-          <div className="progress-item">
-            <span className="progress-label">Normales</span>
-            {getProgressBar(resumen.horasNormales, resumen.total, "#27ae60")}
-          </div>
-          <div className="progress-item">
-            <span className="progress-label">Extras Diurnas</span>
-            {getProgressBar(resumen.extrasDiurnas, resumen.total, "#f39c12")}
-          </div>
-          <div className="progress-item">
-            <span className="progress-label">Extras Nocturnas</span>
-            {getProgressBar(resumen.extrasNocturnas, resumen.total, "#8e44ad")}
-          </div>
-          <div className="progress-item">
-            <span className="progress-label">Dom. Diurnas</span>
-            {getProgressBar(resumen.extrasDomDiurnas, resumen.total, "#e74c3c")}
-          </div>
-          <div className="progress-item">
-            <span className="progress-label">Dom. Nocturnas</span>
-            {getProgressBar(resumen.extrasDomNocturnas, resumen.total, "#c0392b")}
-          </div>
+        <div className="chart-container">
+          <Bar data={getChartData()} options={chartOptions} height={300} />
         </div>
       </div>
 
