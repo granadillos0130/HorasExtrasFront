@@ -17,7 +17,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const EstadisticasPage: React.FC = () => {
   const [centros, setCentros] = useState<Centro[]>([]);
-  const [centroId, setCentroId] = useState<string>("");
+  const [centroId, setCentroId] = useState<string>(""); // cambiado a string
   const [estadisticas, setEstadisticas] = useState<TrabajadorEstadistica[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingCentros, setLoadingCentros] = useState(true);
@@ -38,13 +38,13 @@ const EstadisticasPage: React.FC = () => {
   }, []);
 
   const buscarEstadisticas = async () => {
-    if (centroId === 0) {
+    if (centroId === "") {
       alert("Seleccione un centro.");
       return;
     }
     setLoading(true);
     try {
-      const data = await estadisticasService.getEstadisticasPorCentro(centroId);
+      const data = await estadisticasService.getEstadisticasPorCentro(centroId); // pasa como string
       setEstadisticas(data);
     } catch (error) {
       console.error("Error al cargar estadísticas:", error);
@@ -142,10 +142,9 @@ const EstadisticasPage: React.FC = () => {
   };
 
   const getSelectedCentroName = () => {
-  const centro = centros.find(c => String(c.id) === centroId);
-  return centro ? centro.nombreCentro : "";
-};
-
+    const centro = centros.find(c => c.id === centroId);
+    return centro ? centro.nombreCentro : "";
+  };
 
   const formatHours = (hours: number) => {
     if (hours === 0) return "0:00";
@@ -199,11 +198,11 @@ const EstadisticasPage: React.FC = () => {
               <label className="form-label">Centro de Trabajo</label>
               <select 
                 value={centroId} 
-                onChange={e => setCentroId(String(e.target.value))}
+                onChange={e => setCentroId(e.target.value)}
                 className="form-select"
                 disabled={loadingCentros}
               >
-                <option value={0}>
+                <option value="">
                   {loadingCentros ? "Cargando centros..." : "Seleccione un centro"}
                 </option>
                 {centros.map(c => (
@@ -216,7 +215,7 @@ const EstadisticasPage: React.FC = () => {
             <button 
               onClick={buscarEstadisticas}
               className="btn-search"
-              disabled={loading || centroId === 0}
+              disabled={loading || centroId === ""}
             >
               {loading ? "🔄 Cargando..." : "📊 Generar Estadísticas"}
             </button>
@@ -233,7 +232,6 @@ const EstadisticasPage: React.FC = () => {
 
         {estadisticas.length > 0 && !loading && (
           <>
-            {/* Resumen General */}
             <div className="results-card">
               <div className="results-header">
                 <div className="results-title">
@@ -293,7 +291,6 @@ const EstadisticasPage: React.FC = () => {
               )}
             </div>
 
-            {/* Gráfico */}
             <div className="results-card">
               <div className="results-header">
                 <div className="results-title">
@@ -307,7 +304,6 @@ const EstadisticasPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Tabla Detallada */}
             <div className="results-card">
               <div className="results-header">
                 <div className="results-title">
@@ -348,7 +344,7 @@ const EstadisticasPage: React.FC = () => {
           </>
         )}
 
-        {estadisticas.length === 0 && !loading && centroId > 0 && (
+        {estadisticas.length === 0 && !loading && centroId !== "" && (
           <div className="results-card">
             <div className="empty-state">
               <div className="empty-state-icon">📊</div>
@@ -357,8 +353,8 @@ const EstadisticasPage: React.FC = () => {
             </div>
           </div>
         )}
-        
-        {centroId === 0 && (
+
+        {centroId === "" && (
           <div className="results-card">
             <div className="empty-state">
               <div className="empty-state-icon">🏢</div>
