@@ -1,9 +1,11 @@
+// src/pages/RegistrosPage.tsx - ACTUALIZADA con funcionalidad de lote
 import React, { useEffect, useState } from "react";
 import { useRegistros } from "../hooks/useRegistros";
 import { useResumenSemana } from "../hooks/useResumenSemana";
 import RegistrosTable from "../components/registros/RegistrosTable";
 import ResumenSemanaTable from "../components/registros/ResumenSemanaTable";
 import RegistrosForm from "../components/registros/RegistrosForm";
+import RegistrosLoteForm from "../components/registros/RegistrosLoteForm";
 import RegistroModal from "../components/registros/RegistroModal";
 import "../styles/pages/RegistroPage.css";
 import { api } from "../api/api";
@@ -32,6 +34,7 @@ const RegistrosPage: React.FC = () => {
   const [semana, setSemana] = useState<number>(1);
   const [hasSearched, setHasSearched] = useState(false);
   const [showForm, setShowForm] = useState(false);
+  const [showLoteForm, setShowLoteForm] = useState(false);
   const [registroSeleccionado, setRegistroSeleccionado] = useState<Registro | null>(null);
 
   // Cargar trabajadores al inicio
@@ -62,6 +65,13 @@ const RegistrosPage: React.FC = () => {
     }
   };
 
+  const refreshData = () => {
+    if (trabajadorId > 0) {
+      buscarRegistros(trabajadorId, mes, semana);
+      buscarResumen(trabajadorId, mes, semana);
+    }
+  };
+
   const getMesesOptions = () => {
     const meses = [
       "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -83,10 +93,8 @@ const RegistrosPage: React.FC = () => {
     if (confirm("¿Estás seguro de eliminar este registro?")) {
       try {
         await api.delete(`/registros/${id}`);
-        if (trabajadorId > 0) {
-          buscarRegistros(trabajadorId, mes, semana);
-          buscarResumen(trabajadorId, mes, semana);
-        }
+        refreshData();
+        alert("Registro eliminado correctamente.");
       } catch (error) {
         console.error("Error al eliminar registro:", error);
         alert("Ocurrió un error al eliminar el registro.");
@@ -98,13 +106,33 @@ const RegistrosPage: React.FC = () => {
     try {
       await api.put(`/registros/${id}`, data);
       setRegistroSeleccionado(null);
-      if (trabajadorId > 0) {
-        buscarRegistros(trabajadorId, mes, semana);
-        buscarResumen(trabajadorId, mes, semana);
-      }
+      refreshData();
+      alert("Registro actualizado correctamente.");
     } catch (error) {
       console.error("Error al actualizar registro:", error);
       alert("Ocurrió un error al guardar los cambios.");
+    }
+  };
+
+  const handleFormSuccess = () => {
+    setShowForm(false);
+    refreshData();
+  };
+
+  const handleLoteSuccess = () => {
+    setShowLoteForm(false);
+    // Limpiar los estados de error y resultado del hook si existe
+    refreshData();
+    // No mostramos alert aquí porque ya se muestra en el formulario
+  };
+
+  const toggleFormType = (tipo: 'individual' | 'lote') => {
+    if (tipo === 'individual') {
+      setShowForm(!showForm);
+      setShowLoteForm(false);
+    } else {
+      setShowLoteForm(!showLoteForm);
+      setShowForm(false);
     }
   };
 
@@ -122,12 +150,20 @@ const RegistrosPage: React.FC = () => {
           <div className="filters-header">
             <div className="filters-icon">🔍</div>
             <h2>Filtros de Búsqueda</h2>
-            <button 
-              className="btn-nuevo-registro" 
-              onClick={() => setShowForm(!showForm)}
-            >
-              {showForm ? "❌ Cancelar" : "➕ Nuevo Registro"}
-            </button>
+            <div className="form-buttons">
+              <button 
+                className={`btn-nuevo-registro ${showForm ? 'active' : ''}`}
+                onClick={() => toggleFormType('individual')}
+              >
+                {showForm ? "❌ Cancelar" : "➕ Nuevo Registro"}
+              </button>
+              <button 
+                className={`btn-nuevo-lote ${showLoteForm ? 'active' : ''}`}
+                onClick={() => toggleFormType('lote')}
+              >
+                {showLoteForm ? "❌ Cancelar" : "📊 Registros en Lote"}
+              </button>
+            </div>
           </div>
           
           <form onSubmit={handleSubmit} className="filtros-form">
@@ -188,7 +224,20 @@ const RegistrosPage: React.FC = () => {
 
         {showForm && (
           <div className="form-card">
-            <RegistrosForm onSuccess={() => setShowForm(false)} />
+            <div className="form-card-header">
+              <h3>📝 Crear Registro Individual</h3>
+              <p>Agrega un nuevo registro de trabajo</p>
+            </div>
+            <RegistrosForm onSuccess={handleFormSuccess} />
+          </div>
+        )}
+
+        {showLoteForm && (
+          <div className="form-card">
+            <RegistrosLoteForm 
+              onSuccess={handleLoteSuccess} 
+              onCancel={() => setShowLoteForm(false)}
+            />
           </div>
         )}
 
@@ -288,6 +337,20 @@ const RegistrosPage: React.FC = () => {
               <div className="empty-state-icon">🔍</div>
               <h3>Busca registros de trabajo</h3>
               <p>Utiliza los filtros de arriba para encontrar los registros de horas trabajadas de cualquier empleado en una semana específica.</p>
+              <div className="empty-state-actions">
+                <button
+                  className="empty-state-action"
+                  onClick={() => toggleFormType('individual')}
+                >
+                  ➕ Crear Registro Individual
+                </button>
+                <button
+                  className="empty-state-action secondary"
+                  onClick={() => toggleFormType('lote')}
+                >
+                  📊 Crear Registros en Lote
+                </button>
+              </div>
             </div>
           </div>
         )}
