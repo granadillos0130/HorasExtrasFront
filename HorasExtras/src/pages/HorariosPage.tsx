@@ -52,14 +52,19 @@ const HorariosPage: React.FC = () => {
     try {
       await horariosService.eliminar(id);
       // Recargar horarios después de eliminar
-      if (filtroTrabajador === 0) {
-        cargarTodos();
-      } else {
-        cargarPorTrabajador(filtroTrabajador);
-      }
+      handleUpdate();
     } catch (err) {
       setError("Error al eliminar el horario");
       console.error("Error:", err);
+    }
+  };
+
+  // Nueva función para actualizar la lista (usado después de editar)
+  const handleUpdate = () => {
+    if (filtroTrabajador === 0) {
+      cargarTodos();
+    } else {
+      cargarPorTrabajador(filtroTrabajador);
     }
   };
 
@@ -221,7 +226,11 @@ const HorariosPage: React.FC = () => {
                 </button>
               </div>
             ) : (
-              <HorariosTable horarios={horarios} onDelete={handleDelete} />
+              <HorariosTable 
+                horarios={horarios} 
+                onDelete={handleDelete}
+                onUpdate={handleUpdate}
+              />
             )}
           </div>
         </div>

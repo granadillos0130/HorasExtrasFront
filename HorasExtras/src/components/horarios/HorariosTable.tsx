@@ -1,14 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import type { Horario } from "../../types/horarios";
+import HorarioEditModal from "./HorarioModal";
 import "../../styles/components/HorariosTable.css";
 
 interface Props {
   horarios: Horario[];
   onDelete: (id: number) => void;
-  onEdit?: (horario: Horario) => void;
+  onUpdate: () => void; // Nueva prop para actualizar la lista después de editar
 }
 
-const HorariosTable: React.FC<Props> = ({ horarios, onDelete, onEdit }) => {
+const HorariosTable: React.FC<Props> = ({ horarios, onDelete, onUpdate }) => {
+  const [horarioEditando, setHorarioEditando] = useState<Horario | null>(null);
+
   if (horarios.length === 0) {
     return (
       <div className="empty-horarios">
@@ -46,9 +49,16 @@ const HorariosTable: React.FC<Props> = ({ horarios, onDelete, onEdit }) => {
   };
 
   const handleEdit = (horario: Horario) => {
-    if (onEdit) {
-      onEdit(horario);
-    }
+    setHorarioEditando(horario);
+  };
+
+  const handleCloseModal = () => {
+    setHorarioEditando(null);
+  };
+
+  const handleSaveEdit = () => {
+    setHorarioEditando(null);
+    onUpdate(); // Actualizar la lista
   };
 
   const handleDelete = (id: number, trabajadorNombre: string, dia: string) => {
@@ -73,78 +83,78 @@ const HorariosTable: React.FC<Props> = ({ horarios, onDelete, onEdit }) => {
   const stats = getStats();
 
   return (
-    <div className="horarios-table-container">
-      <div className="table-header">
-        <h3 className="table-title">Lista de Horarios</h3>
-        <div className="table-stats">
-          <div className="stat-item">
-            👥 {stats.totalTrabajadores} trabajador{stats.totalTrabajadores !== 1 ? 'es' : ''}
-          </div>
-          <div className="stat-item">
-            📅 {stats.diasCubiertos} días
-          </div>
-          <div className="stat-item">
-            ⏱️ {stats.horasPromedio}h promedio
+    <>
+      <div className="horarios-table-container">
+        <div className="table-header">
+          <h3 className="table-title">Lista de Horarios</h3>
+          <div className="table-stats">
+            <div className="stat-item">
+              👥 {stats.totalTrabajadores} trabajador{stats.totalTrabajadores !== 1 ? 'es' : ''}
+            </div>
+            <div className="stat-item">
+              📅 {stats.diasCubiertos} días
+            </div>
+            <div className="stat-item">
+              ⏱️ {stats.horasPromedio}h promedio
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="table-wrapper">
-        <table className="horarios-table">
-          <thead>
-            <tr>
-              <th className="col-trabajador">Trabajador</th>
-              <th className="col-dia">Día</th>
-              <th className="col-hora">Hora Inicio</th>
-              <th className="col-hora">Hora Fin</th>
-              <th className="col-intensidad">Intensidad</th>
-              <th className="col-acciones">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {horarios.map((h, index) => (
-              <tr key={h.id} style={{ animationDelay: `${index * 0.05}s` }}>
-                <td className="col-trabajador">
-                  <div className="worker-info">
-                    <div className="worker-avatar">
-                      {getInitials(h.trabajadorNombre || `Worker ${h.trabajadorId}`)}
+        <div className="table-wrapper">
+          <table className="horarios-table">
+            <thead>
+              <tr>
+                <th className="col-trabajador">Trabajador</th>
+                <th className="col-dia">Día</th>
+                <th className="col-hora">Hora Inicio</th>
+                <th className="col-hora">Hora Fin</th>
+                <th className="col-intensidad">Intensidad</th>
+                <th className="col-acciones">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {horarios.map((h, index) => (
+                <tr key={h.id} style={{ animationDelay: `${index * 0.05}s` }}>
+                  <td className="col-trabajador">
+                    <div className="worker-info">
+                      <div className="worker-avatar">
+                        {getInitials(h.trabajadorNombre || `Worker ${h.trabajadorId}`)}
+                      </div>
+                      <div className="worker-name">
+                        {h.trabajadorNombre || `Trabajador #${h.trabajadorId}`}
+                      </div>
                     </div>
-                    <div className="worker-name">
-                      {h.trabajadorNombre || `Trabajador #${h.trabajadorId}`}
-                    </div>
-                  </div>
-                </td>
-                
-                <td className="col-dia">
-                  <span 
-                    className="day-badge" 
-                    style={{ background: getDayColor(h.dia) }}
-                  >
-                    {h.dia}
-                  </span>
-                </td>
-                
-                <td className="col-hora">
-                  <span className="time-badge">
-                    {formatTime(h.horaInicio)}
-                  </span>
-                </td>
-                
-                <td className="col-hora">
-                  <span className="time-badge">
-                    {formatTime(h.horaFin)}
-                  </span>
-                </td>
-                
-                <td className="col-intensidad">
-                  <span className="intensity-badge">
-                    {h.intensidadHoraria}
-                  </span>
-                </td>
-                
-                <td className="col-acciones">
-                  <div className="action-buttons">
-                    {onEdit && (
+                  </td>
+                  
+                  <td className="col-dia">
+                    <span 
+                      className="day-badge" 
+                      style={{ background: getDayColor(h.dia) }}
+                    >
+                      {h.dia}
+                    </span>
+                  </td>
+                  
+                  <td className="col-hora">
+                    <span className="time-badge">
+                      {formatTime(h.horaInicio)}
+                    </span>
+                  </td>
+                  
+                  <td className="col-hora">
+                    <span className="time-badge">
+                      {formatTime(h.horaFin)}
+                    </span>
+                  </td>
+                  
+                  <td className="col-intensidad">
+                    <span className="intensity-badge">
+                      {h.intensidadHoraria}
+                    </span>
+                  </td>
+                  
+                  <td className="col-acciones">
+                    <div className="action-buttons">
                       <button 
                         className="btn-action btn-edit"
                         onClick={() => handleEdit(h)}
@@ -152,27 +162,36 @@ const HorariosTable: React.FC<Props> = ({ horarios, onDelete, onEdit }) => {
                       >
                         ✏️ Editar
                       </button>
-                    )}
-                    <button 
-                      className="btn-action btn-delete"
-                      onClick={() => handleDelete(h.id, h.trabajadorNombre || 'Trabajador', h.dia)}
-                      title="Eliminar horario"
-                    >
-                      🗑️ Eliminar
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                      <button 
+                        className="btn-action btn-delete"
+                        onClick={() => handleDelete(h.id, h.trabajadorNombre || 'Trabajador', h.dia)}
+                        title="Eliminar horario"
+                      >
+                        🗑️ Eliminar
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Indicador de scroll en móvil */}
+        <div className="scroll-indicator">
+          💡 Desliza horizontalmente para ver todas las columnas
+        </div>
       </div>
-      
-      {/* Indicador de scroll en móvil */}
-      <div className="scroll-indicator">
-        💡 Desliza horizontalmente para ver todas las columnas
-      </div>
-    </div>
+
+      {/* Modal de edición */}
+      {horarioEditando && (
+        <HorarioEditModal
+          horario={horarioEditando}
+          onClose={handleCloseModal}
+          onSave={handleSaveEdit}
+        />
+      )}
+    </>
   );
 };
 

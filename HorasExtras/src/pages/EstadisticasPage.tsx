@@ -17,10 +17,14 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend)
 
 const EstadisticasPage: React.FC = () => {
   const [centros, setCentros] = useState<Centro[]>([]);
-  const [centroId, setCentroId] = useState<string>(""); // cambiado a string
+  const [centroId, setCentroId] = useState<string>("");
   const [estadisticas, setEstadisticas] = useState<TrabajadorEstadistica[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingCentros, setLoadingCentros] = useState(true);
+
+  // 🚀 CAMBIO: nuevos estados para el buscador
+  const [busqueda, setBusqueda] = useState<string>("");
+  const [mostrarResultados, setMostrarResultados] = useState<boolean>(false);
 
   useEffect(() => {
     const cargarCentros = async () => {
@@ -44,7 +48,7 @@ const EstadisticasPage: React.FC = () => {
     }
     setLoading(true);
     try {
-      const data = await estadisticasService.getEstadisticasPorCentro(centroId); // pasa como string
+      const data = await estadisticasService.getEstadisticasPorCentro(centroId);
       setEstadisticas(data);
     } catch (error) {
       console.error("Error al cargar estadísticas:", error);
@@ -94,51 +98,37 @@ const EstadisticasPage: React.FC = () => {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { 
+      legend: {
         position: "top" as const,
         labels: {
           usePointStyle: true,
           padding: 20,
           font: {
             size: 12,
-            weight: 600
-          }
-        }
+            weight: 600,
+          },
+        },
       },
-      title: { 
-        display: true, 
+      title: {
+        display: true,
         text: "Distribución de Horas por Trabajador",
         font: {
           size: 16,
-          weight: 600
+          weight: 600,
         },
-        padding: 20
+        padding: 20,
       },
     },
     scales: {
       x: {
-        grid: {
-          display: false
-        },
-        ticks: {
-          font: {
-            size: 11,
-            weight: 500
-          }
-        }
+        grid: { display: false },
+        ticks: { font: { size: 11, weight: 500 } },
       },
       y: {
-        grid: {
-          color: 'rgba(0,0,0,0.1)'
-        },
-        ticks: {
-          font: {
-            size: 11,
-            weight: 500
-          }
-        }
-      }
-    }
+        grid: { color: "rgba(0,0,0,0.1)" },
+        ticks: { font: { size: 11, weight: 500 } },
+      },
+    },
   };
 
   const getSelectedCentroName = () => {
@@ -155,23 +145,24 @@ const EstadisticasPage: React.FC = () => {
 
   const getTotalStats = () => {
     if (estadisticas.length === 0) return null;
-    
-    const totales = estadisticas.reduce((acc, est) => ({
-      horasNormales: acc.horasNormales + est.horasNormales,
-      horasExtrasDiurnas: acc.horasExtrasDiurnas + est.horasExtrasDiurnas,
-      horasExtrasNocturnas: acc.horasExtrasNocturnas + est.horasExtrasNocturnas,
-      extrasDominicalesDiurnas: acc.extrasDominicalesDiurnas + est.extrasDominicalesDiurnas,
-      extrasDominicalesNocturnas: acc.extrasDominicalesNocturnas + est.extrasDominicalesNocturnas,
-      totalHoras: acc.totalHoras + est.totalHoras,
-    }), {
-      horasNormales: 0,
-      horasExtrasDiurnas: 0,
-      horasExtrasNocturnas: 0,
-      extrasDominicalesDiurnas: 0,
-      extrasDominicalesNocturnas: 0,
-      totalHoras: 0,
-    });
-
+    const totales = estadisticas.reduce(
+      (acc, est) => ({
+        horasNormales: acc.horasNormales + est.horasNormales,
+        horasExtrasDiurnas: acc.horasExtrasDiurnas + est.horasExtrasDiurnas,
+        horasExtrasNocturnas: acc.horasExtrasNocturnas + est.horasExtrasNocturnas,
+        extrasDominicalesDiurnas: acc.extrasDominicalesDiurnas + est.extrasDominicalesDiurnas,
+        extrasDominicalesNocturnas: acc.extrasDominicalesNocturnas + est.extrasDominicalesNocturnas,
+        totalHoras: acc.totalHoras + est.totalHoras,
+      }),
+      {
+        horasNormales: 0,
+        horasExtrasDiurnas: 0,
+        horasExtrasNocturnas: 0,
+        extrasDominicalesDiurnas: 0,
+        extrasDominicalesNocturnas: 0,
+        totalHoras: 0,
+      }
+    );
     return totales;
   };
 
@@ -192,27 +183,56 @@ const EstadisticasPage: React.FC = () => {
             <div className="filters-icon">📊</div>
             <h2>Seleccionar Centro</h2>
           </div>
-          
+
           <div className="estadisticas-toolbar">
-            <div className="form-group">
+            {/* 🚀 CAMBIO: Buscador dinámico */}
+            <div className="form-group buscador-centros">
               <label className="form-label">Centro de Trabajo</label>
-              <select 
-                value={centroId} 
-                onChange={e => setCentroId(e.target.value)}
-                className="form-select"
-                disabled={loadingCentros}
-              >
-                <option value="">
-                  {loadingCentros ? "Cargando centros..." : "Seleccione un centro"}
-                </option>
-                {centros.map(c => (
-                  <option key={c.id} value={c.id}>
-                    {c.nombreCentro}
-                  </option>
-                ))}
-              </select>
+              <input
+                type="text"
+                className="form-input"
+                placeholder="Buscar por nombre o ID..."
+                value={busqueda}
+                onChange={e => {
+                  setBusqueda(e.target.value);
+                  setMostrarResultados(true);
+                }}
+                onFocus={() => setMostrarResultados(true)}
+              />
+              {mostrarResultados && (
+                <div className="resultados-dropdown">
+                  {centros
+                    .filter(c =>
+                      c.nombreCentro.toLowerCase().includes(busqueda.toLowerCase()) ||
+                      c.id.toLowerCase().includes(busqueda.toLowerCase())
+                    )
+                    .slice(0, 10)
+                    .map(c => (
+                      <div
+                        key={c.id}
+                        className="resultado-item"
+                        onClick={() => {
+                          setCentroId(c.id);
+                          setBusqueda(c.nombreCentro);
+                          setMostrarResultados(false);
+                        }}
+                      >
+                        🏢 <strong>{c.nombreCentro}</strong> <small>({c.id})</small>
+                      </div>
+                    ))}
+                  {centros.filter(c =>
+                    c.nombreCentro.toLowerCase().includes(busqueda.toLowerCase()) ||
+                    c.id.toLowerCase().includes(busqueda.toLowerCase())
+                  ).length === 0 && (
+                    <div className="resultado-item no-resultados">
+                      No se encontraron centros.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
-            <button 
+
+            <button
               onClick={buscarEstadisticas}
               className="btn-search"
               disabled={loading || centroId === ""}
