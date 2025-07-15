@@ -9,6 +9,10 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
+import ChartDataLabels from "chartjs-plugin-datalabels";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
+
 import { estadisticasService } from "../api/estadisticasService";
 import type { Centro, TrabajadorEstadistica } from "../types/estadisticas";
 import "../styles/pages/EstadisticasPage.css";
@@ -95,41 +99,55 @@ const EstadisticasPage: React.FC = () => {
   };
 
   const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "top" as const,
-        labels: {
-          usePointStyle: true,
-          padding: 20,
-          font: {
-            size: 12,
-            weight: 600,
-          },
-        },
-      },
-      title: {
-        display: true,
-        text: "Distribución de Horas por Trabajador",
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      position: "top" as const,
+      labels: {
+        usePointStyle: true,
+        padding: 20,
         font: {
-          size: 16,
+          size: 12,
           weight: 600,
         },
-        padding: 20,
       },
     },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: { font: { size: 11, weight: 500 } },
+    title: {
+      display: true,
+      text: "Distribución de Horas por Trabajador",
+      font: {
+        size: 16,
+        weight: 600,
       },
-      y: {
-        grid: { color: "rgba(0,0,0,0.1)" },
-        ticks: { font: { size: 11, weight: 500 } },
+      padding: 20,
+    },
+    // 🚀 Aquí activamos los labels
+    datalabels: {
+      color: "#000",
+      anchor: "end",
+      align: "end",
+      font: {
+        size: 11,
+        weight: "bold",
+      },
+      formatter: (value: number) => {
+        return value.toFixed(1);
       },
     },
-  };
+  },
+  scales: {
+    x: {
+      grid: { display: false },
+      ticks: { font: { size: 11, weight: 500 } },
+    },
+    y: {
+      grid: { color: "rgba(0,0,0,0.1)" },
+      ticks: { font: { size: 11, weight: 500 } },
+    },
+  },
+};
+
 
   const getSelectedCentroName = () => {
     const centro = centros.find(c => c.id === centroId);
