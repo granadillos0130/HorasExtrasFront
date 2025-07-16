@@ -4,6 +4,7 @@ import { trabajadoresService } from "../../api/trabajadoresService";
 import { centrosService } from "../../api/centrosService";
 import { ordenesService } from "../../api/ordenesService";
 import { useRegistrosLote } from "../../hooks/useRegistrosLote";
+import CentroBuscador from "../shared/CentroBuscador";
 import type { Trabajador } from "../../types/trabajadores";
 import type { Centro } from "../../types/centros";
 import type { OrdenCompra } from "../../types/ordenes";
@@ -26,7 +27,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
   const [registros, setRegistros] = useState<RegistroInputDto[]>([
     {
       Trabajador_ID: 0,
-      Centro_ID: 0,
+      Centro_ID: "",
       Orden_Compra_ID: 0,
       Fecha: new Date().toISOString().split("T")[0],
       Hora_Ingreso: "08:00",
@@ -64,6 +65,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
       {
         ...ultimoRegistro,
         Trabajador_ID: 0, // Resetear trabajador para que seleccione uno nuevo
+        Centro_ID: "", // Resetear centro
       }
     ]);
   };
@@ -84,12 +86,17 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
     setRegistros(nuevosRegistros);
   };
 
+  const handleCentroChange = (index: number, centroId: string) => {
+    actualizarRegistro(index, "Centro_ID", centroId);
+  };
+
   const duplicarRegistro = (index: number) => {
     const registroADuplicar = registros[index];
     const nuevosRegistros = [...registros];
     nuevosRegistros.splice(index + 1, 0, {
       ...registroADuplicar,
       Trabajador_ID: 0, // Resetear trabajador
+      Centro_ID: "", // Resetear centro
     });
     setRegistros(nuevosRegistros);
   };
@@ -101,7 +108,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
       if (registro.Trabajador_ID === 0) {
         errores.push(`Registro ${index + 1}: Seleccione un trabajador`);
       }
-      if (registro.Centro_ID === 0) {
+      if (!registro.Centro_ID) {
         errores.push(`Registro ${index + 1}: Seleccione un centro`);
       }
       if (registro.Orden_Compra_ID === 0) {
@@ -154,8 +161,8 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
     return trabajador ? trabajador.nombre : "Sin seleccionar";
   };
 
-  const getCentroNombre = (id: number) => {
-    const centro = centros.find(c => Number(c.id) === id);
+  const getCentroNombre = (id: string | number) => {
+    const centro = centros.find(c => c.id === String(id));
     return centro ? centro.nombreCentro : "Sin seleccionar";
   };
 
@@ -257,27 +264,14 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                     )}
                   </div>
 
-                  <div className="form-group">
-                    <label className="form-label">Centro</label>
-                    <select
-                      value={registro.Centro_ID}
-                      onChange={(e) => actualizarRegistro(index, "Centro_ID", e.target.value)}
-                      className="form-select"
-                      required
-                    >
-                      <option value="">Seleccione centro</option>
-                      {centros.map((c) => (
-                        <option key={c.id} value={String(c.id)}>
-                          {c.nombreCentro}
-                        </option>
-                      ))}
-                    </select>
-                    {registro.Centro_ID && (
-                      <div className="selected-preview">
-                        🏢 {getCentroNombre(Number(registro.Centro_ID))}
-                      </div>
-                    )}
-                  </div>
+                  <CentroBuscador
+                    centros={centros}
+                    value={registro.Centro_ID}
+                    onChange={(centroId) => handleCentroChange(index, centroId)}
+                    required
+                    showSelectedInfo={false}
+                    className="compact"
+                  />
 
                   <div className="form-group">
                     <label className="form-label">Orden de Compra</label>
@@ -407,7 +401,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
         <div className="summary-item">
           <span className="summary-icon">🏢</span>
           <span className="summary-text">
-            <strong>Centros únicos:</strong> {new Set(registros.map(r => r.Centro_ID).filter(id => id !== 0)).size}
+            <strong>Centros únicos:</strong> {new Set(registros.map(r => r.Centro_ID).filter(id => id !== "")).size}
           </span>
         </div>
       </div>

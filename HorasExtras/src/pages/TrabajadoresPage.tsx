@@ -1,25 +1,30 @@
 import React, { useState } from "react";
 import { useTrabajadores } from "../hooks/useTrabajadores";
+import TrabajadorForm from "../components/trabajadores/TrabajadorForm";
+import TrabajadorCard from "../components/trabajadores/TrabajadorCard";
+import TrabajadorDetail from "../components/trabajadores/TrabajadorDetailModal";
 import { trabajadoresService } from "../api/trabajadoresService";
 import "../styles/pages/TrabajadoresPage.css";
+import EpsForm from "../components/SeguridadEmpleado/epsForm";
+import ArlForm from "../components/SeguridadEmpleado/arlForm";
+import PensionForm from "../components/SeguridadEmpleado/PensionForm";
+import ClinicaForm from "../components/SeguridadEmpleado/ClinicaForm";
+import BancoForm from "../components/SeguridadEmpleado/BancoForm";
+import { epsService } from "../api/epsService";
+import { arlService } from "../api/arlService";
+import { pensionService } from "../api/pensionService";
+import { clinicaService } from "../api/clinicaService";
+import { bancoService } from "../api/bancoService";
 
 const TrabajadoresPage: React.FC = () => {
   const { trabajadores, loading, error, refetch } = useTrabajadores();
-  const [adding, setAdding] = useState(false);
-  const [nombre, setNombre] = useState("");
+  const [showForm, setShowForm] = useState(false);
+  const [nuevoTrabajadorId, setNuevoTrabajadorId] = useState<number | null>(null);
+  const [detalleId, setDetalleId] = useState<number | null>(null);
 
-  const handleAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!nombre.trim()) return;
-    
-    setAdding(true);
-    try {
-      await trabajadoresService.create({ nombre: nombre.trim() });
-      setNombre("");
-      refetch();
-    } finally {
-      setAdding(false);
-    }
+  const handleCreated = (id: number) => {
+    setNuevoTrabajadorId(id);
+    setShowForm(false);
   };
 
   const handleDelete = async (id: number, nombre: string) => {
@@ -33,15 +38,6 @@ const TrabajadoresPage: React.FC = () => {
     }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
   return (
     <div className="trabajadores-page">
       <div className="page-container">
@@ -53,76 +49,117 @@ const TrabajadoresPage: React.FC = () => {
         </div>
 
         <div className="content-card">
-          <div className="form-section">
-            <h2>Agregar Nuevo Trabajador</h2>
-            <form className="trabajador-form" onSubmit={handleAdd}>
-              <input
-                type="text"
-                placeholder="Nombre completo del trabajador"
-                value={nombre}
-                onChange={(e) => setNombre(e.target.value)}
-                className="form-input"
-                disabled={adding}
-              />
-              <button 
-                type="submit" 
-                className="btn-primary"
-                disabled={adding || !nombre.trim()}
-              >
-                {adding ? "Agregando..." : "➕ Agregar"}
+          {!showForm && (
+            <div className="form-section">
+              <button className="btn-primary" onClick={() => setShowForm(true)}>
+                ➕ Agregar Nuevo Trabajador
               </button>
-            </form>
-          </div>
+            </div>
+          )}
+
+          {showForm && (
+            <TrabajadorForm
+              onCreated={handleCreated}
+              onCancel={() => setShowForm(false)}
+              onRefresh={refetch}
+            />
+          )}
 
           <div className="list-section">
             <h2>Trabajadores Registrados ({trabajadores.length})</h2>
-            
+
             {loading && (
               <div className="loading-message">
                 🔄 Cargando trabajadores...
               </div>
             )}
-            
+
             {error && (
               <div className="error-message">
                 ❌ {error}
               </div>
             )}
-            
+
             {!loading && trabajadores.length === 0 && (
               <div className="empty-state">
                 <div className="empty-state-icon">👥</div>
                 <h3>No hay trabajadores registrados</h3>
-                <p>Comienza agregando tu primer trabajador usando el formulario de arriba.</p>
+                <p>Comienza agregando tu primer trabajador usando el botón de arriba.</p>
               </div>
             )}
-            
+
             {!loading && trabajadores.length > 0 && (
               <div className="trabajadores-grid">
                 {trabajadores.map((trabajador, index) => (
-                  <div key={trabajador.id} className="trabajador-card" style={{animationDelay: `${index * 0.1}s`}}>
-                    <div className="card-content">
-                      <div className="worker-info">
-                        <div className="worker-avatar">
-                          {getInitials(trabajador.nombre)}
-                        </div>
-                        <div className="worker-details">
-                          <h3>{trabajador.nombre}</h3>
-                          <div className="worker-id">ID: {trabajador.id}</div>
-                        </div>
-                      </div>
-                      <button 
-                        className="btn-delete"
-                        onClick={() => handleDelete(trabajador.id, trabajador.nombre)}
-                      >
-                        🗑️ Eliminar
-                      </button>
-                    </div>
-                  </div>
+                  <TrabajadorCard
+                    key={trabajador.id}
+                    trabajador={trabajador}
+                    onDelete={(id) => handleDelete(id, trabajador.nombre)}
+                    onView={(id) => setDetalleId(id)}
+                  />
                 ))}
               </div>
             )}
           </div>
+
+          {detalleId && (
+            <TrabajadorDetail
+              trabajadorId={detalleId}
+              onClose={() => setDetalleId(null)}
+            />
+          )}
+
+         {nuevoTrabajadorId && (
+  <div className="extra-section">
+    <h2>Completar información para el trabajador #{nuevoTrabajadorId}</h2>
+
+    <EpsForm
+      trabajadorId={nuevoTrabajadorId}
+      onSave={async (data) => {
+        await epsService.crear(data);
+        alert("EPS registrada correctamente");
+      }}
+      onCancel={() => console.log("EPS cancelada")}
+    />
+
+    <ArlForm
+      trabajadorId={nuevoTrabajadorId}
+      onSave={async (data) => {
+        await arlService.crear(data);
+        alert("ARL registrada correctamente");
+      }}
+      onCancel={() => console.log("ARL cancelada")}
+    />
+
+    <PensionForm
+      trabajadorId={nuevoTrabajadorId}
+      onSave={async (data) => {
+        await pensionService.crear(data);
+        alert("Pensión registrada correctamente");
+      }}
+      onCancel={() => console.log("Pensión cancelada")}
+    />
+
+    <ClinicaForm
+      trabajadorId={nuevoTrabajadorId}
+      onSave={async (data) => {
+        await clinicaService.crear(data);
+        alert("Clínica registrada correctamente");
+      }}
+      onCancel={() => console.log("Clínica cancelada")}
+    />
+
+    <BancoForm
+      trabajadorId={nuevoTrabajadorId}
+      onSave={async (data) => {
+        await bancoService.crear(data);
+        alert("Banco registrado correctamente");
+      }}
+      onCancel={() => console.log("Banco cancelado")}
+    />
+  </div>
+)}
+
         </div>
       </div>
     </div>

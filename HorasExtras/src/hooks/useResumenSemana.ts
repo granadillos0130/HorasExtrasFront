@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { registrosService } from "../api/registrosService";
-import type { ResumenSemana } from "../types/resumenSemana";
+import type { ResumenSemana } from "../types/ResumenSemana";
 
 export const useResumenSemana = () => {
   const [resumen, setResumen] = useState<ResumenSemana | null>(null);

@@ -1,17 +1,21 @@
 // src/components/trabajadores/TrabajadorCard.tsx
 import React from "react";
 import type { Trabajador } from "../../types/trabajadores";
-import "../../styles/components/TrabajadorCard.css"
+import "../../styles/components/TrabajadorCard.css";
 
 interface Props {
   trabajador: Trabajador;
   onDelete: (id: number) => void;
+  onView: (id: number) => void;
 }
 
-const TrabajadorCard: React.FC<Props> = ({ trabajador, onDelete }) => (
+const TrabajadorCard: React.FC<Props> = ({ trabajador, onDelete, onView }) => (
   <div className="trabajador-card">
     <h3>{trabajador.nombre}</h3>
-    <button onClick={() => onDelete(trabajador.id)}>Eliminar</button>
+    <div className="card-actions">
+      <button onClick={() => onView(trabajador.id)}>👁️ Ver más</button>
+      <button onClick={() => onDelete(trabajador.id)}>🗑️ Eliminar</button>
+    </div>
   </div>
 );
 

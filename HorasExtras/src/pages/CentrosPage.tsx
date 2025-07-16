@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { centrosService } from "../api/centrosService";
 import { trabajadoresService } from "../api/trabajadoresService";
 import { useNavigate } from "react-router-dom";
+import CentroBuscador from "../components/shared/CentroBuscador";
 import type { Centro } from "../types/centros";
 import type { Trabajador } from "../types/trabajadores";
 import "../styles/pages/CentrosPage.css";
@@ -53,6 +54,7 @@ const CentrosPage: React.FC = () => {
       await centrosService.asignarTrabajador(selectedCentro, selectedTrabajador);
       alert("Trabajador asignado correctamente");
       setSelectedTrabajador(0);
+      setSelectedCentro("");
     } catch (error) {
       console.error("Error al asignar trabajador:", error);
       alert("Error al asignar trabajador");
@@ -72,11 +74,6 @@ const CentrosPage: React.FC = () => {
         alert("Error al eliminar centro");
       }
     }
-  };
-
-  const getSelectedCentroName = () => {
-    const centro = centros.find(c => c.id === selectedCentro);
-    return centro ? centro.nombreCentro : "";
   };
 
   const getSelectedTrabajadorName = () => {
@@ -206,24 +203,14 @@ const CentrosPage: React.FC = () => {
 
           <div className="assign-form">
             <div className="form-row">
-              <div className="form-group">
-                <label className="form-label">Centro de Trabajo</label>
-                <select 
-                  value={selectedCentro} 
-                  onChange={e => setSelectedCentro(e.target.value)}
-                  className="form-select"
-                >
-                  <option value="">Seleccione un centro</option>
-                  {centros.map(c => (
-                    <option key={c.id} value={c.id}>{c.nombreCentro}</option>
-                  ))}
-                </select>
-                {getSelectedCentroName() && (
-                  <div className="selected-item">
-                    🏢 Centro seleccionado: <strong>{getSelectedCentroName()}</strong>
-                  </div>
-                )}
-              </div>
+              <CentroBuscador
+                centros={centros}
+                value={selectedCentro}
+                onChange={(centroId) => setSelectedCentro(centroId)}
+                placeholder="Seleccione un centro para asignar trabajador"
+                label="Centro de Trabajo"
+                showSelectedInfo={true}
+              />
 
               <div className="form-group">
                 <label className="form-label">Trabajador</label>
