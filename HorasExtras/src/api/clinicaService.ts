@@ -11,11 +11,11 @@ export const clinicaService = {
     return api.get(`/clinicas/${id}`).then(res => res.data);
   },
 
-  crear(data: Clinica): Promise<void> {
+  crear(data: Omit<Clinica, "id">): Promise<void> {
     return api.post("/clinicas", data);
   },
 
-  actualizar(id: number, data: Clinica): Promise<void> {
+  actualizar(id: number, data: Omit<Clinica, "id">): Promise<void> {
     return api.put(`/clinicas/${id}`, data);
   },
 

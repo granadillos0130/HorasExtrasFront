@@ -11,11 +11,11 @@ export const bancoService = {
     return api.get(`/bancos/${id}`).then(res => res.data);
   },
 
-  crear(data: Banco): Promise<void> {
+  crear(data: Omit<Banco, "id">): Promise<void> {
     return api.post("/bancos", data);
   },
 
-  actualizar(id: number, data: Banco): Promise<void> {
+  actualizar(id: number, data: Omit<Banco, "id">): Promise<void> {
     return api.put(`/bancos/${id}`, data);
   },
 

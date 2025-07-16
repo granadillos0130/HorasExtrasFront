@@ -11,11 +11,11 @@ export const pensionService = {
     return api.get(`/pensiones/${id}`).then(res => res.data);
   },
 
-  crear(data: Pension): Promise<void> {
+  crear(data: Omit<Pension, "id">): Promise<void> {
     return api.post("/pensiones", data);
   },
 
-  actualizar(id: number, data: Pension): Promise<void> {
+  actualizar(id: number, data: Omit<Pension, "id">): Promise<void> {
     return api.put(`/pensiones/${id}`, data);
   },
 

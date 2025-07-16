@@ -11,11 +11,11 @@ export const epsService = {
     return api.get(`/eps/${id}`).then(res => res.data);
   },
 
-  crear(data: Eps): Promise<void> {
+  crear(data: Omit<Eps, "id">): Promise<void> {
     return api.post("/eps", data);
   },
 
-  actualizar(id: number, data: Eps): Promise<void> {
+  actualizar(id: number, data: Omit<Eps, "id">): Promise<void> {
     return api.put(`/eps/${id}`, data);
   },
 
