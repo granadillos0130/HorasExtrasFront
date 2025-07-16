@@ -3,23 +3,23 @@ import type { Clinica } from "../types/clinica";
 
 export const clinicaService = {
   async getAll(): Promise<Clinica[]> {
-    const res = await api.get<Clinica[]>("/clinicas");
+    const res = await api.get<Clinica[]>("/ClinicaEmpleado");
     return res.data;
   },
 
   getById(id: number): Promise<Clinica> {
-    return api.get(`/clinicas/${id}`).then(res => res.data);
+    return api.get(`/ClinicaEmpleado/${id}`).then(res => res.data);
   },
 
   crear(data: Omit<Clinica, "id">): Promise<void> {
-    return api.post("/clinicas", data);
+    return api.post("/ClinicaEmpleado", data);
   },
 
   actualizar(id: number, data: Omit<Clinica, "id">): Promise<void> {
-    return api.put(`/clinicas/${id}`, data);
+    return api.put(`/ClinicaEmpleado/${id}`, data);
   },
 
   eliminar(id: number): Promise<void> {
-    return api.delete(`/clinicas/${id}`);
+    return api.delete(`/ClinicaEmpleado/${id}`);
   }
 };

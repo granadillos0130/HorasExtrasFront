@@ -3,23 +3,23 @@ import type { Arl } from "../types/arl";
 
 export const arlService = {
   async getAll(): Promise<Arl[]> {
-    const res = await api.get<Arl[]>("/arls");
+    const res = await api.get<Arl[]>("/Arlempleado");
     return res.data;
   },
 
   getById(id: number): Promise<Arl> {
-    return api.get(`/arls/${id}`).then(res => res.data);
+    return api.get(`/Arlempleado/${id}`).then(res => res.data);
   },
 
   crear(data: Omit<Arl, "id">): Promise<void> {
-    return api.post("/arls", data);
+    return api.post("/Arlempleado", data);
   },
 
   actualizar(id: number, data: Omit<Arl, "id">): Promise<void> {
-    return api.put(`/arls/${id}`, data);
+    return api.put(`/Arlempleado/${id}`, data);
   },
 
   eliminar(id: number): Promise<void> {
-    return api.delete(`/arls/${id}`);
+    return api.delete(`/Arlempleado/${id}`);
   }
 };

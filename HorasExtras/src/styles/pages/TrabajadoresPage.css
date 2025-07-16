@@ -1,3 +1,4 @@
+/* src/styles/pages/TrabajadoresPage.css */
 .trabajadores-page {
   min-height: 100vh;
   background: var(--gradient-primary);
@@ -5,7 +6,7 @@
 }
 
 .page-container {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 0 auto;
 }
 
@@ -71,32 +72,6 @@
   justify-content: center;
 }
 
-.trabajador-form {
-  display: flex;
-  gap: 15px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.form-input {
-  flex: 1;
-  min-width: 250px;
-  padding: 15px 20px;
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-lg);
-  font-size: 1rem;
-  transition: all var(--transition-normal);
-  background: var(--background-secondary);
-  color: var(--text-color);
-}
-
-.form-input:focus {
-  outline: none;
-  border-color: var(--primary-green);
-  background: white;
-  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
-}
-
 .btn-primary {
   background: var(--gradient-primary);
   color: white;
@@ -125,10 +100,19 @@
   transform: none;
 }
 
+.list-section {
+  background: white;
+  border-radius: var(--radius-2xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-light);
+}
+
 .list-section h2 {
   color: var(--text-color);
   font-size: 1.5rem;
-  margin-bottom: 25px;
+  margin: 0 0 25px 0;
+  padding: 25px 30px 0;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -150,101 +134,66 @@
 
 .trabajadores-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 20px;
+  padding: 0 30px 30px;
 }
 
-.trabajador-card {
-  background: var(--gradient-primary);
-  border-radius: var(--radius-xl);
-  padding: 25px;
-  color: white;
-  transition: all var(--transition-normal);
-  position: relative;
-  overflow: hidden;
-  box-shadow: var(--shadow-md);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.extra-section {
+  background: white;
+  border-radius: var(--radius-2xl);
+  padding: 30px;
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-light);
+  margin-top: 30px;
 }
 
-.trabajador-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
-  opacity: 0;
-  transition: opacity var(--transition-normal);
-}
-
-.trabajador-card:hover::before {
-  opacity: 1;
-}
-
-.trabajador-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 20px 40px rgba(34, 197, 94, 0.3);
-}
-
-.card-content {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-  z-index: 1;
-}
-
-.worker-info {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.worker-avatar {
-  width: 50px;
-  height: 50px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 50%;
+.extra-section h2 {
+  color: var(--text-color);
+  font-size: 1.4rem;
+  margin-bottom: 30px;
+  text-align: center;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
-  font-weight: bold;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-}
-
-.worker-details h3 {
-  margin: 0;
-  font-size: 1.2rem;
+  gap: 10px;
   font-weight: 600;
+  padding: 20px;
+  background: linear-gradient(135deg, var(--light-green), var(--light-orange));
+  border-radius: var(--radius-lg);
+  border: 2px solid var(--border-color);
 }
 
-.worker-id {
-  font-size: 0.9rem;
-  opacity: 0.8;
-  margin-top: 5px;
-}
-
-.btn-delete {
-  background: rgba(239, 68, 68, 0.9);
-  color: white;
-  border: none;
-  padding: 10px 15px;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all var(--transition-normal);
-  font-size: 0.9rem;
+.extra-section h2::before {
+  content: "📋";
+  background: var(--gradient-primary);
+  padding: 8px;
+  border-radius: 50%;
+  font-size: 0.8rem;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
-  gap: 5px;
-  font-weight: 500;
+  justify-content: center;
 }
 
-.btn-delete:hover {
-  background: #dc2626;
-  transform: scale(1.05);
-  box-shadow: 0 5px 15px rgba(239, 68, 68, 0.4);
+.extra-section > div {
+  margin-bottom: 25px;
+  padding: 25px;
+  background: var(--background-secondary);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
+  transition: all 0.3s ease;
+}
+
+.extra-section > div:hover {
+  background: white;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+}
+
+.extra-section > div:last-child {
+  margin-bottom: 0;
 }
 
 .loading-message {
@@ -304,11 +253,30 @@
   }
 }
 
-.trabajador-card {
+.content-card,
+.list-section,
+.extra-section {
   animation: fadeIn 0.5s ease forwards;
 }
 
+.extra-section > div {
+  animation: fadeIn 0.6s ease forwards;
+}
+
+.extra-section > div:nth-child(2) { animation-delay: 0.1s; }
+.extra-section > div:nth-child(3) { animation-delay: 0.2s; }
+.extra-section > div:nth-child(4) { animation-delay: 0.3s; }
+.extra-section > div:nth-child(5) { animation-delay: 0.4s; }
+.extra-section > div:nth-child(6) { animation-delay: 0.5s; }
+
 /* Responsive */
+@media (max-width: 1200px) {
+  .trabajadores-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+}
+
 @media (max-width: 768px) {
   .trabajadores-page {
     padding: 20px 15px;
@@ -318,21 +286,57 @@
     font-size: 2.5rem;
   }
   
-  .trabajador-form {
-    flex-direction: column;
-  }
-  
-  .form-input {
-    min-width: 100%;
+  .content-card,
+  .list-section,
+  .extra-section {
+    padding: 20px;
   }
   
   .trabajadores-grid {
     grid-template-columns: 1fr;
+    gap: 20px;
+    padding: 0 20px 20px;
   }
   
-  .card-content {
-    flex-direction: column;
-    gap: 15px;
+  .list-section h2 {
+    padding: 20px 20px 0;
     text-align: center;
+  }
+  
+  .extra-section h2 {
+    font-size: 1.2rem;
+    padding: 15px;
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .extra-section > div {
+    padding: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .page-container {
+    max-width: 100%;
+  }
+  
+  .content-card,
+  .list-section,
+  .extra-section {
+    margin: 0 0 20px 0;
+    border-radius: var(--radius-xl);
+  }
+  
+  .trabajadores-grid {
+    padding: 0 15px 15px;
+  }
+  
+  .list-section h2 {
+    padding: 15px 15px 0;
+    font-size: 1.3rem;
+  }
+  
+  .extra-section > div {
+    padding: 15px;
   }
 }
