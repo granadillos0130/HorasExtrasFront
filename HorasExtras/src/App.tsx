@@ -9,6 +9,7 @@ import CentrosPage from "./pages/CentrosPage";
 import CentroForm from "./components/centros/CentroForm";
 import EstadisticasPage from "./pages/EstadisticasPage";
 import TrabajadorEditPage from './components/trabajadores/TrabajadorEditPage';
+import TrabajadorIntensidad from "./components/trabajadores/TrabajadorIntensidad";
 export default function App() {
   return (
     <BrowserRouter>
@@ -16,6 +17,8 @@ export default function App() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/trabajadores" element={<TrabajadoresPage />} />
         <Route path="/trabajadores/editar/:id" element={<TrabajadorEditPage />} />
+        <Route path="/trabajadores/:id/intensidad" element={<TrabajadorIntensidad />} />
+
         <Route path="/registros" element={<RegistrosPage />} />
         <Route path="/horarios" element={<HorariosPage />} />
         <Route path="/horarios/crear" element={<HorariosForm />} />

@@ -2,20 +2,21 @@
 
 export interface RegistroInputDto {
   Trabajador_ID: number;
-  Centro_ID: number;
-  Orden_Compra_ID: number;
-  Fecha: string; // formato: "YYYY-MM-DD"
-  Hora_Ingreso: string; // formato: "HH:mm"
-  Hora_Salida: string; // formato: "HH:mm"
-  Tiempo_Almuerzo: string; // formato: "HH:mm"
+  Centro_ID: string;
+  Nombr_Centro: string;
+  Fecha: string; // "YYYY-MM-DD"
+  Hora_Ingreso: string; // "HH:mm"
+  Hora_Salida: string; // "HH:mm"
+  Tiempo_Almuerzo: string; // "HH:mm:ss"
 }
+
 
 export interface Registro {
   id: number;
   trabajadorId: number;
   trabajadorNombre: string;
   centroId: number;
-  centroNombre: string;
+  nombreCentro: string;
   ordenCompraId: number;
   ordenCompraNumero: string;
   ordenCompraDescripcion: string;

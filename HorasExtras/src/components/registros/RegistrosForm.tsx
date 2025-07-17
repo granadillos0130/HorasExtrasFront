@@ -1,12 +1,11 @@
+// ...importaciones
 import React, { useState, useEffect } from "react";
 import { trabajadoresService } from "../../api/trabajadoresService";
 import { centrosService } from "../../api/centrosService";
-import { ordenesService } from "../../api/ordenesService";
 import { registrosService } from "../../api/registrosService";
 import CentroBuscador from "../shared/CentroBuscador";
 import type { Trabajador } from "../../types/trabajadores";
 import type { Centro } from "../../types/centros";
-import type { OrdenCompra } from "../../types/ordenes";
 import type { RegistroInputDto } from "../../types/registros";
 import "../../styles/components/RegistroForm.css";
 
@@ -17,13 +16,12 @@ interface Props {
 const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
   const [centros, setCentros] = useState<Centro[]>([]);
-  const [ordenes, setOrdenes] = useState<OrdenCompra[]>([]);
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState<RegistroInputDto>({
     Trabajador_ID: 0,
-    Centro_ID: "", // Cambiado a string para coincidir con el buscador
-    Orden_Compra_ID: 0,
+    Centro_ID: "",
+    Nombr_Centro: "",
     Fecha: new Date().toISOString().split("T")[0],
     Hora_Ingreso: "08:00",
     Hora_Salida: "17:00",
@@ -33,14 +31,12 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
   useEffect(() => {
     const cargarDatos = async () => {
       try {
-        const [trabajadoresData, centrosData, ordenesData] = await Promise.all([
+        const [trabajadoresData, centrosData] = await Promise.all([
           trabajadoresService.getAll(),
           centrosService.getAll(),
-          ordenesService.getAll(),
         ]);
         setTrabajadores(trabajadoresData);
         setCentros(centrosData);
-        setOrdenes(ordenesData);
       } catch (error) {
         console.error("Error al cargar datos:", error);
       }
@@ -52,11 +48,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (
-      formData.Trabajador_ID === 0 ||
-      !formData.Centro_ID ||
-      formData.Orden_Compra_ID === 0
-    ) {
+    if (!formData.Trabajador_ID || !formData.Centro_ID || !formData.Nombr_Centro) {
       alert("Por favor complete todos los campos");
       return;
     }
@@ -64,23 +56,20 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
     setLoading(true);
 
     try {
-      const normalizarHora = (hora: string) => {
-        return hora.length === 5 ? `${hora}:00` : hora;
-      };
+      const normalizarHora = (hora: string) =>
+        hora.length === 5 ? `${hora}:00` : hora;
 
       const payload = {
         ...formData,
         Tiempo_Almuerzo: normalizarHora(formData.Tiempo_Almuerzo),
       };
-      
-      console.log("Datos del registro a crear:", payload);
+
       await registrosService.crear(payload);
       alert("Registro creado correctamente");
       onSuccess();
     } catch (error: any) {
       console.error("Error al crear registro:", error);
-      if (error.response && error.response.data) {
-        console.log("Detalle del error del backend:", error.response.data);
+      if (error.response?.data) {
         alert("Error del servidor:\n" + JSON.stringify(error.response.data, null, 2));
       } else {
         alert("Error al crear el registro");
@@ -98,7 +87,12 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
   };
 
   const handleCentroChange = (centroId: string) => {
-    handleInputChange("Centro_ID", centroId);
+    const centroSeleccionado = centros.find(c => c.id === centroId);
+    setFormData((prev) => ({
+      ...prev,
+      Centro_ID: centroId,
+      Nombr_Centro: centroSeleccionado?.nombreCentro || "", // auto llena pero editable
+    }));
   };
 
   return (
@@ -122,32 +116,29 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
             </select>
           </div>
 
-          {/* REEMPLAZADO: Selector de centro por CentroBuscador */}
-          <CentroBuscador
-            centros={centros}
-            value={formData.Centro_ID}
-            onChange={handleCentroChange}
-            required
-          />
+          <div className="form-group">
+            <label>Centro</label>
+            <CentroBuscador
+              centros={centros}
+              value={formData.Centro_ID}
+              onChange={handleCentroChange}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label>Nombre del Centro</label>
+            <input
+              type="text"
+              value={formData.Nombre_Centro}
+              onChange={(e) => handleInputChange("Nombr_Centro", e.target.value)}
+              placeholder="Escriba el nombre del centro"
+              required
+            />
+          </div>
         </div>
 
         <div className="form-row">
-          <div className="form-group">
-            <label>Orden de Compra</label>
-            <select
-              value={formData.Orden_Compra_ID}
-              onChange={(e) => handleInputChange("Orden_Compra_ID", Number(e.target.value))}
-              required
-            >
-              <option value={0}>Seleccione orden</option>
-              {ordenes.map((o) => (
-                <option key={o.id} value={o.id}>
-                  {o.numero} - {o.descripcion}
-                </option>
-              ))}
-            </select>
-          </div>
-
           <div className="form-group">
             <label>Fecha</label>
             <input

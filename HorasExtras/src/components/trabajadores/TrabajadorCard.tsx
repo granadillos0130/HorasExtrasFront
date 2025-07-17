@@ -68,6 +68,15 @@ const TrabajadorCard: React.FC<Props> = ({ trabajador, onDelete, onView }) => {
           >
             🗑️
           </button>
+          <button
+  className="btn-intensidad"
+  onClick={() => navigate(`/trabajadores/${trabajador.id}/intensidad`)}
+  title="Ver intensidad horaria"
+>
+  <span className="btn-icon">📊</span>
+  Intensidad Horaria
+</button>
+
         </div>
       </div>
     </div>

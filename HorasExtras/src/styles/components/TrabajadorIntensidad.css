@@ -1,0 +1,29 @@
+.trabajador-intensidad {
+  padding: 1rem;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+}
+
+.trabajador-intensidad h2 {
+  margin-bottom: 1rem;
+  font-size: 1.25rem;
+}
+
+.tabla-intensidad {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla-intensidad th,
+.tabla-intensidad td {
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.tabla-intensidad thead {
+  background-color: #f5f5f5;
+  font-weight: bold;
+}
