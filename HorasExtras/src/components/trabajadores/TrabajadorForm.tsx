@@ -1,8 +1,18 @@
 // src/components/trabajadores/TrabajadorForm.tsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { trabajadoresService } from "../../api/trabajadoresService";
+import { epsService } from "../../api/epsService";
+import { arlService } from "../../api/arlService";
+import { pensionService } from "../../api/pensionService";
+import { bancoService } from "../../api/bancoService";
+import { clinicaService } from "../../api/clinicaService";
 import "../../styles/components/TrabajadorForm.css";
 import type { CrearTrabajadorDto } from "../../types/trabajadores";
+import type { Eps } from "../../types/eps";
+import type { Arl } from "../../types/arl";
+import type { Pension } from "../../types/pension";
+import type { Banco } from "../../types/banco";
+import type { Clinica } from "../../types/clinica";
 
 interface Props {
   onCreated: (trabajadorId: number) => void;
@@ -31,9 +41,54 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
     tipoContratacion: ""
   });
 
+  // Estados para los servicios de seguridad social
+  const [epsData, setEpsData] = useState<Omit<Eps, "id" | "trabajadorId">>({
+    nombre: "",
+    fechaInicio: "",
+    fechaFin: ""
+  });
+
+  const [arlData, setArlData] = useState<Omit<Arl, "id" | "trabajadorId">>({
+    nombre: "",
+    fechaInicio: "",
+    fechaFin: ""
+  });
+
+  const [pensionData, setPensionData] = useState<Omit<Pension, "id" | "trabajadorId">>({
+    nombre: "",
+    fechaInicio: "",
+    fechaFin: ""
+  });
+
+  const [bancoData, setBancoData] = useState<Omit<Banco, "id" | "trabajadorId">>({
+    nombre: "",
+    numeroCuenta: ""
+  });
+
+  const [clinicaData, setClinicaData] = useState<Omit<Clinica, "id" | "trabajadorId">>({
+    nombre: "",
+    fechaInicio: "",
+    fechaFin: ""
+  });
+
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [createdWorkerId, setCreatedWorkerId] = useState<number | null>(null);
+
+  // Auto-calcular edad si se ingresa fecha de nacimiento
+  useEffect(() => {
+    if (form.fechaNacimiento) {
+      const today = new Date();
+      const birthDate = new Date(form.fechaNacimiento);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      setForm(prev => ({ ...prev, edad: age }));
+    }
+  }, [form.fechaNacimiento]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -48,18 +103,6 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
     // Limpiar error cuando el usuario empiece a escribir
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: "" }));
-    }
-
-    // Auto-calcular edad si se ingresa fecha de nacimiento
-    if (name === "fechaNacimiento" && value) {
-      const today = new Date();
-      const birthDate = new Date(value);
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const monthDiff = today.getMonth() - birthDate.getMonth();
-      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      setForm(prev => ({ ...prev, edad: age }));
     }
   };
 
@@ -89,13 +132,38 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
       if (!form.parentescoContacto) newErrors.parentescoContacto = "El parentesco es requerido";
     }
 
+    if (step === 4) {
+      if (!epsData.nombre.trim()) newErrors.epsNombre = "El nombre de EPS es requerido";
+      if (!epsData.fechaInicio) newErrors.epsFechaInicio = "La fecha de inicio de EPS es requerida";
+    }
+
+    if (step === 5) {
+      if (!arlData.nombre.trim()) newErrors.arlNombre = "El nombre de ARL es requerido";
+      if (!arlData.fechaInicio) newErrors.arlFechaInicio = "La fecha de inicio de ARL es requerida";
+    }
+
+    if (step === 6) {
+      if (!pensionData.nombre.trim()) newErrors.pensionNombre = "El nombre de Pensión es requerido";
+      if (!pensionData.fechaInicio) newErrors.pensionFechaInicio = "La fecha de inicio de Pensión es requerida";
+    }
+
+    if (step === 7) {
+      if (!bancoData.nombre.trim()) newErrors.bancoNombre = "El nombre del Banco es requerido";
+      if (!bancoData.numeroCuenta.trim()) newErrors.bancoNumeroCuenta = "El número de cuenta es requerido";
+    }
+
+    if (step === 8) {
+      if (!clinicaData.nombre.trim()) newErrors.clinicaNombre = "El nombre de la Clínica es requerido";
+      if (!clinicaData.fechaInicio) newErrors.clinicaFechaInicio = "La fecha de inicio de Clínica es requerida";
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const nextStep = () => {
     if (validateStep(currentStep)) {
-      setCurrentStep(prev => Math.min(prev + 1, 3));
+      setCurrentStep(prev => Math.min(prev + 1, 8));
     }
   };
 
@@ -106,17 +174,56 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateStep(3)) return;
+    if (currentStep < 8) {
+      nextStep();
+      return;
+    }
+
+    if (!validateStep(8)) return;
 
     setLoading(true);
     try {
+      // 1. Crear el trabajador
       const nuevo = await trabajadoresService.create(form);
+      setCreatedWorkerId(nuevo.id);
+      
+      // 2. Crear EPS
+      await epsService.crear({
+        ...epsData,
+        trabajadorId: nuevo.id
+      });
+
+      // 3. Crear ARL
+      await arlService.crear({
+        ...arlData,
+        trabajadorId: nuevo.id
+      });
+
+      // 4. Crear Pensión
+      await pensionService.crear({
+        ...pensionData,
+        trabajadorId: nuevo.id
+      });
+
+      // 5. Crear Banco
+      await bancoService.crear({
+        ...bancoData,
+        trabajadorId: nuevo.id
+      });
+
+      // 6. Crear Clínica
+      await clinicaService.crear({
+        ...clinicaData,
+        trabajadorId: nuevo.id
+      });
+
+      alert("Trabajador y todos sus servicios creados correctamente");
       onCreated(nuevo.id);
       onRefresh();
       onCancel();
     } catch (error) {
       console.error("Error al crear trabajador:", error);
-      alert("Error al crear trabajador.");
+      alert("Error al crear trabajador y sus servicios.");
     } finally {
       setLoading(false);
     }
@@ -127,6 +234,11 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
       case 1: return "Información Personal";
       case 2: return "Información Laboral";
       case 3: return "Contacto de Emergencia";
+      case 4: return "EPS";
+      case 5: return "ARL";
+      case 6: return "Pensión";
+      case 7: return "Banco";
+      case 8: return "Clínica";
       default: return "";
     }
   };
@@ -136,6 +248,11 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
       case 1: return "👤";
       case 2: return "💼";
       case 3: return "📞";
+      case 4: return "⚕️";
+      case 5: return "🦺";
+      case 6: return "👴";
+      case 7: return "🏦";
+      case 8: return "🏥";
       default: return "📋";
     }
   };
@@ -148,7 +265,7 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
         </div>
         <div className="form-title-section">
           <h3>Nuevo Trabajador</h3>
-          <p>Paso {currentStep} de 3: {getStepTitle()}</p>
+          <p>Paso {currentStep} de 8: {getStepTitle()}</p>
         </div>
         <button 
           type="button" 
@@ -164,18 +281,25 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
         <div className="progress-bar">
           <div 
             className="progress-fill" 
-            style={{ width: `${(currentStep / 3) * 100}%` }}
+            style={{ width: `${(currentStep / 8) * 100}%` }}
           ></div>
         </div>
         <div className="progress-steps">
-          {[1, 2, 3].map(step => (
+          {[1, 2, 3, 4, 5, 6, 7, 8].map(step => (
             <div 
               key={step}
               className={`progress-step ${currentStep >= step ? 'active' : ''}`}
             >
               <div className="step-number">{step}</div>
               <div className="step-label">
-                {step === 1 ? "Personal" : step === 2 ? "Laboral" : "Contacto"}
+                {step === 1 ? "Personal" : 
+                 step === 2 ? "Laboral" : 
+                 step === 3 ? "Contacto" :
+                 step === 4 ? "EPS" :
+                 step === 5 ? "ARL" :
+                 step === 6 ? "Pensión" :
+                 step === 7 ? "Banco" :
+                 "Clínica"}
               </div>
             </div>
           ))}
@@ -503,6 +627,264 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
           </div>
         )}
 
+        {/* Paso 4: EPS */}
+        {currentStep === 4 && (
+          <div className="form-step">
+            <div className="step-header">
+              <h4>⚕️ EPS (Entidad Promotora de Salud)</h4>
+              <p>Información de la entidad de salud del trabajador</p>
+            </div>
+            
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">
+                  Nombre de EPS <span className="required">*</span>
+                </label>
+                <input
+                  name="epsNombre"
+                  placeholder="Ej: Sanitas, Sura, Nueva EPS"
+                  value={epsData.nombre}
+                  onChange={(e) => setEpsData(prev => ({ ...prev, nombre: e.target.value }))}
+                  className={`form-input ${errors.epsNombre ? 'error' : ''}`}
+                  disabled={loading}
+                />
+                {errors.epsNombre && <span className="error-text">{errors.epsNombre}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  Fecha de Inicio <span className="required">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="epsFechaInicio"
+                  value={epsData.fechaInicio}
+                  onChange={(e) => setEpsData(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                  className={`form-input ${errors.epsFechaInicio ? 'error' : ''}`}
+                  disabled={loading}
+                />
+                {errors.epsFechaInicio && <span className="error-text">{errors.epsFechaInicio}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Fecha de Fin (Opcional)</label>
+                <input
+                  type="date"
+                  name="epsFechaFin"
+                  value={epsData.fechaFin}
+                  onChange={(e) => setEpsData(prev => ({ ...prev, fechaFin: e.target.value }))}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Paso 5: ARL */}
+        {currentStep === 5 && (
+          <div className="form-step">
+            <div className="step-header">
+              <h4>🦺 ARL (Administradora de Riesgos Laborales)</h4>
+              <p>Información de la administradora de riesgos laborales</p>
+            </div>
+            
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">
+                  Nombre de ARL <span className="required">*</span>
+                </label>
+                <input
+                  name="arlNombre"
+                  placeholder="Ej: Sura ARL, Positiva, Colmena"
+                  value={arlData.nombre}
+                  onChange={(e) => setArlData(prev => ({ ...prev, nombre: e.target.value }))}
+                  className={`form-input ${errors.arlNombre ? 'error' : ''}`}
+                  disabled={loading}
+                />
+                {errors.arlNombre && <span className="error-text">{errors.arlNombre}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  Fecha de Inicio <span className="required">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="arlFechaInicio"
+                  value={arlData.fechaInicio}
+                  onChange={(e) => setArlData(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                  className={`form-input ${errors.arlFechaInicio ? 'error' : ''}`}
+                  disabled={loading}
+                />
+                {errors.arlFechaInicio && <span className="error-text">{errors.arlFechaInicio}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Fecha de Fin (Opcional)</label>
+                <input
+                  type="date"
+                  name="arlFechaFin"
+                  value={arlData.fechaFin}
+                  onChange={(e) => setArlData(prev => ({ ...prev, fechaFin: e.target.value }))}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Paso 6: Pensión */}
+        {currentStep === 6 && (
+          <div className="form-step">
+            <div className="step-header">
+              <h4>👴 Fondo de Pensión</h4>
+              <p>Información del fondo de pensión del trabajador</p>
+            </div>
+            
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">
+                  Nombre del Fondo <span className="required">*</span>
+                </label>
+                <input
+                  name="pensionNombre"
+                  placeholder="Ej: Protección, Porvenir, Colfondos"
+                  value={pensionData.nombre}
+                  onChange={(e) => setPensionData(prev => ({ ...prev, nombre: e.target.value }))}
+                  className={`form-input ${errors.pensionNombre ? 'error' : ''}`}
+                  disabled={loading}
+                />
+                {errors.pensionNombre && <span className="error-text">{errors.pensionNombre}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  Fecha de Inicio <span className="required">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="pensionFechaInicio"
+                  value={pensionData.fechaInicio}
+                  onChange={(e) => setPensionData(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                  className={`form-input ${errors.pensionFechaInicio ? 'error' : ''}`}
+                  disabled={loading}
+                />
+                {errors.pensionFechaInicio && <span className="error-text">{errors.pensionFechaInicio}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Fecha de Fin (Opcional)</label>
+                <input
+                  type="date"
+                  name="pensionFechaFin"
+                  value={pensionData.fechaFin}
+                  onChange={(e) => setPensionData(prev => ({ ...prev, fechaFin: e.target.value }))}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Paso 7: Banco */}
+        {currentStep === 7 && (
+          <div className="form-step">
+            <div className="step-header">
+              <h4>🏦 Información Bancaria</h4>
+              <p>Datos bancarios para pagos de nómina</p>
+            </div>
+            
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">
+                  Nombre del Banco <span className="required">*</span>
+                </label>
+                <input
+                  name="bancoNombre"
+                  placeholder="Ej: Bancolombia, Banco de Bogotá, Nequi"
+                  value={bancoData.nombre}
+                  onChange={(e) => setBancoData(prev => ({ ...prev, nombre: e.target.value }))}
+                  className={`form-input ${errors.bancoNombre ? 'error' : ''}`}
+                  disabled={loading}
+                />
+                {errors.bancoNombre && <span className="error-text">{errors.bancoNombre}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  Número de Cuenta <span className="required">*</span>
+                </label>
+                <input
+                  name="bancoNumeroCuenta"
+                  placeholder="Ej: 12345678901"
+                  value={bancoData.numeroCuenta}
+                  onChange={(e) => setBancoData(prev => ({ ...prev, numeroCuenta: e.target.value }))}
+                  className={`form-input ${errors.bancoNumeroCuenta ? 'error' : ''}`}
+                  disabled={loading}
+                />
+                {errors.bancoNumeroCuenta && <span className="error-text">{errors.bancoNumeroCuenta}</span>}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Paso 8: Clínica */}
+        {currentStep === 8 && (
+          <div className="form-step">
+            <div className="step-header">
+              <h4>🏥 Clínica de Atención</h4>
+              <p>Información de la clínica o centro médico de preferencia</p>
+            </div>
+            
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">
+                  Nombre de la Clínica <span className="required">*</span>
+                </label>
+                <input
+                  name="clinicaNombre"
+                  placeholder="Ej: Clínica del Country, Hospital San Ignacio"
+                  value={clinicaData.nombre}
+                  onChange={(e) => setClinicaData(prev => ({ ...prev, nombre: e.target.value }))}
+                  className={`form-input ${errors.clinicaNombre ? 'error' : ''}`}
+                  disabled={loading}
+                />
+                {errors.clinicaNombre && <span className="error-text">{errors.clinicaNombre}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">
+                  Fecha de Inicio <span className="required">*</span>
+                </label>
+                <input
+                  type="date"
+                  name="clinicaFechaInicio"
+                  value={clinicaData.fechaInicio}
+                  onChange={(e) => setClinicaData(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                  className={`form-input ${errors.clinicaFechaInicio ? 'error' : ''}`}
+                  disabled={loading}
+                />
+                {errors.clinicaFechaInicio && <span className="error-text">{errors.clinicaFechaInicio}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Fecha de Fin (Opcional)</label>
+                <input
+                  type="date"
+                  name="clinicaFechaFin"
+                  value={clinicaData.fechaFin}
+                  onChange={(e) => setClinicaData(prev => ({ ...prev, fechaFin: e.target.value }))}
+                  className="form-input"
+                  disabled={loading}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Botones de navegación */}
         <div className="form-actions">
           {currentStep > 1 && (
@@ -518,7 +900,7 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
           
           <div className="spacer"></div>
           
-          {currentStep < 3 ? (
+          {currentStep < 8 ? (
             <button
               type="button"
               className="btn-primary"
@@ -536,11 +918,11 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
               {loading ? (
                 <>
                   <span className="loading-spinner"></span>
-                  Guardando...
+                  Creando trabajador y servicios...
                 </>
               ) : (
                 <>
-                  ✅ Crear Trabajador
+                  ✅ Crear Trabajador Completo
                 </>
               )}
             </button>
