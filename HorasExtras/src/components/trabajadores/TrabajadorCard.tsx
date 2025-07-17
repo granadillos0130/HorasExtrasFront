@@ -1,5 +1,5 @@
-// src/components/trabajadores/TrabajadorCard.tsx
 import React from "react";
+import { useNavigate } from "react-router-dom";
 import type { Trabajador } from "../../types/trabajadores";
 import "../../styles/components/TrabajadorCard.css";
 
@@ -10,6 +10,8 @@ interface Props {
 }
 
 const TrabajadorCard: React.FC<Props> = ({ trabajador, onDelete, onView }) => {
+  const navigate = useNavigate();
+  
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -17,6 +19,10 @@ const TrabajadorCard: React.FC<Props> = ({ trabajador, onDelete, onView }) => {
       .join('')
       .toUpperCase()
       .substring(0, 2);
+  };
+
+  const handleEdit = () => {
+    navigate(`/trabajadores/editar/${trabajador.id}`);
   };
 
   return (
@@ -45,6 +51,16 @@ const TrabajadorCard: React.FC<Props> = ({ trabajador, onDelete, onView }) => {
             <span className="btn-icon">👁️</span>
             Ver Detalles
           </button>
+          
+          <button
+            className="btn-edit"
+            onClick={handleEdit}
+            title="Editar trabajador"
+          >
+            <span className="btn-icon">✏️</span>
+            Editar
+          </button>
+          
           <button
             className="btn-delete"
             onClick={() => onDelete(trabajador.id)}

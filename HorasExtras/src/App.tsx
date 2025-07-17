@@ -8,16 +8,19 @@ import HorariosForm from "./components/horarios/HorarioForm";
 import CentrosPage from "./pages/CentrosPage";
 import CentroForm from "./components/centros/CentroForm";
 import EstadisticasPage from "./pages/EstadisticasPage";
+import TrabajadorEditPage from './components/trabajadores/TrabajadorEditPage';
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/trabajadores" element={<TrabajadoresPage />} />
+        <Route path="/trabajadores/editar/:id" element={<TrabajadorEditPage />} />
         <Route path="/registros" element={<RegistrosPage />} />
         <Route path="/horarios" element={<HorariosPage />} />
         <Route path="/horarios/crear" element={<HorariosForm />} />
         <Route path="/centros" element={<CentrosPage />} />
+        
 <Route path="/centros/crear" element={<CentroForm />} />
 <Route path="/centros/editar/:id" element={<CentroForm />} />
 <Route path="/estadisticas" element={<EstadisticasPage />} />
