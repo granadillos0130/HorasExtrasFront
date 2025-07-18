@@ -1,6 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { centrosService } from "../../api/centrosService";
+import { clientesService } from "../../api/clientesService";
 import type { Centro } from "../../types/centros";
+import type { Cliente } from "../../types/cliente";
 import "../../styles/components/CentroForm.css";
 
 interface Props {
@@ -10,12 +12,23 @@ interface Props {
 const CentroForm: React.FC<Props> = ({ onSuccess }) => {
   const [formData, setFormData] = useState<Centro>({
     id: "",
-    nombreCentro: ""
+    nombreCentro: "",
+    fechaHoraInicio: "", // opcional
+    clienteId: ""
   });
+
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  useEffect(() => {
+    clientesService
+      .obtenerTodos()
+      .then(setClientes)
+      .catch((err) => console.error("Error cargando clientes", err));
+  }, []);
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -26,9 +39,9 @@ const CentroForm: React.FC<Props> = ({ onSuccess }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.id.trim() || !formData.nombreCentro.trim()) {
-      setError("Por favor, ingrese un ID válido y un nombre de centro.");
+      setError("Por favor, complete los campos obligatorios.");
       return;
     }
 
@@ -37,16 +50,20 @@ const CentroForm: React.FC<Props> = ({ onSuccess }) => {
 
     try {
       await centrosService.crear(formData);
-      alert("Centro creado correctamente.");
+      alert("Centro creado con éxito ✅");
       onSuccess();
-      setFormData({ id: "", nombreCentro: "" });
+      setFormData({
+        id: "",
+        nombreCentro: "",
+        fechaHoraInicio: "",
+        clienteId: ""
+      });
     } catch (err: any) {
       if (err.response?.status === 409) {
-        setError("Ya existe un centro con este ID. Por favor, use un ID diferente.");
+        setError("Ya existe un centro con ese ID.");
       } else {
-        setError("Error al crear el centro. Inténtelo de nuevo.");
+        setError("Error al crear el centro.");
       }
-      console.error("Error:", err);
     } finally {
       setLoading(false);
     }
@@ -55,112 +72,87 @@ const CentroForm: React.FC<Props> = ({ onSuccess }) => {
   return (
     <div className="centro-form-container">
       <div className="form-header">
-        <div className="form-icon">🏢</div>
+        <div className="form-icon">🏗️</div>
         <div className="form-title-section">
-          <h3>Crear Nuevo Centro</h3>
-          <p>Complete la información para registrar un nuevo centro de trabajo</p>
+          <h3>Registrar Centro</h3>
+          <p>Llena los datos para crear un nuevo centro</p>
         </div>
       </div>
 
-      {error && (
-        <div className="error-message">
-          ❌ {error}
-        </div>
-      )}
+      {error && <div className="error-message">❌ {error}</div>}
 
       <form className="centro-form" onSubmit={handleSubmit}>
         <div className="form-section">
+          {/* ID y Nombre */}
           <div className="form-row">
             <div className="form-group">
-              <label className="form-label">ID Centro</label>
+              <label>ID Centro</label>
               <input
                 type="text"
                 name="id"
                 value={formData.id}
                 onChange={handleChange}
-                className="form-input"
-                placeholder="Ej: 001, CTR-01"
+                placeholder="Ej: CTRO01"
                 required
                 disabled={loading}
               />
-              <small className="form-help">
-                Identificador único del centro
-              </small>
             </div>
-
             <div className="form-group">
-              <label className="form-label">Nombre del Centro</label>
+              <label>Nombre</label>
               <input
                 type="text"
                 name="nombreCentro"
                 value={formData.nombreCentro}
                 onChange={handleChange}
-                className="form-input"
-                placeholder="Ej: Centro Principal"
+                placeholder="Ej: Obra Itagüí"
                 required
                 disabled={loading}
-                maxLength={100}
               />
-              <small className="form-help">
-                Nombre descriptivo del centro de trabajo
-              </small>
             </div>
           </div>
 
-          {/* Vista previa */}
-          {(formData.id.trim() || formData.nombreCentro.trim()) && (
-            <div className="preview-section">
-              <h4>Vista Previa</h4>
-              <div className="centro-preview">
-                <div className="preview-icon">🏢</div>
-                <div className="preview-content">
-                  <div className="preview-name">
-                    {formData.nombreCentro.trim() || "Nombre del centro"}
-                  </div>
-                  <div className="preview-id">
-                    ID: {formData.id.trim() || "---"}
-                  </div>
-                </div>
-              </div>
+          {/* Fecha y hora de inicio opcional */}
+          <div className="form-row">
+            <div className="form-group full-width">
+              <label>Fecha y Hora de Inicio (opcional)</label>
+              <input
+                type="datetime-local"
+                name="fechaHoraInicio"
+                value={formData.fechaHoraInicio || ""}
+                onChange={handleChange}
+                disabled={loading}
+              />
             </div>
-          )}
-        </div>
+          </div>
 
-        <div className="form-actions">
-          <button 
-            type="submit" 
-            className="btn-submit"
-            disabled={loading || !formData.id.trim() || !formData.nombreCentro.trim()}
-          >
-            {loading ? (
-              <>
-                <span className="loading-spinner"></span>
-                Creando...
-              </>
-            ) : (
-              <>
-                ✅ Crear Centro
-              </>
-            )}
-          </button>
+          {/* Cliente */}
+          <div className="form-row">
+            <div className="form-group full-width">
+              <label>Cliente</label>
+              <select
+                name="clienteId"
+                value={formData.clienteId}
+                onChange={handleChange}
+                disabled={loading}
+              >
+                <option value="">-- Selecciona un cliente --</option>
+                {clientes.map((cliente) => (
+  <option key={cliente.id} value={cliente.id}>
+    {cliente.nombreCliente}
+  </option>
+))}
+
+              </select>
+            </div>
+          </div>
+
+          <div className="form-footer">
+            <button type="submit" disabled={loading}>
+              {loading ? "Guardando..." : "Crear Centro"}
+            </button>
+          </div>
         </div>
       </form>
-
-      {/* Información adicional */}
-      <div className="info-section">
-        <div className="info-item">
-          <span className="info-icon">💡</span>
-          <span className="info-text">
-            <strong>Consejo:</strong> Use un ID corto y descriptivo que sea fácil de recordar.
-          </span>
-        </div>
-        <div className="info-item">
-          <span className="info-icon">🎯</span>
-          <span className="info-text">
-            <strong>Uso:</strong> Los centros ayudan a organizar trabajadores y registros por ubicación.
-          </span>
-        </div>
-      </div>
     </div>
   );
 };
