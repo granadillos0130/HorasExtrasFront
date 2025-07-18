@@ -1,5 +1,6 @@
 import React from "react";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import type { CentroEstadisticas } from "../../types/centros";
 import "../../styles/components/CentroEstadisticasModal.css";
 
@@ -12,21 +13,75 @@ interface Props {
 const CentroEstadisticasModal: React.FC<Props> = ({ visible, onClose, data }) => {
   if (!visible || !data) return null;
 
-  const exportarExcel = () => {
-    const ws = XLSX.utils.json_to_sheet(data.trabajadores.map(t => ({
-      "Nombre del Trabajador": t.nombreTrabajador,
-      "Horas Totales": t.totalHoras,
-      "Normales": t.horasNormales,
-      "Extras Diurnas": t.horasExtrasDiurnas,
-      "Extras Nocturnas": t.horasExtrasNocturnas,
-      "Dom. Día": t.extrasDominicalesDiurnas,
-      "Dom. Noche": t.extrasDominicalesNocturnas,
-    })));
+  const exportarExcel = async () => {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Estadísticas");
 
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Estadísticas");
+    const headers = [
+      "Nombre del Trabajador",
+      "Horas Totales",
+      "Normales",
+      "Extras Diurnas",
+      "Extras Nocturnas",
+      "Dom. Día",
+      "Dom. Noche",
+    ];
 
-    XLSX.writeFile(wb, `Estadisticas_${data.centroNombre}.xlsx`);
+    // Agregar encabezados
+    worksheet.addRow(headers);
+
+    // Estilos de encabezado
+    const headerRow = worksheet.getRow(1);
+    headerRow.eachCell((cell) => {
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF4F81BD" },
+      };
+      cell.alignment = { horizontal: "center" };
+      cell.border = {
+        top: { style: "thin" },
+        bottom: { style: "thin" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+      };
+    });
+
+    // Agregar datos de trabajadores
+    data.trabajadores.forEach((t) => {
+      worksheet.addRow([
+        t.nombreTrabajador,
+        t.totalHoras,
+        t.horasNormales,
+        t.horasExtrasDiurnas,
+        t.horasExtrasNocturnas,
+        t.extrasDominicalesDiurnas,
+        t.extrasDominicalesNocturnas,
+      ]);
+    });
+
+    // Estilo para filas de datos
+    worksheet.eachRow({ includeEmpty: false }, (row, rowNumber) => {
+      if (rowNumber === 1) return;
+      row.eachCell((cell) => {
+        cell.alignment = { horizontal: "center" };
+        cell.border = {
+          top: { style: "thin" },
+          bottom: { style: "thin" },
+          left: { style: "thin" },
+          right: { style: "thin" },
+        };
+      });
+    });
+
+    // Ajustar tamaño de columnas
+    worksheet.columns.forEach((col) => {
+      col.width = 20;
+    });
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `Estadisticas_${data.centroNombre}.xlsx`);
   };
 
   return (
