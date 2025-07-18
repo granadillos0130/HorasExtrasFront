@@ -21,6 +21,7 @@ const TrabajadoresPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [nuevoTrabajadorId, setNuevoTrabajadorId] = useState<number | null>(null);
   const [detalleId, setDetalleId] = useState<number | null>(null);
+  const [mostrarSoloNoVigentes, setMostrarSoloNoVigentes] = useState(false);
 
   const handleCreated = (id: number) => {
     setNuevoTrabajadorId(id);
@@ -38,6 +39,10 @@ const TrabajadoresPage: React.FC = () => {
     }
   };
 
+  const trabajadoresFiltrados = mostrarSoloNoVigentes
+    ? trabajadores.filter((t) => t.estado === "No Vigente")
+    : trabajadores;
+
   return (
     <div className="trabajadores-page">
       <div className="page-container">
@@ -49,13 +54,21 @@ const TrabajadoresPage: React.FC = () => {
         </div>
 
         <div className="content-card">
-          {!showForm && (
-            <div className="form-section">
-              <button className="btn-primary" onClick={() => setShowForm(true)}>
-                ➕ Agregar Nuevo Trabajador
-              </button>
-            </div>
-          )}
+          <div className="form-section">
+            {!showForm && (
+              <>
+                <button className="btn-primary" onClick={() => setShowForm(true)}>
+                  ➕ Agregar Nuevo Trabajador
+                </button>
+                <button
+                  className="btn-secondary"
+                  onClick={() => setMostrarSoloNoVigentes((prev) => !prev)}
+                >
+                  {mostrarSoloNoVigentes ? "👀 Ver Todos" : "🚫 Ver No Vigentes"}
+                </button>
+              </>
+            )}
+          </div>
 
           {showForm && (
             <TrabajadorForm
@@ -66,7 +79,7 @@ const TrabajadoresPage: React.FC = () => {
           )}
 
           <div className="list-section">
-            <h2>Trabajadores Registrados ({trabajadores.length})</h2>
+            <h2>Trabajadores Registrados ({trabajadoresFiltrados.length})</h2>
 
             {loading && (
               <div className="loading-message">
@@ -80,17 +93,17 @@ const TrabajadoresPage: React.FC = () => {
               </div>
             )}
 
-            {!loading && trabajadores.length === 0 && (
+            {!loading && trabajadoresFiltrados.length === 0 && (
               <div className="empty-state">
                 <div className="empty-state-icon">👥</div>
-                <h3>No hay trabajadores registrados</h3>
+                <h3>No hay trabajadores {mostrarSoloNoVigentes ? "No Vigentes" : "registrados"}</h3>
                 <p>Comienza agregando tu primer trabajador usando el botón de arriba.</p>
               </div>
             )}
 
-            {!loading && trabajadores.length > 0 && (
+            {!loading && trabajadoresFiltrados.length > 0 && (
               <div className="trabajadores-grid">
-                {trabajadores.map((trabajador, index) => (
+                {trabajadoresFiltrados.map((trabajador) => (
                   <TrabajadorCard
                     key={trabajador.id}
                     trabajador={trabajador}
@@ -109,57 +122,56 @@ const TrabajadoresPage: React.FC = () => {
             />
           )}
 
-         {nuevoTrabajadorId && (
-  <div className="extra-section">
-    <h2>Completar información para el trabajador #{nuevoTrabajadorId}</h2>
+          {nuevoTrabajadorId && (
+            <div className="extra-section">
+              <h2>Completar información para el trabajador #{nuevoTrabajadorId}</h2>
 
-    <EpsForm
-      trabajadorId={nuevoTrabajadorId}
-      onSave={async (data) => {
-        await epsService.crear(data);
-        alert("EPS registrada correctamente");
-      }}
-      onCancel={() => console.log("EPS cancelada")}
-    />
+              <EpsForm
+                trabajadorId={nuevoTrabajadorId}
+                onSave={async (data) => {
+                  await epsService.crear(data);
+                  alert("EPS registrada correctamente");
+                }}
+                onCancel={() => console.log("EPS cancelada")}
+              />
 
-    <ArlForm
-      trabajadorId={nuevoTrabajadorId}
-      onSave={async (data) => {
-        await arlService.crear(data);
-        alert("ARL registrada correctamente");
-      }}
-      onCancel={() => console.log("ARL cancelada")}
-    />
+              <ArlForm
+                trabajadorId={nuevoTrabajadorId}
+                onSave={async (data) => {
+                  await arlService.crear(data);
+                  alert("ARL registrada correctamente");
+                }}
+                onCancel={() => console.log("ARL cancelada")}
+              />
 
-    <PensionForm
-      trabajadorId={nuevoTrabajadorId}
-      onSave={async (data) => {
-        await pensionService.crear(data);
-        alert("Pensión registrada correctamente");
-      }}
-      onCancel={() => console.log("Pensión cancelada")}
-    />
+              <PensionForm
+                trabajadorId={nuevoTrabajadorId}
+                onSave={async (data) => {
+                  await pensionService.crear(data);
+                  alert("Pensión registrada correctamente");
+                }}
+                onCancel={() => console.log("Pensión cancelada")}
+              />
 
-    <ClinicaForm
-      trabajadorId={nuevoTrabajadorId}
-      onSave={async (data) => {
-        await clinicaService.crear(data);
-        alert("Clínica registrada correctamente");
-      }}
-      onCancel={() => console.log("Clínica cancelada")}
-    />
+              <ClinicaForm
+                trabajadorId={nuevoTrabajadorId}
+                onSave={async (data) => {
+                  await clinicaService.crear(data);
+                  alert("Clínica registrada correctamente");
+                }}
+                onCancel={() => console.log("Clínica cancelada")}
+              />
 
-    <BancoForm
-      trabajadorId={nuevoTrabajadorId}
-      onSave={async (data) => {
-        await bancoService.crear(data);
-        alert("Banco registrado correctamente");
-      }}
-      onCancel={() => console.log("Banco cancelado")}
-    />
-  </div>
-)}
-
+              <BancoForm
+                trabajadorId={nuevoTrabajadorId}
+                onSave={async (data) => {
+                  await bancoService.crear(data);
+                  alert("Banco registrado correctamente");
+                }}
+                onCancel={() => console.log("Banco cancelado")}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -5,6 +5,7 @@ export interface Trabajador {
   rh: string;
   fechaNacimiento: string; // formato ISO
   edad: number;
+  estado: string; // "Activo", "Inactivo", etc.
   estadoCivil: string;
   genero: string;
   cantidadHijos: number;

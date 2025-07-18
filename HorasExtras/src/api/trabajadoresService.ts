@@ -31,4 +31,12 @@ export const trabajadoresService = {
   async delete(id: number): Promise<void> {
     await api.delete(`/trabajadores/${id}`);
   },
+  
+  async cambiarEstado(id: number, nuevoEstado: string): Promise<void> {
+  await api.put(`/trabajadores/${id}/estado`, JSON.stringify(nuevoEstado), {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  });
+}
 };
