@@ -4,9 +4,12 @@ import { trabajadoresService } from "../api/trabajadoresService";
 import { useNavigate } from "react-router-dom";
 import CentroBuscador from "../components/shared/CentroBuscador";
 import CentroForm from "../components/centros/CentroForm";
+import CentroCard from "../components/centros/CentroCard";
+import CentroEstadisticasModal from "../components/centros/CentroEstadisticasModal";
 import type { Centro } from "../types/centros";
 import type { Trabajador } from "../types/trabajadores";
-import "../styles/pages/CentrosPage.css";
+import type { CentroEstadisticas } from "../types/centros";
+import "../styles/components/CentroCard.css";
 
 const CentrosPage: React.FC = () => {
   const [centros, setCentros] = useState<Centro[]>([]);
@@ -18,6 +21,8 @@ const CentrosPage: React.FC = () => {
   const [loadingAssign, setLoadingAssign] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  const [estadisticasCentro, setEstadisticasCentro] = useState<CentroEstadisticas | null>(null);
+  const [showEstadisticasModal, setShowEstadisticasModal] = useState(false);
   const navigate = useNavigate();
 
   const cargarCentros = async () => {
@@ -51,7 +56,7 @@ const CentrosPage: React.FC = () => {
     if (!busqueda.trim()) {
       setCentrosFiltrados(centros);
     } else {
-      const filtrados = centros.filter(centro =>
+      const filtrados = centros.filter((centro) =>
         centro.nombreCentro.toLowerCase().includes(busqueda.toLowerCase()) ||
         centro.id.toLowerCase().includes(busqueda.toLowerCase())
       );
@@ -92,12 +97,23 @@ const CentrosPage: React.FC = () => {
     }
   };
 
+  const handleVerEstadisticas = async (centroId: string) => {
+    try {
+      const data = await centrosService.getEstadisticas({ centroId });
+      setEstadisticasCentro(data);
+      setShowEstadisticasModal(true);
+    } catch (error) {
+      console.error("Error al obtener estadísticas:", error);
+      alert("Error al obtener estadísticas del centro");
+    }
+  };
+
   const handleLimpiarBusqueda = () => {
     setBusqueda("");
   };
 
   const getSelectedTrabajadorName = () => {
-    const trabajador = trabajadores.find(t => t.id === selectedTrabajador);
+    const trabajador = trabajadores.find((t) => t.id === selectedTrabajador);
     return trabajador ? trabajador.nombre : "";
   };
 
@@ -133,18 +149,16 @@ const CentrosPage: React.FC = () => {
                   <p>Ingresa la información del centro de trabajo</p>
                 </div>
               </div>
-              <CentroForm onSuccess={() => {
-                setShowForm(false);
-                cargarCentros();
-              }} />
+              <CentroForm
+                onSuccess={() => {
+                  setShowForm(false);
+                  cargarCentros();
+                }}
+              />
             </div>
           )}
-
-          {/* Aquí sigue el resto sin cambios... (buscador, listado, asignación, etc.) */}
-          {/* ... */}
         </div>
 
-        {/* Asignar trabajador a centro */}
         <div className="content-card">
           <div className="assign-header">
             <div className="assign-icon">👥</div>
@@ -167,24 +181,27 @@ const CentrosPage: React.FC = () => {
 
               <div className="form-group">
                 <label className="form-label">Trabajador</label>
-                <select 
-                  value={selectedTrabajador} 
-                  onChange={e => setSelectedTrabajador(Number(e.target.value))}
+                <select
+                  value={selectedTrabajador}
+                  onChange={(e) => setSelectedTrabajador(Number(e.target.value))}
                   className="form-select"
                 >
                   <option value={0}>Seleccione un trabajador</option>
-                  {trabajadores.map(t => (
-                    <option key={t.id} value={t.id}>{t.nombre}</option>
+                  {trabajadores.map((t) => (
+                    <option key={t.id} value={t.id}>
+                      {t.nombre}
+                    </option>
                   ))}
                 </select>
                 {getSelectedTrabajadorName() && (
                   <div className="selected-item">
-                    👤 Trabajador seleccionado: <strong>{getSelectedTrabajadorName()}</strong>
+                    👤 Trabajador seleccionado:{" "}
+                    <strong>{getSelectedTrabajadorName()}</strong>
                   </div>
                 )}
               </div>
 
-              <button 
+              <button
                 onClick={handleAsignar}
                 className="btn-assign"
                 disabled={loadingAssign || selectedCentro === "" || selectedTrabajador === 0}
@@ -194,7 +211,42 @@ const CentrosPage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        <div className="content-card">
+          <div className="listado-header">
+            <h2>📋 Centros Registrados</h2>
+            <p>Total: {centrosFiltrados.length}</p>
+            {busqueda && (
+              <button className="btn-clear" onClick={handleLimpiarBusqueda}>
+                Limpiar búsqueda
+              </button>
+            )}
+          </div>
+
+          <div className="centros-grid">
+            {loading ? (
+              <p>Cargando centros...</p>
+            ) : centrosFiltrados.length === 0 ? (
+              <p>No se encontraron centros.</p>
+            ) : (
+              centrosFiltrados.map((centro) => (
+                <CentroCard
+                  key={centro.id}
+                  centro={centro}
+                  onDelete={handleEliminar}
+                  onView={handleVerEstadisticas}
+                />
+              ))
+            )}
+          </div>
+        </div>
       </div>
+
+      <CentroEstadisticasModal
+        visible={showEstadisticasModal}
+        onClose={() => setShowEstadisticasModal(false)}
+        data={estadisticasCentro}
+      />
     </div>
   );
 };
