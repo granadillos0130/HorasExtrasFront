@@ -1,28 +1,172 @@
+/* Estilos existentes de la card */
 .centro-card {
-  background-color: #f3f3f3;
-  border: 1px solid #ddd;
-  border-radius: 1rem;
-  padding: 1rem;
-  margin: 0.5rem;
-  box-shadow: 1px 1px 5px rgba(0, 0, 0, 0.08);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  background: white;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 24px;
+  transition: all var(--transition-normal);
+  border: 2px solid var(--border-color);
+}
+
+.centro-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+}
+
+.centro-info {
+  margin-bottom: 20px;
 }
 
 .centro-info h3 {
-  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 8px;
 }
 
-.centro-actions .btn-eliminar {
-  background-color: #e74c3c;
-  color: white;
-  padding: 0.4rem 0.8rem;
-  border: none;
-  border-radius: 0.5rem;
+.centro-info p {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+/* Estilos mejorados para los botones */
+.centro-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.centro-actions .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 16px;
+  border-radius: var(--radius-lg);
+  font-size: 0.9rem;
+  font-weight: 600;
   cursor: pointer;
+  transition: all var(--transition-normal);
+  border: none;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  min-width: 100px;
 }
 
-.centro-actions .btn-eliminar:hover {
-  background-color: #c0392b;
+.centro-actions .btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.centro-actions .btn:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+.btn-icon {
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  position: relative;
+}
+
+.btn-text {
+  z-index: 1;
+  position: relative;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-size: 0.8rem;
+}
+
+/* Botón Ver */
+.btn-view {
+  background: linear-gradient(135deg, #3B82F6, #1E40AF);
+  color: white;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-view:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4);
+  background: linear-gradient(135deg, #2563EB, #1D4ED8);
+}
+
+.btn-view:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+/* Botón Eliminar */
+.btn-delete {
+  background: linear-gradient(135deg, #EF4444, #DC2626);
+  color: white;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.btn-delete:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.4);
+  background: linear-gradient(135deg, #DC2626, #B91C1C);
+}
+
+.btn-delete:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+/* Efectos adicionales */
+.centro-actions .btn:focus-visible {
+  outline: 2px solid var(--primary-green);
+  outline-offset: 2px;
+}
+
+.centro-actions .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.centro-actions .btn:disabled::before {
+  display: none;
+}
+
+/* Animación de carga sutil */
+@keyframes buttonPulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.02);
+  }
+}
+
+.centro-actions .btn.loading {
+  animation: buttonPulse 1s ease-in-out infinite;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .centro-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .centro-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
 }

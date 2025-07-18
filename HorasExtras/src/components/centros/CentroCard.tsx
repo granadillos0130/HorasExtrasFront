@@ -17,21 +17,22 @@ const CentroCard: React.FC<Props> = ({ centro, onDelete, onView }) => {
       </div>
       <div className="centro-actions">
         <button
-          className="btn-ver"
+          className="btn btn-view"
           onClick={() => onView(centro.id)}
         >
-          👁️ Ver
+          <span className="btn-icon">👁️</span>
+          <span className="btn-text">Ver</span>
         </button>
         <button
-          className="btn-eliminar"
+          className="btn btn-delete"
           onClick={() => onDelete(centro.id, centro.nombreCentro)}
         >
-          🗑️ Eliminar
+          <span className="btn-icon">🗑️</span>
+          <span className="btn-text">Eliminar</span>
         </button>
       </div>
     </div>
   );
 };
-
 
 export default CentroCard;
