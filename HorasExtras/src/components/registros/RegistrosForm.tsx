@@ -130,7 +130,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
             <label>Nombre del Centro</label>
             <input
               type="text"
-              value={formData.Nombre_Centro}
+              value={formData.Nombr_Centro}
               onChange={(e) => handleInputChange("Nombr_Centro", e.target.value)}
               placeholder="Escriba el nombre del centro"
               required
