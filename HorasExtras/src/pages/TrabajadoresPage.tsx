@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { useTrabajadores } from "../hooks/useTrabajadores";
 import TrabajadorForm from "../components/trabajadores/TrabajadorForm";
 import TrabajadorCard from "../components/trabajadores/TrabajadorCard";
 import TrabajadorDetail from "../components/trabajadores/TrabajadorDetailModal";
+import TrabajadorBuscador from "../components/shared/TrabajadorBuscador";
 import { trabajadoresService } from "../api/trabajadoresService";
 import "../styles/pages/TrabajadoresPage.css";
 import EpsForm from "../components/SeguridadEmpleado/epsForm";
@@ -15,6 +16,7 @@ import { arlService } from "../api/arlService";
 import { pensionService } from "../api/pensionService";
 import { clinicaService } from "../api/clinicaService";
 import { bancoService } from "../api/bancoService";
+import type { Trabajador } from "../types/trabajadores";
 
 const TrabajadoresPage: React.FC = () => {
   const { trabajadores, loading, error, refetch } = useTrabajadores();
@@ -22,6 +24,11 @@ const TrabajadoresPage: React.FC = () => {
   const [nuevoTrabajadorId, setNuevoTrabajadorId] = useState<number | null>(null);
   const [detalleId, setDetalleId] = useState<number | null>(null);
   const [mostrarSoloNoVigentes, setMostrarSoloNoVigentes] = useState(false);
+  
+  // Estados para el buscador
+  const [trabajadorSeleccionadoId, setTrabajadorSeleccionadoId] = useState<number>(0);
+  const [filtroEstado, setFiltroEstado] = useState<string>("todos");
+  const [terminoBusqueda, setTerminoBusqueda] = useState<string>("");
 
   const handleCreated = (id: number) => {
     setNuevoTrabajadorId(id);
@@ -39,9 +46,62 @@ const TrabajadoresPage: React.FC = () => {
     }
   };
 
-  const trabajadoresFiltrados = mostrarSoloNoVigentes
-    ? trabajadores.filter((t) => t.estado === "No Vigente")
-    : trabajadores;
+  // Función para filtrar trabajadores
+  const trabajadoresFiltrados = useMemo(() => {
+    let filtrados = trabajadores;
+
+    // Filtro por estado
+    if (filtroEstado !== "todos") {
+      filtrados = filtrados.filter(t => t.estado === filtroEstado);
+    }
+
+    // Filtro por trabajador específico (buscador)
+    if (trabajadorSeleccionadoId > 0) {
+      filtrados = filtrados.filter(t => t.id === trabajadorSeleccionadoId);
+    } else if (terminoBusqueda.trim()) {
+      // Filtro por término de búsqueda
+      const termino = terminoBusqueda.toLowerCase();
+      filtrados = filtrados.filter(t => 
+        t.nombre.toLowerCase().includes(termino) ||
+        t.cedula.toLowerCase().includes(termino)
+      );
+    }
+
+    // Filtro legacy para no vigentes
+    if (mostrarSoloNoVigentes) {
+      filtrados = filtrados.filter(t => t.estado === "No Vigente");
+    }
+
+    return filtrados;
+  }, [trabajadores, filtroEstado, trabajadorSeleccionadoId, terminoBusqueda, mostrarSoloNoVigentes]);
+
+  // Estadísticas de trabajadores
+  const estadisticas = useMemo(() => {
+    const vigentes = trabajadores.filter(t => t.estado === "Vigente").length;
+    const noVigentes = trabajadores.filter(t => t.estado === "No Vigente").length;
+    const total = trabajadores.length;
+    
+    return { vigentes, noVigentes, total };
+  }, [trabajadores]);
+
+  const handleBuscarTrabajador = (id: number, trabajador?: Trabajador) => {
+    setTrabajadorSeleccionadoId(id);
+    if (trabajador) {
+      setTerminoBusqueda(trabajador.nombre);
+    } else {
+      setTerminoBusqueda("");
+    }
+  };
+
+  const limpiarBusqueda = () => {
+    setTrabajadorSeleccionadoId(0);
+    setTerminoBusqueda("");
+    setFiltroEstado("todos");
+    setMostrarSoloNoVigentes(false);
+  };
+
+  const hayFiltrosActivos = trabajadorSeleccionadoId > 0 || terminoBusqueda.trim() || 
+                          filtroEstado !== "todos" || mostrarSoloNoVigentes;
 
   return (
     <div className="trabajadores-page">
@@ -78,8 +138,108 @@ const TrabajadoresPage: React.FC = () => {
             />
           )}
 
+          {/* Estadísticas */}
+          {!loading && trabajadores.length > 0 && (
+            <div className="trabajadores-stats">
+              <div className="stat-card">
+                <div className="stat-number">{estadisticas.total}</div>
+                <div className="stat-label">Total</div>
+              </div>
+              <div className="stat-card vigentes">
+                <div className="stat-number">{estadisticas.vigentes}</div>
+                <div className="stat-label">Vigentes</div>
+              </div>
+              <div className="stat-card no-vigentes">
+                <div className="stat-number">{estadisticas.noVigentes}</div>
+                <div className="stat-label">No Vigentes</div>
+              </div>
+            </div>
+          )}
+
+          {/* Sección de búsqueda */}
+          {!loading && trabajadores.length > 0 && (
+            <div className="search-section">
+              <div className="search-header">
+                <div className="search-icon-header">🔍</div>
+                <div className="search-title-section">
+                  <h3>Buscar Trabajadores</h3>
+                  <p>Encuentra rápidamente cualquier trabajador por nombre o cédula</p>
+                </div>
+                {hayFiltrosActivos && (
+                  <button className="btn-clear-search" onClick={limpiarBusqueda}>
+                    ✕ Limpiar
+                  </button>
+                )}
+              </div>
+              
+              <div className="search-controls">
+                <div className="search-input-container">
+                  <TrabajadorBuscador
+                    trabajadores={trabajadores}
+                    value={trabajadorSeleccionadoId}
+                    onChange={handleBuscarTrabajador}
+                    placeholder="Buscar por nombre o cédula..."
+                    showSelectedInfo={false}
+                    className="search-trabajador-input"
+                  />
+                </div>
+                <div className="filter-container">
+                  <select
+                    className="filter-select"
+                    value={filtroEstado}
+                    onChange={(e) => setFiltroEstado(e.target.value)}
+                  >
+                    <option value="todos">Todos los estados</option>
+                    <option value="Vigente">Solo Vigentes</option>
+                    <option value="No Vigente">Solo No Vigentes</option>
+                  </select>
+                  <div className="filter-icon">⚙️</div>
+                </div>
+              </div>
+
+              {hayFiltrosActivos && (
+                <div className="search-results-info">
+                  <div className="results-count">
+                    {trabajadoresFiltrados.length > 0 ? (
+                      <span className="results-found">
+                        ✓ {trabajadoresFiltrados.length} trabajador{trabajadoresFiltrados.length !== 1 ? 'es' : ''} encontrado{trabajadoresFiltrados.length !== 1 ? 's' : ''}
+                      </span>
+                    ) : (
+                      <span className="no-results">
+                        ❌ No se encontraron resultados
+                      </span>
+                    )}
+                  </div>
+                  
+                  <div className="active-filters">
+                    {trabajadorSeleccionadoId > 0 && (
+                      <span className="filter-tag">
+                        Trabajador específico
+                        <button onClick={() => setTrabajadorSeleccionadoId(0)}>✕</button>
+                      </span>
+                    )}
+                    {filtroEstado !== "todos" && (
+                      <span className="filter-tag">
+                        Estado: {filtroEstado}
+                        <button onClick={() => setFiltroEstado("todos")}>✕</button>
+                      </span>
+                    )}
+                    {mostrarSoloNoVigentes && (
+                      <span className="filter-tag">
+                        Solo No Vigentes
+                        <button onClick={() => setMostrarSoloNoVigentes(false)}>✕</button>
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="list-section">
-            <h2>Trabajadores Registrados ({trabajadoresFiltrados.length})</h2>
+            <h2>
+              Trabajadores {hayFiltrosActivos ? 'Filtrados' : 'Registrados'} ({trabajadoresFiltrados.length})
+            </h2>
 
             {loading && (
               <div className="loading-message">
@@ -93,23 +253,44 @@ const TrabajadoresPage: React.FC = () => {
               </div>
             )}
 
-            {!loading && trabajadoresFiltrados.length === 0 && (
+            {!loading && trabajadores.length === 0 && (
               <div className="empty-state">
                 <div className="empty-state-icon">👥</div>
-                <h3>No hay trabajadores {mostrarSoloNoVigentes ? "No Vigentes" : "registrados"}</h3>
+                <h3>No hay trabajadores registrados</h3>
                 <p>Comienza agregando tu primer trabajador usando el botón de arriba.</p>
+              </div>
+            )}
+
+            {!loading && trabajadores.length > 0 && trabajadoresFiltrados.length === 0 && (
+              <div className="empty-search-state">
+                <div className="empty-search-icon">🔍</div>
+                <h3>No se encontraron trabajadores</h3>
+                <p>Los filtros aplicados no coinciden con ningún trabajador.</p>
+                <div className="search-suggestions">
+                  <p>Intenta:</p>
+                  <ul>
+                    <li>Verificar la ortografía del nombre o cédula</li>
+                    <li>Usar términos más generales</li>
+                    <li>Cambiar el filtro de estado</li>
+                    <li>Limpiar todos los filtros</li>
+                  </ul>
+                </div>
+                <button className="btn-clear-search-alt" onClick={limpiarBusqueda}>
+                  🔄 Limpiar filtros
+                </button>
               </div>
             )}
 
             {!loading && trabajadoresFiltrados.length > 0 && (
               <div className="trabajadores-grid">
-                {trabajadoresFiltrados.map((trabajador) => (
-                  <TrabajadorCard
-                    key={trabajador.id}
-                    trabajador={trabajador}
-                    onDelete={(id) => handleDelete(id, trabajador.nombre)}
-                    onView={(id) => setDetalleId(id)}
-                  />
+                {trabajadoresFiltrados.map((trabajador, index) => (
+                  <div key={trabajador.id} className="trabajador-card-wrapper" style={{ animationDelay: `${index * 0.1}s` }}>
+                    <TrabajadorCard
+                      trabajador={trabajador}
+                      onDelete={(id) => handleDelete(id, trabajador.nombre)}
+                      onView={(id) => setDetalleId(id)}
+                    />
+                  </div>
                 ))}
               </div>
             )}
