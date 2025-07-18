@@ -11,6 +11,7 @@ import type { Trabajador } from "../types/trabajadores";
 import type { CentroEstadisticas } from "../types/centros";
 import "../styles/components/CentroCard.css";
 import "../styles/pages/CentrosPage.css";
+
 const CentrosPage: React.FC = () => {
   const [centros, setCentros] = useState<Centro[]>([]);
   const [centrosFiltrados, setCentrosFiltrados] = useState<Centro[]>([]);
@@ -21,6 +22,7 @@ const CentrosPage: React.FC = () => {
   const [loadingAssign, setLoadingAssign] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [busqueda, setBusqueda] = useState("");
+  const [centroFiltroSeleccionado, setCentroFiltroSeleccionado] = useState<string>("");
   const [estadisticasCentro, setEstadisticasCentro] = useState<CentroEstadisticas | null>(null);
   const [showEstadisticasModal, setShowEstadisticasModal] = useState(false);
   const navigate = useNavigate();
@@ -52,17 +54,25 @@ const CentrosPage: React.FC = () => {
     cargarTrabajadores();
   }, []);
 
+  // Filtrar centros cuando cambie la búsqueda o el centro seleccionado
   useEffect(() => {
-    if (!busqueda.trim()) {
-      setCentrosFiltrados(centros);
-    } else {
-      const filtrados = centros.filter((centro) =>
+    let filtrados = centros;
+
+    // Filtrar por texto de búsqueda
+    if (busqueda.trim()) {
+      filtrados = filtrados.filter((centro) =>
         centro.nombreCentro.toLowerCase().includes(busqueda.toLowerCase()) ||
         centro.id.toLowerCase().includes(busqueda.toLowerCase())
       );
-      setCentrosFiltrados(filtrados);
     }
-  }, [busqueda, centros]);
+
+    // Filtrar por centro específico seleccionado
+    if (centroFiltroSeleccionado) {
+      filtrados = filtrados.filter(centro => centro.id === centroFiltroSeleccionado);
+    }
+
+    setCentrosFiltrados(filtrados);
+  }, [busqueda, centroFiltroSeleccionado, centros]);
 
   const handleAsignar = async () => {
     if (selectedCentro === "" || selectedTrabajador === 0) {
@@ -110,12 +120,31 @@ const CentrosPage: React.FC = () => {
 
   const handleLimpiarBusqueda = () => {
     setBusqueda("");
+    setCentroFiltroSeleccionado("");
+  };
+
+  const handleBusquedaTexto = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setBusqueda(e.target.value);
+    // Limpiar el filtro por centro específico cuando se hace búsqueda por texto
+    if (e.target.value.trim()) {
+      setCentroFiltroSeleccionado("");
+    }
+  };
+
+  const handleCentroFiltroChange = (centroId: string) => {
+    setCentroFiltroSeleccionado(centroId);
+    // Limpiar la búsqueda por texto cuando se selecciona un centro específico
+    if (centroId) {
+      setBusqueda("");
+    }
   };
 
   const getSelectedTrabajadorName = () => {
     const trabajador = trabajadores.find((t) => t.id === selectedTrabajador);
     return trabajador ? trabajador.nombre : "";
   };
+
+  const hayFiltrosActivos = busqueda.trim() || centroFiltroSeleccionado;
 
   return (
     <div className="centros-page">
@@ -212,29 +241,138 @@ const CentrosPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Nueva sección de búsqueda y filtros */}
+        <div className="content-card">
+          <div className="search-section">
+            <div className="search-header">
+              <div className="search-icon-header">🔍</div>
+              <div className="search-title-section">
+                <h3>Buscar y Filtrar Centros</h3>
+                <p>Encuentra centros por nombre, ID o selecciona uno específico</p>
+              </div>
+              {hayFiltrosActivos && (
+                <button className="btn-clear-search" onClick={handleLimpiarBusqueda}>
+                  🗑️ Limpiar
+                </button>
+              )}
+            </div>
+
+            <div className="search-controls">
+              <div className="search-input-container">
+                <input
+                  type="text"
+                  className="search-input"
+                  placeholder="Buscar por nombre del centro o ID..."
+                  value={busqueda}
+                  onChange={handleBusquedaTexto}
+                />
+                <div className="search-icon-input">🔍</div>
+              </div>
+
+              <div className="search-or-separator">
+                <span>O selecciona un centro específico:</span>
+              </div>
+
+              <CentroBuscador
+                centros={centros}
+                value={centroFiltroSeleccionado}
+                onChange={handleCentroFiltroChange}
+                placeholder="Selecciona un centro específico para filtrar..."
+                label="Filtrar por Centro Específico"
+                showSelectedInfo={false}
+                className="filter-centro-buscador"
+              />
+            </div>
+
+            {hayFiltrosActivos && (
+              <div className="search-results-info">
+                {centrosFiltrados.length > 0 ? (
+                  <div className="results-found">
+                    ✅ {centrosFiltrados.length} centro(s) encontrado(s)
+                    {busqueda && ` para "${busqueda}"`}
+                    {centroFiltroSeleccionado && (
+                      <span>
+                        {" "}filtrado por: {centros.find(c => c.id === centroFiltroSeleccionado)?.nombreCentro}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="no-results">
+                    ❌ No se encontraron centros
+                    {busqueda && ` que coincidan con "${busqueda}"`}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="content-card">
           <div className="listado-header">
-            <h2>📋 Centros Registrados</h2>
-            <p>Total: {centrosFiltrados.length}</p>
-            {busqueda && (
-              <button className="btn-clear" onClick={handleLimpiarBusqueda}>
-                Limpiar búsqueda
-              </button>
-            )}
+            <h2>📋 Centros {hayFiltrosActivos ? 'Filtrados' : 'Registrados'}</h2>
+            <p>
+              {hayFiltrosActivos 
+                ? `Mostrando: ${centrosFiltrados.length} de ${centros.length} centros`
+                : `Total: ${centrosFiltrados.length}`
+              }
+            </p>
           </div>
 
           <div className="centros-grid">
             {loading ? (
-              <p>Cargando centros...</p>
+              <div className="loading-message">
+                <div className="search-loading">
+                  <div className="search-loading-spinner"></div>
+                  Cargando centros...
+                </div>
+              </div>
             ) : centrosFiltrados.length === 0 ? (
-              <p>No se encontraron centros.</p>
+              hayFiltrosActivos ? (
+                <div className="empty-search-state">
+                  <div className="empty-search-icon">🔍</div>
+                  <h3>No se encontraron centros</h3>
+                  <p>
+                    {busqueda 
+                      ? `No hay centros que coincidan con "${busqueda}"`
+                      : "El centro seleccionado no está disponible"
+                    }
+                  </p>
+                  <div className="search-suggestions">
+                    <p>Sugerencias:</p>
+                    <ul>
+                      <li>Verifica la ortografía de tu búsqueda</li>
+                      <li>Prueba con términos más generales</li>
+                      <li>Busca por ID del centro en lugar del nombre</li>
+                      <li>Limpia los filtros para ver todos los centros</li>
+                    </ul>
+                  </div>
+                  <button className="btn-clear-search-alt" onClick={handleLimpiarBusqueda}>
+                    🗑️ Limpiar filtros
+                  </button>
+                </div>
+              ) : (
+                <div className="empty-state">
+                  <div className="empty-state-icon">🏢</div>
+                  <h3>No hay centros registrados</h3>
+                  <p>Comienza creando tu primer centro de trabajo</p>
+                  <button 
+                    className="empty-state-action"
+                    onClick={() => setShowForm(true)}
+                  >
+                    ➕ Crear Primer Centro
+                  </button>
+                </div>
+              )
             ) : (
-              centrosFiltrados.map((centro) => (
+              centrosFiltrados.map((centro, index) => (
                 <CentroCard
                   key={centro.id}
                   centro={centro}
                   onDelete={handleEliminar}
                   onView={handleVerEstadisticas}
+                  style={{
+                    animationDelay: `${index * 0.1}s`
+                  }}
                 />
               ))
             )}
