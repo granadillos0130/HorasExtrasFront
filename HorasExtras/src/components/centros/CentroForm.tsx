@@ -63,7 +63,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => { // ✅ valor
         typeof err === "object" &&
         err !== null &&
         "response" in err &&
-        (err as any).response?.status === 409
+        (err as { response?: { status?: number } }).response?.status === 409
       ) {
         setError("Ya existe un centro con ese ID.");
       } else {

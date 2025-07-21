@@ -1,3 +1,4 @@
+import { AxiosError } from "axios";
 // ...importaciones
 import React, { useState, useEffect } from "react";
 import { trabajadoresService } from "../../api/trabajadoresService";
@@ -67,10 +68,13 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
       await registrosService.crear(payload);
       alert("Registro creado correctamente");
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Error al crear registro:", error);
-      if (error.response?.data) {
-        alert("Error del servidor:\n" + JSON.stringify(error.response.data, null, 2));
+      if (error instanceof AxiosError && error.response?.data) {
+        alert(
+          "Error del servidor:\n" +
+            JSON.stringify(error.response.data, null, 2)
+        );
       } else {
         alert("Error al crear el registro");
       }

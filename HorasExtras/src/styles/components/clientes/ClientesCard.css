@@ -1,0 +1,15 @@
+.cliente-card {
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  padding: 1rem;
+  margin: 0.5rem;
+  background: #f9f9f9;
+}
+
+.cliente-card h3 {
+  margin-top: 0;
+}
+
+.cliente-card .botones button {
+  margin-right: 0.5rem;
+}

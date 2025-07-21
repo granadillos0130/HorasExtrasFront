@@ -29,5 +29,8 @@ export const centrosService = {
 
   getEstadisticas(params: { centroId?: string; nombre?: string }): Promise<any> {
     return api.get(`/centros/estadisticas`, { params }).then(res => res.data);
+  },
+   obtenerPorCliente(clienteId: string): Promise<Centro[]> {
+    return api.get(`/centros/por-cliente/${clienteId}`).then(res => res.data);
   }
 };

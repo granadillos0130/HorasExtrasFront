@@ -1,0 +1,71 @@
+
+.clientes-page-root {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: #f6f8ff;
+  border-radius: 18px;
+  box-shadow: 0 4px 24px 0 #646cff22;
+  text-align: center;
+}
+
+.clientes-title {
+  color: #646cff;
+  font-size: 2.2rem;
+  margin-bottom: 1.5rem;
+  letter-spacing: 1px;
+}
+
+.clientes-card {
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 2px 12px 0 #61dafb33;
+  padding: 1.5em 2em;
+  margin: 1.2em 0;
+  transition: box-shadow 0.3s;
+}
+.clientes-card:hover {
+  box-shadow: 0 4px 24px 0 #646cff55;
+}
+
+.clientes-btn {
+  background: linear-gradient(90deg, #646cff 60%, #61dafb 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.7em 1.5em;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s, box-shadow 0.3s;
+  margin-top: 1em;
+}
+.clientes-btn:hover {
+  background: linear-gradient(90deg, #61dafb 60%, #646cff 100%);
+  box-shadow: 0 2px 12px 0 #646cff55;
+}
+
+.clientes-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+  align-items: center;
+  margin-bottom: 2em;
+}
+
+.clientes-input {
+  padding: 0.6em 1em;
+  border: 1px solid #646cff44;
+  border-radius: 6px;
+  font-size: 1rem;
+  outline: none;
+  transition: border 0.2s;
+}
+.clientes-input:focus {
+  border: 1.5px solid #646cff;
+}
+
+.clientes-empty {
+  color: #888;
+  font-style: italic;
+  margin-top: 2em;
+}

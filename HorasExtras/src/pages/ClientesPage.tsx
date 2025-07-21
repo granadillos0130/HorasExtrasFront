@@ -4,7 +4,7 @@ import { clientesService } from "../api/clientesService";
 import type { Cliente } from "../types/cliente";
 import ClienteCard from "../components/clientes/ClienteCard";
 import ClienteForm from "../components/clientes/ClienteForm";
-import "../styles/pages/ClientesPage.css";
+import "../styles/pages/ClientesPage.css"
 
 const ClientesPage: React.FC = () => {
   const [clientes, setClientes] = useState<Cliente[]>([]);

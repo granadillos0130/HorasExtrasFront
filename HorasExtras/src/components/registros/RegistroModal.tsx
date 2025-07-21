@@ -11,8 +11,8 @@ interface Props {
 const RegistroModal: React.FC<Props> = ({ registro, onClose, onSave }) => {
   const [form, setForm] = useState<RegistroInputDto>({
     Trabajador_ID: 0,
-    Centro_ID: 0,
-    Orden_Compra_ID: 0,
+    Centro_ID: "",
+    Nombr_Centro: "",
     Fecha: "",
     Hora_Ingreso: "",
     Hora_Salida: "",
@@ -23,8 +23,8 @@ const RegistroModal: React.FC<Props> = ({ registro, onClose, onSave }) => {
     if (registro) {
       setForm({
         Trabajador_ID: registro.trabajadorId,
-        Centro_ID: registro.centroId,
-        Orden_Compra_ID: registro.ordenCompraId,
+        Centro_ID: registro.centroId.toString(),
+        Nombr_Centro: registro.nombreCentro || "",
         Fecha: registro.fecha.split("T")[0], // solo YYYY-MM-DD
         Hora_Ingreso: registro.horaIngreso,
         Hora_Salida: registro.horaSalida,
@@ -112,11 +112,11 @@ const RegistroModal: React.FC<Props> = ({ registro, onClose, onSave }) => {
             />
           </label>
           <label>
-            Orden Compra ID:
+            Nombre Centro:
             <input
-              type="number"
-              name="Orden_Compra_ID"
-              value={form.Orden_Compra_ID}
+              type="text"
+              name="Nombr_Centro"
+              value={form.Nombr_Centro}
               onChange={handleChange}
             />
           </label>
