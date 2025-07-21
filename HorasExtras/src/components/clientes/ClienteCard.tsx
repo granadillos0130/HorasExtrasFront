@@ -16,7 +16,8 @@ const ClienteCard: React.FC<Props> = ({ cliente, onEditar, onEliminar }) => {
   const [centros, setCentros] = useState<Centro[]>([]);
 
   const abrirModal = async () => {
-    const data = await centrosService.(cliente.id);
+    const data = await centrosService.obtenerPorCliente(cliente.id);
+
     setCentros(data);
     setModalVisible(true);
   };
