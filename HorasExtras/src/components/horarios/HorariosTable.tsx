@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import type { Horario } from "../../types/horarios";
 import HorarioEditModal from "./HorarioModal";
-import "../../styles/components/HorariosTable.css";
+import "../../styles/components/horario/HorariosTable.css";
 
 interface Props {
   horarios: Horario[];

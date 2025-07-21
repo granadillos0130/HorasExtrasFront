@@ -4,7 +4,7 @@ import { trabajadoresService } from "../../api/trabajadoresService";
 import { horariosService } from "../../api/horariosService";
 import type { Trabajador } from "../../types/trabajadores";
 import type { HorarioDto } from "../../types/horarios";
-import "../../styles/components/HorariosForm.css"
+import "../../styles/components/horario/HorariosForm.css"
 
 interface Props {
   onSuccess?: () => void;

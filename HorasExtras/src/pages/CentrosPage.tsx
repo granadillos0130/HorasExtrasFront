@@ -9,7 +9,7 @@ import CentroEstadisticasModal from "../components/centros/CentroEstadisticasMod
 import type { Centro } from "../types/centros";
 import type { Trabajador } from "../types/trabajadores";
 import type { CentroEstadisticas } from "../types/centros";
-import "../styles/components/CentroCard.css";
+import "../styles/components/centro/CentroCard.css";
 import "../styles/pages/CentrosPage.css";
 
 const CentrosPage: React.FC = () => {

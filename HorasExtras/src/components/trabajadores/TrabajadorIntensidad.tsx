@@ -5,7 +5,7 @@ import { trabajadoresService } from "../../api/trabajadoresService";
 import TrabajadorBuscador from "../shared/TrabajadorBuscador";
 import type { Registro } from "../../types/registros";
 import type { Trabajador } from "../../types/trabajadores";
-import "../../styles/components/TrabajadorIntensidad.css";
+import "../../styles/components/trabajador/TrabajadorIntensidad.css";
 
 const getCurrentMonth = () => new Date().getMonth() + 1;
 const getCurrentWeek = () => {

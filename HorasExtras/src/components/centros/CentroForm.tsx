@@ -3,13 +3,13 @@ import { centrosService } from "../../api/centrosService";
 import { clientesService } from "../../api/clientesService";
 import type { Centro } from "../../types/centros";
 import type { Cliente } from "../../types/cliente";
-import "../../styles/components/CentroForm.css";
+import "../../styles/components/centro/CentroForm.css";
 
 interface Props {
-  onSuccess: () => void;
+  onSuccess?: () => void; // ✅ ahora es opcional
 }
 
-const CentroForm: React.FC<Props> = ({ onSuccess }) => {
+const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => { // ✅ valor por defecto
   const [formData, setFormData] = useState<Centro>({
     id: "",
     nombreCentro: "",
@@ -58,8 +58,13 @@ const CentroForm: React.FC<Props> = ({ onSuccess }) => {
         fechaHoraInicio: "",
         clienteId: ""
       });
-    } catch (err: any) {
-      if (err.response?.status === 409) {
+    } catch (err: unknown) { // ✅ cambiamos any por unknown
+      if (
+        typeof err === "object" &&
+        err !== null &&
+        "response" in err &&
+        (err as any).response?.status === 409
+      ) {
         setError("Ya existe un centro con ese ID.");
       } else {
         setError("Error al crear el centro.");
@@ -68,6 +73,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess }) => {
       setLoading(false);
     }
   };
+
 
   return (
     <div className="centro-form-container">

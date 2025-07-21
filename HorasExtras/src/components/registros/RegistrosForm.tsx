@@ -7,7 +7,7 @@ import CentroBuscador from "../shared/CentroBuscador";
 import type { Trabajador } from "../../types/trabajadores";
 import type { Centro } from "../../types/centros";
 import type { RegistroInputDto } from "../../types/registros";
-import "../../styles/components/RegistroForm.css";
+import "../../styles/components/registros/RegistroForm.css";
 
 interface Props {
   onSuccess: () => void;

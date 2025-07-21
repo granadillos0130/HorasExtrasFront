@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import type { Trabajador } from "../../types/trabajadores";
-import "../../styles/components/TrabajadorCard.css";
+import "../../styles/components/trabajador/TrabajadorCard.css";
 import { trabajadoresService } from "../../api/trabajadoresService";
 
 interface Props {

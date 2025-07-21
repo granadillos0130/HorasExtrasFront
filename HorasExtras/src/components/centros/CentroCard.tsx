@@ -1,6 +1,6 @@
 import React from "react";
 import type { Centro } from "../../types/centros";
-import "../../styles/components/CentroCard.css";
+import "../../styles/components/centro/CentroCard.css";
 
 interface Props {
   centro: Centro;

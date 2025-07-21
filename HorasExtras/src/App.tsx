@@ -23,7 +23,6 @@ export default function App() {
         <Route path="/horarios" element={<HorariosPage />} />
         <Route path="/horarios/crear" element={<HorariosForm />} />
         <Route path="/centros" element={<CentrosPage />} />
-        
 <Route path="/centros/crear" element={<CentroForm />} />
 <Route path="/centros/editar/:id" element={<CentroForm />} />
 <Route path="/estadisticas" element={<EstadisticasPage />} />

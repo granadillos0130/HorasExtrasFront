@@ -6,7 +6,7 @@ import { arlService } from "../../api/arlService";
 import { pensionService } from "../../api/pensionService";
 import { bancoService } from "../../api/bancoService";
 import { clinicaService } from "../../api/clinicaService";
-import "../../styles/components/TrabajadorForm.css";
+import "../../styles/components/trabajador/TrabajadorForm.css";
 import type { CrearTrabajadorDto } from "../../types/trabajadores";
 import type { Eps } from "../../types/eps";
 import type { Arl } from "../../types/arl";

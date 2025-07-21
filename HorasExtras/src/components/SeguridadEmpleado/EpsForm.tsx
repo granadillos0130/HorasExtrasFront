@@ -1,7 +1,7 @@
 // src/components/trabajadores/EpsForm.tsx
 import React, { useState } from "react";
 import type { Eps } from "../../types/eps";
-import "../../styles/components/EpsForm.css";
+import "../../styles/components/eps/EpsForm.css";
 
 interface Props {
   trabajadorId: number;

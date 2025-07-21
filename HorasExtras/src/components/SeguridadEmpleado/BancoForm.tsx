@@ -1,7 +1,7 @@
 // src/components/trabajadores/BancoForm.tsx
 import React, { useState } from "react";
 import type { Banco } from "../../types/banco";
-import "../../styles/components/BancoForm.css";
+import "../../styles/components/banco/BancoForm.css";
 
 interface Props {
   trabajadorId: number;

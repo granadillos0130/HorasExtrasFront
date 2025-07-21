@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import type { Registro, RegistroInputDto } from "../../types/registros";
-import "../../styles/components/RegistroModal.css";
+import "../../styles/components/registros/RegistroModal.css";
 
 interface Props {
   registro: Registro | null;

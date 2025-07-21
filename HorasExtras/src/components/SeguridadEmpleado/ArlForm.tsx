@@ -1,7 +1,7 @@
 // src/components/trabajadores/ArlForm.tsx
 import React, { useState } from "react";
 import type { Arl } from "../../types/arl";
-import "../../styles/components/ArlForm.css";
+import "../../styles/components/arl/ArlForm.css";
 
 interface Props {
   trabajadorId: number;

@@ -1,6 +1,6 @@
 import React from "react";
 import type { Registro } from "../../types/registros";
-import "../../styles/components/RegistroCard.css";
+import "../../styles/components/registros/RegistroCard.css";
 
 interface Props {
   registro: Registro;

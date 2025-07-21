@@ -3,7 +3,7 @@ import { trabajadoresService } from "../../api/trabajadoresService";
 import { horariosService } from "../../api/horariosService";
 import type { Trabajador } from "../../types/trabajadores";
 import type { Horario, HorarioDto } from "../../types/horarios";
-import "../../styles/components/HorarioEditModal.css";
+import "../../styles/components/horario/HorarioEditModal.css";
 
 interface Props {
   horario: Horario | null;

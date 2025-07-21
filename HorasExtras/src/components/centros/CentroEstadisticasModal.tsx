@@ -2,7 +2,7 @@ import React from "react";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import type { CentroEstadisticas } from "../../types/centros";
-import "../../styles/components/CentroEstadisticasModal.css";
+import "../../styles/components/centro/CentroEstadisticasModal.css";
 
 interface Props {
   visible: boolean;

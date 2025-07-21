@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import type { Trabajador } from "../../types/trabajadores";
 import { trabajadoresService } from "../../api/trabajadoresService";
-import "../../styles/components/TrabajadorDetail.css";
+import "../../styles/components/trabajador/TrabajadorDetail.css";
 
 interface Props {
   trabajadorId: number;

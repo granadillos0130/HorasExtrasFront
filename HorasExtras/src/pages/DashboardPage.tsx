@@ -53,6 +53,14 @@ const DashboardPage: React.FC = () => {
   icon: "📁",
   path: "/estadisticas/proyecto",
   className: "estadisticas"
+},
+{
+  id:"clientes",
+  title:"Clientes de trabajo",
+  description:"Gestione la informacion de todos los clientes registrados",
+  icon: "👔",
+  path: "/clientes",
+  className: "clientes"
 }
 
   ];

@@ -13,7 +13,7 @@ import type { Arl } from "../../types/arl";
 import type { Pension } from "../../types/pension";
 import type { Banco } from "../../types/banco";
 import type { Clinica } from "../../types/clinica";
-import "../../styles/components/TrabajadorEditPage.css";
+import "../../styles/components/trabajador/TrabajadorEditPage.css";
 
 const TrabajadorEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
