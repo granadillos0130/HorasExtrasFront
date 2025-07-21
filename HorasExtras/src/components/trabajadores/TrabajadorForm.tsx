@@ -1,18 +1,8 @@
 // src/components/trabajadores/TrabajadorForm.tsx
 import React, { useState, useEffect } from "react";
 import { trabajadoresService } from "../../api/trabajadoresService";
-import { epsService } from "../../api/epsService";
-import { arlService } from "../../api/arlService";
-import { pensionService } from "../../api/pensionService";
-import { bancoService } from "../../api/bancoService";
-import { clinicaService } from "../../api/clinicaService";
 import "../../styles/components/trabajador/TrabajadorForm.css";
 import type { CrearTrabajadorDto } from "../../types/trabajadores";
-import type { Eps } from "../../types/eps";
-import type { Arl } from "../../types/arl";
-import type { Pension } from "../../types/pension";
-import type { Banco } from "../../types/banco";
-import type { Clinica } from "../../types/clinica";
 
 interface Props {
   onCreated: (trabajadorId: number) => void;
@@ -22,6 +12,7 @@ interface Props {
 
 const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => {
   const [form, setForm] = useState<CrearTrabajadorDto>({
+    // Información básica del trabajador
     nombre: "",
     cedula: "",
     rh: "",
@@ -38,43 +29,28 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
     telefonoContacto: "",
     direccionContacto: "",
     parentescoContacto: "",
-    tipoContratacion: ""
-  });
+    tipoContratacion: "",
 
-  // Estados para los servicios de seguridad social
-  const [epsData, setEpsData] = useState<Omit<Eps, "id" | "trabajadorId">>({
-    nombre: "",
-    fechaInicio: "",
-    fechaFin: ""
-  });
-
-  const [arlData, setArlData] = useState<Omit<Arl, "id" | "trabajadorId">>({
-    nombre: "",
-    fechaInicio: "",
-    fechaFin: ""
-  });
-
-  const [pensionData, setPensionData] = useState<Omit<Pension, "id" | "trabajadorId">>({
-    nombre: "",
-    fechaInicio: "",
-    fechaFin: ""
-  });
-
-  const [bancoData, setBancoData] = useState<Omit<Banco, "id" | "trabajadorId">>({
-    nombre: "",
-    numeroCuenta: ""
-  });
-
-  const [clinicaData, setClinicaData] = useState<Omit<Clinica, "id" | "trabajadorId">>({
-    nombre: "",
-    fechaInicio: "",
-    fechaFin: ""
+    // Servicios de seguridad social
+    eps: "",
+    epsFechaInicio: "",
+    epsFechaFin: "",
+    arl: "",
+    arlFechaInicio: "",
+    arlFechaFin: "",
+    fondoPension: "",
+    pensionFechaInicio: "",
+    pensionFechaFin: "",
+    banco: "",
+    numeroCuenta: "",
+    nombreClinica: "",
+    clinicaFechaInicio: "",
+    clinicaFechaFin: ""
   });
 
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
-  const [createdWorkerId, setCreatedWorkerId] = useState<number | null>(null);
 
   // Auto-calcular edad si se ingresa fecha de nacimiento
   useEffect(() => {
@@ -133,28 +109,28 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
     }
 
     if (step === 4) {
-      if (!epsData.nombre.trim()) newErrors.epsNombre = "El nombre de EPS es requerido";
-      if (!epsData.fechaInicio) newErrors.epsFechaInicio = "La fecha de inicio de EPS es requerida";
+      if (!form.eps.trim()) newErrors.eps = "El nombre de EPS es requerido";
+      if (!form.epsFechaInicio) newErrors.epsFechaInicio = "La fecha de inicio de EPS es requerida";
     }
 
     if (step === 5) {
-      if (!arlData.nombre.trim()) newErrors.arlNombre = "El nombre de ARL es requerido";
-      if (!arlData.fechaInicio) newErrors.arlFechaInicio = "La fecha de inicio de ARL es requerida";
+      if (!form.arl.trim()) newErrors.arl = "El nombre de ARL es requerido";
+      if (!form.arlFechaInicio) newErrors.arlFechaInicio = "La fecha de inicio de ARL es requerida";
     }
 
     if (step === 6) {
-      if (!pensionData.nombre.trim()) newErrors.pensionNombre = "El nombre de Pensión es requerido";
-      if (!pensionData.fechaInicio) newErrors.pensionFechaInicio = "La fecha de inicio de Pensión es requerida";
+      if (!form.fondoPension.trim()) newErrors.fondoPension = "El nombre de Pensión es requerido";
+      if (!form.pensionFechaInicio) newErrors.pensionFechaInicio = "La fecha de inicio de Pensión es requerida";
     }
 
     if (step === 7) {
-      if (!bancoData.nombre.trim()) newErrors.bancoNombre = "El nombre del Banco es requerido";
-      if (!bancoData.numeroCuenta.trim()) newErrors.bancoNumeroCuenta = "El número de cuenta es requerido";
+      if (!form.banco.trim()) newErrors.banco = "El nombre del Banco es requerido";
+      if (!form.numeroCuenta.trim()) newErrors.numeroCuenta = "El número de cuenta es requerido";
     }
 
     if (step === 8) {
-      if (!clinicaData.nombre.trim()) newErrors.clinicaNombre = "El nombre de la Clínica es requerido";
-      if (!clinicaData.fechaInicio) newErrors.clinicaFechaInicio = "La fecha de inicio de Clínica es requerida";
+      if (!form.nombreClinica.trim()) newErrors.nombreClinica = "El nombre de la Clínica es requerido";
+      if (!form.clinicaFechaInicio) newErrors.clinicaFechaInicio = "La fecha de inicio de Clínica es requerida";
     }
 
     setErrors(newErrors);
@@ -183,42 +159,11 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
 
     setLoading(true);
     try {
-      // 1. Crear el trabajador
-      const nuevo = await trabajadoresService.create(form);
-      setCreatedWorkerId(nuevo.id);
+      // ✅ UNA SOLA LLAMADA con todos los datos
+      const resultado = await trabajadoresService.create(form);
       
-      // 2. Crear EPS
-      await epsService.crear({
-        ...epsData,
-        trabajadorId: nuevo.id
-      });
-
-      // 3. Crear ARL
-      await arlService.crear({
-        ...arlData,
-        trabajadorId: nuevo.id
-      });
-
-      // 4. Crear Pensión
-      await pensionService.crear({
-        ...pensionData,
-        trabajadorId: nuevo.id
-      });
-
-      // 5. Crear Banco
-      await bancoService.crear({
-        ...bancoData,
-        trabajadorId: nuevo.id
-      });
-
-      // 6. Crear Clínica
-      await clinicaService.crear({
-        ...clinicaData,
-        trabajadorId: nuevo.id
-      });
-
-      alert("Trabajador y todos sus servicios creados correctamente");
-      onCreated(nuevo.id);
+      alert("Trabajador creado correctamente con todos sus servicios");
+      onCreated(resultado.id);
       onRefresh();
       onCancel();
     } catch (error) {
@@ -641,14 +586,14 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                   Nombre de EPS <span className="required">*</span>
                 </label>
                 <input
-                  name="epsNombre"
+                  name="eps"
                   placeholder="Ej: Sanitas, Sura, Nueva EPS"
-                  value={epsData.nombre}
-                  onChange={(e) => setEpsData(prev => ({ ...prev, nombre: e.target.value }))}
-                  className={`form-input ${errors.epsNombre ? 'error' : ''}`}
+                  value={form.eps}
+                  onChange={handleChange}
+                  className={`form-input ${errors.eps ? 'error' : ''}`}
                   disabled={loading}
                 />
-                {errors.epsNombre && <span className="error-text">{errors.epsNombre}</span>}
+                {errors.eps && <span className="error-text">{errors.eps}</span>}
               </div>
 
               <div className="form-group">
@@ -658,8 +603,8 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                 <input
                   type="date"
                   name="epsFechaInicio"
-                  value={epsData.fechaInicio}
-                  onChange={(e) => setEpsData(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                  value={form.epsFechaInicio}
+                  onChange={handleChange}
                   className={`form-input ${errors.epsFechaInicio ? 'error' : ''}`}
                   disabled={loading}
                 />
@@ -671,8 +616,8 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                 <input
                   type="date"
                   name="epsFechaFin"
-                  value={epsData.fechaFin}
-                  onChange={(e) => setEpsData(prev => ({ ...prev, fechaFin: e.target.value }))}
+                  value={form.epsFechaFin}
+                  onChange={handleChange}
                   className="form-input"
                   disabled={loading}
                 />
@@ -695,14 +640,14 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                   Nombre de ARL <span className="required">*</span>
                 </label>
                 <input
-                  name="arlNombre"
+                  name="arl"
                   placeholder="Ej: Sura ARL, Positiva, Colmena"
-                  value={arlData.nombre}
-                  onChange={(e) => setArlData(prev => ({ ...prev, nombre: e.target.value }))}
-                  className={`form-input ${errors.arlNombre ? 'error' : ''}`}
+                  value={form.arl}
+                  onChange={handleChange}
+                  className={`form-input ${errors.arl ? 'error' : ''}`}
                   disabled={loading}
                 />
-                {errors.arlNombre && <span className="error-text">{errors.arlNombre}</span>}
+                {errors.arl && <span className="error-text">{errors.arl}</span>}
               </div>
 
               <div className="form-group">
@@ -712,8 +657,8 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                 <input
                   type="date"
                   name="arlFechaInicio"
-                  value={arlData.fechaInicio}
-                  onChange={(e) => setArlData(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                  value={form.arlFechaInicio}
+                  onChange={handleChange}
                   className={`form-input ${errors.arlFechaInicio ? 'error' : ''}`}
                   disabled={loading}
                 />
@@ -725,8 +670,8 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                 <input
                   type="date"
                   name="arlFechaFin"
-                  value={arlData.fechaFin}
-                  onChange={(e) => setArlData(prev => ({ ...prev, fechaFin: e.target.value }))}
+                  value={form.arlFechaFin}
+                  onChange={handleChange}
                   className="form-input"
                   disabled={loading}
                 />
@@ -749,14 +694,14 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                   Nombre del Fondo <span className="required">*</span>
                 </label>
                 <input
-                  name="pensionNombre"
+                  name="fondoPension"
                   placeholder="Ej: Protección, Porvenir, Colfondos"
-                  value={pensionData.nombre}
-                  onChange={(e) => setPensionData(prev => ({ ...prev, nombre: e.target.value }))}
-                  className={`form-input ${errors.pensionNombre ? 'error' : ''}`}
+                  value={form.fondoPension}
+                  onChange={handleChange}
+                  className={`form-input ${errors.fondoPension ? 'error' : ''}`}
                   disabled={loading}
                 />
-                {errors.pensionNombre && <span className="error-text">{errors.pensionNombre}</span>}
+                {errors.fondoPension && <span className="error-text">{errors.fondoPension}</span>}
               </div>
 
               <div className="form-group">
@@ -766,8 +711,8 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                 <input
                   type="date"
                   name="pensionFechaInicio"
-                  value={pensionData.fechaInicio}
-                  onChange={(e) => setPensionData(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                  value={form.pensionFechaInicio}
+                  onChange={handleChange}
                   className={`form-input ${errors.pensionFechaInicio ? 'error' : ''}`}
                   disabled={loading}
                 />
@@ -779,8 +724,8 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                 <input
                   type="date"
                   name="pensionFechaFin"
-                  value={pensionData.fechaFin}
-                  onChange={(e) => setPensionData(prev => ({ ...prev, fechaFin: e.target.value }))}
+                  value={form.pensionFechaFin}
+                  onChange={handleChange}
                   className="form-input"
                   disabled={loading}
                 />
@@ -803,14 +748,14 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                   Nombre del Banco <span className="required">*</span>
                 </label>
                 <input
-                  name="bancoNombre"
+                  name="banco"
                   placeholder="Ej: Bancolombia, Banco de Bogotá, Nequi"
-                  value={bancoData.nombre}
-                  onChange={(e) => setBancoData(prev => ({ ...prev, nombre: e.target.value }))}
-                  className={`form-input ${errors.bancoNombre ? 'error' : ''}`}
+                  value={form.banco}
+                  onChange={handleChange}
+                  className={`form-input ${errors.banco ? 'error' : ''}`}
                   disabled={loading}
                 />
-                {errors.bancoNombre && <span className="error-text">{errors.bancoNombre}</span>}
+                {errors.banco && <span className="error-text">{errors.banco}</span>}
               </div>
 
               <div className="form-group">
@@ -818,14 +763,14 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                   Número de Cuenta <span className="required">*</span>
                 </label>
                 <input
-                  name="bancoNumeroCuenta"
+                  name="numeroCuenta"
                   placeholder="Ej: 12345678901"
-                  value={bancoData.numeroCuenta}
-                  onChange={(e) => setBancoData(prev => ({ ...prev, numeroCuenta: e.target.value }))}
-                  className={`form-input ${errors.bancoNumeroCuenta ? 'error' : ''}`}
+                  value={form.numeroCuenta}
+                  onChange={handleChange}
+                  className={`form-input ${errors.numeroCuenta ? 'error' : ''}`}
                   disabled={loading}
                 />
-                {errors.bancoNumeroCuenta && <span className="error-text">{errors.bancoNumeroCuenta}</span>}
+                {errors.numeroCuenta && <span className="error-text">{errors.numeroCuenta}</span>}
               </div>
             </div>
           </div>
@@ -845,14 +790,14 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                   Nombre de la Clínica <span className="required">*</span>
                 </label>
                 <input
-                  name="clinicaNombre"
+                  name="nombreClinica"
                   placeholder="Ej: Clínica del Country, Hospital San Ignacio"
-                  value={clinicaData.nombre}
-                  onChange={(e) => setClinicaData(prev => ({ ...prev, nombre: e.target.value }))}
-                  className={`form-input ${errors.clinicaNombre ? 'error' : ''}`}
+                  value={form.nombreClinica}
+                  onChange={handleChange}
+                  className={`form-input ${errors.nombreClinica ? 'error' : ''}`}
                   disabled={loading}
                 />
-                {errors.clinicaNombre && <span className="error-text">{errors.clinicaNombre}</span>}
+                {errors.nombreClinica && <span className="error-text">{errors.nombreClinica}</span>}
               </div>
 
               <div className="form-group">
@@ -862,8 +807,8 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                 <input
                   type="date"
                   name="clinicaFechaInicio"
-                  value={clinicaData.fechaInicio}
-                  onChange={(e) => setClinicaData(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                  value={form.clinicaFechaInicio}
+                  onChange={handleChange}
                   className={`form-input ${errors.clinicaFechaInicio ? 'error' : ''}`}
                   disabled={loading}
                 />
@@ -875,11 +820,41 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                 <input
                   type="date"
                   name="clinicaFechaFin"
-                  value={clinicaData.fechaFin}
-                  onChange={(e) => setClinicaData(prev => ({ ...prev, fechaFin: e.target.value }))}
+                  value={form.clinicaFechaFin}
+                  onChange={handleChange}
                   className="form-input"
                   disabled={loading}
                 />
+              </div>
+            </div>
+
+            {/* Resumen final en el paso 8 */}
+            <div className="form-summary">
+              <h5>📋 Resumen del Trabajador</h5>
+              <div className="summary-grid">
+                <div className="summary-section">
+                  <h6>👤 Personal</h6>
+                  <p><strong>Nombre:</strong> {form.nombre}</p>
+                  <p><strong>Cédula:</strong> {form.cedula}</p>
+                  <p><strong>Edad:</strong> {form.edad} años</p>
+                  <p><strong>Género:</strong> {form.genero}</p>
+                </div>
+                
+                <div className="summary-section">
+                  <h6>💼 Laboral</h6>
+                  <p><strong>Correo:</strong> {form.correo}</p>
+                  <p><strong>Salario:</strong> ${form.salario?.toLocaleString()}</p>
+                  <p><strong>Tipo:</strong> {form.tipoContratacion}</p>
+                </div>
+
+                <div className="summary-section">
+                  <h6>🏥 Servicios</h6>
+                  <p><strong>EPS:</strong> {form.eps}</p>
+                  <p><strong>ARL:</strong> {form.arl}</p>
+                  <p><strong>Pensión:</strong> {form.fondoPension}</p>
+                  <p><strong>Banco:</strong> {form.banco}</p>
+                  <p><strong>Clínica:</strong> {form.nombreClinica}</p>
+                </div>
               </div>
             </div>
           </div>
@@ -918,7 +893,7 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
               {loading ? (
                 <>
                   <span className="loading-spinner"></span>
-                  Creando trabajador y servicios...
+                  Creando trabajador completo...
                 </>
               ) : (
                 <>

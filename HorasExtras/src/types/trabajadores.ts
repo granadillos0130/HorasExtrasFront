@@ -5,7 +5,7 @@ export interface Trabajador {
   rh: string;
   fechaNacimiento: string; // formato ISO
   edad: number;
-  estado: string; // "Activo", "Inactivo", etc.
+  estado: string; // "Vigente", "No Vigente"
   estadoCivil: string;
   genero: string;
   cantidadHijos: number;
@@ -63,7 +63,9 @@ export interface Trabajador {
   };
 }
 
+// ✅ DTO ACTUALIZADO para enviar todo en una sola llamada
 export interface CrearTrabajadorDto {
+  // ===== INFORMACIÓN BÁSICA DEL TRABAJADOR =====
   nombre: string;
   cedula: string;
   rh: string;
@@ -81,4 +83,30 @@ export interface CrearTrabajadorDto {
   direccionContacto: string;
   parentescoContacto: string;
   tipoContratacion: string;
+
+  // ===== INFORMACIÓN DE SERVICIOS DE SEGURIDAD SOCIAL =====
+  
+  // EPS
+  eps: string;
+  epsFechaInicio: string;
+  epsFechaFin: string;
+
+  // ARL
+  arl: string;
+  arlFechaInicio: string;
+  arlFechaFin: string;
+
+  // PENSIÓN
+  fondoPension: string;
+  pensionFechaInicio: string;
+  pensionFechaFin: string;
+
+  // BANCO
+  banco: string;
+  numeroCuenta: string;
+
+  // CLÍNICA
+  nombreClinica: string;
+  clinicaFechaInicio: string;
+  clinicaFechaFin: string;
 }
