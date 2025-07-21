@@ -3,6 +3,7 @@ import { trabajadoresService } from "../../api/trabajadoresService";
 import { centrosService } from "../../api/centrosService";
 import { useRegistrosLote } from "../../hooks/useRegistrosLote";
 import CentroBuscador from "../shared/CentroBuscador";
+import TrabajadorBuscador from "../shared/TrabajadorBuscador";
 import type { Trabajador } from "../../types/trabajadores";
 import type { Centro } from "../../types/centros";
 import type { RegistroInputDto } from "../../types/registros";
@@ -11,26 +12,40 @@ import "../../styles/components/registros/RegistrosLoteForm.css";
 interface Props {
   onSuccess: () => void;
   onCancel: () => void;
+  fechaInicial?: string; // 👈 Nueva prop para fecha inicial
 }
 
-const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
+const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial }) => {
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
   const [centros, setCentros] = useState<Centro[]>([]);
   const [loadingData, setLoadingData] = useState(true);
 
-  const { loading, error, resultado, crearLote, reset } = useRegistrosLote();
+  const { loading, error, crearLote, reset } = useRegistrosLote();
 
   const [registros, setRegistros] = useState<RegistroInputDto[]>([
     {
       Trabajador_ID: 0,
       Centro_ID: "",
       Nombr_Centro: "",
-      Fecha: new Date().toISOString().split("T")[0],
+      Fecha: fechaInicial || new Date().toISOString().split("T")[0], // 👈 Usar fecha inicial
       Hora_Ingreso: "08:00",
       Hora_Salida: "17:00",
       Tiempo_Almuerzo: "01:00:00",
+      // 👇 Nombres corregidos para coincidir con la interfaz (camelCase)
+      desplazamientoIda: "",
+      desplazamientoRegreso: "",
     }
   ]);
+
+  // 👇 Actualizar fecha en todos los registros cuando cambie fechaInicial
+  useEffect(() => {
+    if (fechaInicial) {
+      setRegistros(prev => prev.map(registro => ({
+        ...registro,
+        Fecha: fechaInicial
+      })));
+    }
+  }, [fechaInicial]);
 
   useEffect(() => {
     const cargarDatos = async () => {
@@ -61,6 +76,8 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
         Trabajador_ID: 0,
         Centro_ID: "",
         Nombr_Centro: "",
+        // 👇 Mantener fecha inicial si existe
+        Fecha: fechaInicial || ultimoRegistro.Fecha,
       }
     ]);
   };
@@ -93,6 +110,15 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
       ...nuevosRegistros[index],
       Centro_ID: centroId,
       Nombr_Centro: nombreCentro,
+    };
+    setRegistros(nuevosRegistros);
+  };
+
+  const handleTrabajadorChange = (index: number, trabajadorId: number, trabajador?: Trabajador) => {
+    const nuevosRegistros = [...registros];
+    nuevosRegistros[index] = {
+      ...nuevosRegistros[index],
+      Trabajador_ID: trabajadorId,
     };
     setRegistros(nuevosRegistros);
   };
@@ -144,6 +170,13 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
       Tiempo_Almuerzo: registro.Tiempo_Almuerzo.length === 5 
         ? `${registro.Tiempo_Almuerzo}:00` 
         : registro.Tiempo_Almuerzo,
+      // 👇 Solo incluir desplazamiento si tiene valor (nombres corregidos)
+      desplazamientoIda: registro.desplazamientoIda?.trim() 
+        ? (registro.desplazamientoIda.length === 5 ? `${registro.desplazamientoIda}:00` : registro.desplazamientoIda)
+        : undefined,
+      desplazamientoRegreso: registro.desplazamientoRegreso?.trim() 
+        ? (registro.desplazamientoRegreso.length === 5 ? `${registro.desplazamientoRegreso}:00` : registro.desplazamientoRegreso)
+        : undefined,
     }));
 
     const success = await crearLote(registrosNormalizados);
@@ -177,6 +210,19 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
         <div className="form-title-section">
           <h3>Crear Registros en Lote</h3>
           <p>Agrega múltiples registros de trabajo de una vez</p>
+          {fechaInicial && (
+            <div style={{ 
+              background: 'linear-gradient(135deg, #43e97b, #38f9d7)', 
+              color: 'white', 
+              padding: '5px 10px', 
+              borderRadius: '6px', 
+              fontSize: '0.8rem',
+              marginTop: '5px',
+              display: 'inline-block'
+            }}>
+              📅 Fecha: {new Date(fechaInicial).toLocaleDateString('es-ES')}
+            </div>
+          )}
         </div>
         <button type="button" className="btn-cancel-header" onClick={onCancel}>
           ❌ Cancelar
@@ -213,23 +259,15 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
               <div className="registro-form">
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Trabajador</label>
-                    <select
+                    <TrabajadorBuscador
+                      trabajadores={trabajadores}
                       value={registro.Trabajador_ID}
-                      onChange={(e) => actualizarRegistro(index, "Trabajador_ID", Number(e.target.value))}
-                      className="form-select"
+                      onChange={(trabajadorId, trabajador) => handleTrabajadorChange(index, trabajadorId, trabajador)}
+                      label="Trabajador *"
                       required
-                    >
-                      <option value={0}>Seleccione trabajador</option>
-                      {trabajadores.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.nombre}
-                        </option>
-                      ))}
-                    </select>
-                    {registro.Trabajador_ID > 0 && (
-                      <div className="selected-preview">👤 {getTrabajadorNombre(registro.Trabajador_ID)}</div>
-                    )}
+                      showSelectedInfo={false}
+                      className="compact"
+                    />
                   </div>
 
                   <CentroBuscador
@@ -244,18 +282,25 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
 
                 <div className="form-row">
                   <div className="form-group">
-                    <label className="form-label">Fecha</label>
+                    <label className="form-label">Fecha *</label>
                     <input
                       type="date"
                       value={registro.Fecha}
                       onChange={(e) => actualizarRegistro(index, "Fecha", e.target.value)}
                       className="form-input"
                       required
+                      disabled={!!fechaInicial} // 👈 Deshabilitar si hay fecha inicial
+                      style={fechaInicial ? { opacity: 0.7 } : {}}
                     />
+                    {fechaInicial && (
+                      <small style={{ color: '#43e97b', fontSize: '0.7rem' }}>
+                        📅 Fecha preseleccionada del calendario
+                      </small>
+                    )}
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Hora Ingreso</label>
+                    <label className="form-label">Hora Ingreso *</label>
                     <input
                       type="time"
                       value={registro.Hora_Ingreso}
@@ -266,7 +311,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Hora Salida</label>
+                    <label className="form-label">Hora Salida *</label>
                     <input
                       type="time"
                       value={registro.Hora_Salida}
@@ -277,7 +322,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                   </div>
 
                   <div className="form-group">
-                    <label className="form-label">Tiempo Almuerzo</label>
+                    <label className="form-label">Tiempo Almuerzo *</label>
                     <select
                       value={registro.Tiempo_Almuerzo}
                       onChange={(e) => {
@@ -295,6 +340,54 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
                       <option value="01:30:00">1 hora 30 minutos</option>
                       <option value="02:00:00">2 horas</option>
                     </select>
+                  </div>
+                </div>
+
+                {/* 👇 Nueva fila para desplazamientos */}
+                <div style={{ 
+                  marginTop: '15px',
+                  padding: '15px',
+                  background: '#f8fafb',
+                  borderRadius: '10px',
+                  border: '1px dashed #e1e8ed'
+                }}>
+                  <h5 style={{ 
+                    margin: '0 0 10px 0',
+                    color: '#666',
+                    fontSize: '0.9rem',
+                    textAlign: 'center'
+                  }}>
+                    🚗 Tiempos de Desplazamiento (Opcional)
+                  </h5>
+                  
+                  <div className="form-row">
+                    <div className="form-group">
+                      <label className="form-label">Desplazamiento Ida</label>
+                      <input
+                        type="time"
+                        value={registro.desplazamientoIda || ""}
+                        onChange={(e) => actualizarRegistro(index, "desplazamientoIda", e.target.value)}
+                        className="form-input"
+                        placeholder="HH:MM"
+                      />
+                      <small style={{ color: '#666', fontSize: '0.7rem' }}>
+                        Tiempo adicional de viaje
+                      </small>
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Desplazamiento Regreso</label>
+                      <input
+                        type="time"
+                        value={registro.desplazamientoRegreso || ""}
+                        onChange={(e) => actualizarRegistro(index, "desplazamientoRegreso", e.target.value)}
+                        className="form-input"
+                        placeholder="HH:MM"
+                      />
+                      <small style={{ color: '#666', fontSize: '0.7rem' }}>
+                        Tiempo adicional de regreso
+                      </small>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -339,6 +432,15 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel }) => {
             {new Set(registros.map((r) => r.Centro_ID).filter((id) => id !== "")).size}
           </span>
         </div>
+        {fechaInicial && (
+          <div className="summary-item">
+            <span className="summary-icon">📅</span>
+            <span className="summary-text">
+              <strong>Fecha común:</strong>{" "}
+              {new Date(fechaInicial).toLocaleDateString('es-ES')}
+            </span>
+          </div>
+        )}
       </div>
     </div>
   );

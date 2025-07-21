@@ -8,6 +8,8 @@ export interface RegistroInputDto {
   Hora_Ingreso: string; // "HH:mm"
   Hora_Salida: string; // "HH:mm"
   Tiempo_Almuerzo: string; // "HH:mm:ss"
+   desplazamientoIda?: string;
+  desplazamientoRegreso?: string;
 }
 
 
@@ -33,4 +35,6 @@ export interface Registro {
   extrasDominicalesDiurnas: number;
   extrasDominicalesNocturnas: number;
   totalHoras: number;
+   desplazamientoIda?: string;
+  desplazamientoRegreso?: string;
 }

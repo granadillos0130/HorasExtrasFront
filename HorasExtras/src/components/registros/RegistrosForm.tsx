@@ -1,10 +1,10 @@
 import { AxiosError } from "axios";
-// ...importaciones
 import React, { useState, useEffect } from "react";
 import { trabajadoresService } from "../../api/trabajadoresService";
 import { centrosService } from "../../api/centrosService";
 import { registrosService } from "../../api/registrosService";
 import CentroBuscador from "../shared/CentroBuscador";
+import TrabajadorBuscador from "../shared/TrabajadorBuscador";
 import type { Trabajador } from "../../types/trabajadores";
 import type { Centro } from "../../types/centros";
 import type { RegistroInputDto } from "../../types/registros";
@@ -12,9 +12,10 @@ import "../../styles/components/registros/RegistroForm.css";
 
 interface Props {
   onSuccess: () => void;
+  fechaInicial?: string; // 👈 Nueva prop para fecha inicial
 }
 
-const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
+const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
   const [centros, setCentros] = useState<Centro[]>([]);
   const [loading, setLoading] = useState(false);
@@ -23,11 +24,24 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
     Trabajador_ID: 0,
     Centro_ID: "",
     Nombr_Centro: "",
-    Fecha: new Date().toISOString().split("T")[0],
+    Fecha: fechaInicial || new Date().toISOString().split("T")[0], // 👈 Usar fecha inicial si está disponible
     Hora_Ingreso: "08:00",
     Hora_Salida: "17:00",
     Tiempo_Almuerzo: "01:00",
+    // 👇 Nombres corregidos para coincidir con la interfaz (camelCase)
+    desplazamientoIda: "",
+    desplazamientoRegreso: "",
   });
+
+  // 👇 Actualizar fecha cuando cambie fechaInicial
+  useEffect(() => {
+    if (fechaInicial) {
+      setFormData(prev => ({
+        ...prev,
+        Fecha: fechaInicial
+      }));
+    }
+  }, [fechaInicial]);
 
   useEffect(() => {
     const cargarDatos = async () => {
@@ -50,7 +64,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
     e.preventDefault();
 
     if (!formData.Trabajador_ID || !formData.Centro_ID || !formData.Nombr_Centro) {
-      alert("Por favor complete todos los campos");
+      alert("Por favor complete todos los campos obligatorios");
       return;
     }
 
@@ -60,9 +74,16 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
       const normalizarHora = (hora: string) =>
         hora.length === 5 ? `${hora}:00` : hora;
 
-      const payload = {
+      const payload: RegistroInputDto = {
         ...formData,
         Tiempo_Almuerzo: normalizarHora(formData.Tiempo_Almuerzo),
+        // 👇 Solo incluir desplazamiento si tiene valor (nombres corregidos)
+        desplazamientoIda: formData.desplazamientoIda?.trim() 
+          ? normalizarHora(formData.desplazamientoIda) 
+          : undefined,
+        desplazamientoRegreso: formData.desplazamientoRegreso?.trim() 
+          ? normalizarHora(formData.desplazamientoRegreso) 
+          : undefined,
       };
 
       await registrosService.crear(payload);
@@ -90,38 +111,58 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
     }));
   };
 
+  const handleTrabajadorChange = (trabajadorId: number, trabajador?: Trabajador) => {
+    setFormData((prev) => ({
+      ...prev,
+      Trabajador_ID: trabajadorId,
+    }));
+  };
+
   const handleCentroChange = (centroId: string) => {
     const centroSeleccionado = centros.find(c => c.id === centroId);
     setFormData((prev) => ({
       ...prev,
       Centro_ID: centroId,
-      Nombr_Centro: centroSeleccionado?.nombreCentro || "", // auto llena pero editable
+      Nombr_Centro: centroSeleccionado?.nombreCentro || "",
     }));
   };
 
   return (
     <div className="registros-form-container">
       <h3>Crear Nuevo Registro</h3>
+      {fechaInicial && (
+        <div style={{ 
+          background: 'linear-gradient(135deg, #43e97b, #38f9d7)', 
+          color: 'white', 
+          padding: '10px 15px', 
+          borderRadius: '8px', 
+          marginBottom: '20px',
+          textAlign: 'center',
+          fontWeight: '600'
+        }}>
+          📅 Fecha preseleccionada: {new Date(fechaInicial).toLocaleDateString('es-ES', { 
+            weekday: 'long', 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+          })}
+        </div>
+      )}
+      
       <form onSubmit={handleSubmit} className="registros-form">
         <div className="form-row">
           <div className="form-group">
-            <label>Trabajador</label>
-            <select
+            <TrabajadorBuscador
+              trabajadores={trabajadores}
               value={formData.Trabajador_ID}
-              onChange={(e) => handleInputChange("Trabajador_ID", Number(e.target.value))}
+              onChange={handleTrabajadorChange}
+              label="Trabajador *"
               required
-            >
-              <option value={0}>Seleccione trabajador</option>
-              {trabajadores.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.nombre}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           <div className="form-group">
-            <label>Centro</label>
+            <label>Centro *</label>
             <CentroBuscador
               centros={centros}
               value={formData.Centro_ID}
@@ -131,7 +172,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
           </div>
 
           <div className="form-group">
-            <label>Nombre del Centro</label>
+            <label>Nombre del Centro *</label>
             <input
               type="text"
               value={formData.Nombr_Centro}
@@ -144,7 +185,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
 
         <div className="form-row">
           <div className="form-group">
-            <label>Fecha</label>
+            <label>Fecha *</label>
             <input
               type="date"
               value={formData.Fecha}
@@ -156,7 +197,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
 
         <div className="form-row">
           <div className="form-group">
-            <label>Hora Ingreso</label>
+            <label>Hora Ingreso *</label>
             <input
               type="time"
               value={formData.Hora_Ingreso}
@@ -166,7 +207,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
           </div>
 
           <div className="form-group">
-            <label>Hora Salida</label>
+            <label>Hora Salida *</label>
             <input
               type="time"
               value={formData.Hora_Salida}
@@ -176,7 +217,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
           </div>
 
           <div className="form-group">
-            <label>Tiempo Almuerzo</label>
+            <label>Tiempo Almuerzo *</label>
             <select
               value={formData.Tiempo_Almuerzo}
               onChange={(e) => handleInputChange("Tiempo_Almuerzo", e.target.value)}
@@ -188,6 +229,48 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess }) => {
               <option value="01:30:00">1 hora 30 minutos</option>
               <option value="02:00:00">2 horas</option>
             </select>
+          </div>
+        </div>
+
+        {/* 👇 Nueva sección para desplazamientos */}
+        <div className="form-section-header" style={{ 
+          marginTop: '25px',
+          marginBottom: '15px',
+          padding: '10px 0',
+          borderTop: '2px solid #e1e8ed',
+          color: '#666'
+        }}>
+          <h4 style={{ margin: 0, fontSize: '1.1rem' }}>🚗 Tiempos de Desplazamiento (Opcional)</h4>
+          <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem', color: '#888' }}>
+            Si el trabajador tiene tiempo de desplazamiento, ingrésalo aquí
+          </p>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label>Desplazamiento Ida (Opcional)</label>
+            <input
+              type="time"
+              value={formData.desplazamientoIda || ""}
+              onChange={(e) => handleInputChange("desplazamientoIda", e.target.value)}
+              placeholder="HH:MM"
+            />
+            <small style={{ color: '#666', fontSize: '0.8rem' }}>
+              Tiempo adicional de viaje al lugar de trabajo
+            </small>
+          </div>
+
+          <div className="form-group">
+            <label>Desplazamiento Regreso (Opcional)</label>
+            <input
+              type="time"
+              value={formData.desplazamientoRegreso || ""}
+              onChange={(e) => handleInputChange("desplazamientoRegreso", e.target.value)}
+              placeholder="HH:MM"
+            />
+            <small style={{ color: '#666', fontSize: '0.8rem' }}>
+              Tiempo adicional de regreso del trabajo
+            </small>
           </div>
         </div>
 

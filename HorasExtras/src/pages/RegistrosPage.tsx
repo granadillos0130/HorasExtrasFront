@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { registrosService } from "../api/registrosService";
 import RegistrosForm from "../components/registros/RegistrosForm";
 import RegistrosLoteForm from "../components/registros/RegistrosLoteForm";
@@ -425,20 +425,38 @@ const RegistrosPage: React.FC = () => {
                     <h4 style={{ margin: 0, fontSize: '1.2rem' }}>
                       ✅ {registrosDelDia.length} Registro{registrosDelDia.length !== 1 ? 's' : ''} Encontrado{registrosDelDia.length !== 1 ? 's' : ''}
                     </h4>
-                    <button
-                      onClick={() => setMostrarFormulario('individual')}
-                      style={{
-                        background: 'rgba(255,255,255,0.2)',
-                        color: 'white',
-                        border: '1px solid rgba(255,255,255,0.3)',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontWeight: '600'
-                      }}
-                    >
-                      ➕ Nuevo Registro
-                    </button>
+                    <div style={{ display: 'flex', gap: '10px' }}>
+                      <button
+                        onClick={() => setMostrarFormulario('individual')}
+                        style={{
+                          background: 'rgba(255,255,255,0.2)',
+                          color: 'white',
+                          border: '1px solid rgba(255,255,255,0.3)',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: '0.9rem'
+                        }}
+                      >
+                        ➕ Nuevo Registro
+                      </button>
+                      <button
+                        onClick={() => setMostrarFormulario('lote')}
+                        style={{
+                          background: 'rgba(255,255,255,0.2)',
+                          color: 'white',
+                          border: '1px solid rgba(255,255,255,0.3)',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: '0.9rem'
+                        }}
+                      >
+                        📊 Lote
+                      </button>
+                    </div>
                   </div>
                   
                   <div style={{
@@ -448,7 +466,7 @@ const RegistrosPage: React.FC = () => {
                     overflowY: 'auto',
                     padding: '10px'
                   }}>
-                    {registrosDelDia.map((registro, index) => (
+                    {registrosDelDia.map((registro) => (
                       <div key={registro.id} style={{
                         background: 'linear-gradient(135deg, #f8fafb, #ffffff)',
                         padding: '20px',
@@ -564,6 +582,43 @@ const RegistrosPage: React.FC = () => {
                             </div>
                           </div>
                         </div>
+
+                        {/* 👇 Mostrar información de desplazamientos si existen */}
+                        {(registro.desplazamientoIda || registro.desplazamientoRegreso) && (
+                          <div style={{
+                            marginTop: '15px',
+                            padding: '10px',
+                            background: '#f0f9ff',
+                            borderRadius: '8px',
+                            border: '1px solid #bfdbfe'
+                          }}>
+                            <div style={{ fontSize: '0.7rem', color: '#1d4ed8', marginBottom: '5px', textAlign: 'center' }}>
+                              🚗 Desplazamientos
+                            </div>
+                            <div style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
+                              gap: '8px'
+                            }}>
+                              {registro.desplazamientoIda && (
+                                <div style={{ textAlign: 'center', padding: '4px', background: 'white', borderRadius: '4px' }}>
+                                  <div style={{ fontSize: '0.6rem', color: '#3730a3' }}>Ida</div>
+                                  <div style={{ fontWeight: '600', color: '#3730a3', fontSize: '0.7rem' }}>
+                                    {formatearHora(registro.desplazamientoIda)}
+                                  </div>
+                                </div>
+                              )}
+                              {registro.desplazamientoRegreso && (
+                                <div style={{ textAlign: 'center', padding: '4px', background: 'white', borderRadius: '4px' }}>
+                                  <div style={{ fontSize: '0.6rem', color: '#3730a3' }}>Regreso</div>
+                                  <div style={{ fontWeight: '600', color: '#3730a3', fontSize: '0.7rem' }}>
+                                    {formatearHora(registro.desplazamientoRegreso)}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -622,7 +677,7 @@ const RegistrosPage: React.FC = () => {
                 </div>
               )}
 
-              {/* Formularios */}
+              {/* 👇 Formularios con fecha preseleccionada */}
               {mostrarFormulario === 'individual' && (
                 <div style={{
                   marginTop: '30px',
@@ -631,7 +686,10 @@ const RegistrosPage: React.FC = () => {
                   borderRadius: '15px',
                   border: '2px solid #e1e8ed'
                 }}>
-                  <RegistrosForm onSuccess={handleFormSuccess} />
+                  <RegistrosForm 
+                    onSuccess={handleFormSuccess} 
+                    fechaInicial={diaSeleccionado} // 👈 Pasar la fecha seleccionada
+                  />
                 </div>
               )}
 
@@ -646,6 +704,7 @@ const RegistrosPage: React.FC = () => {
                   <RegistrosLoteForm 
                     onSuccess={handleFormSuccess} 
                     onCancel={() => setMostrarFormulario(null)}
+                    fechaInicial={diaSeleccionado} // 👈 Pasar la fecha seleccionada
                   />
                 </div>
               )}

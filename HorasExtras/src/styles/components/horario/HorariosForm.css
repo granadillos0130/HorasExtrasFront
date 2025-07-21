@@ -1,6 +1,6 @@
 .horario-form-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: var(--gradient-primary);
   padding: 40px 20px;
 }
 
@@ -30,9 +30,9 @@
 
 .form-card {
   background: white;
-  border-radius: 20px;
+  border-radius: var(--radius-2xl);
   padding: 40px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-xl);
 }
 
 .form-header {
@@ -41,13 +41,13 @@
   gap: 20px;
   margin-bottom: 40px;
   padding-bottom: 20px;
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 2px solid var(--border-color);
 }
 
 .form-icon {
   width: 60px;
   height: 60px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--gradient-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -59,12 +59,12 @@
 .form-header h2 {
   margin: 0 0 5px 0;
   font-size: 1.5rem;
-  color: #333;
+  color: var(--text-color);
 }
 
 .form-header p {
   margin: 0;
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.9rem;
 }
 
@@ -75,16 +75,17 @@
 }
 
 .form-section {
-  background: #f8fafb;
+  background: white;
   padding: 25px;
-  border-radius: 15px;
-  border: 1px solid #e1e8ed;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
 }
 
 .form-section h3 {
   margin: 0 0 20px 0;
   font-size: 1.2rem;
-  color: #333;
+  color: var(--text-color);
   display: flex;
   align-items: center;
   gap: 8px;
@@ -103,7 +104,7 @@
 
 .form-label {
   font-weight: 600;
-  color: #333;
+  color: var(--text-color);
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
@@ -112,31 +113,31 @@
 .form-select,
 .form-input {
   padding: 15px 20px;
-  border: 2px solid #e1e8ed;
-  border-radius: 10px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
   font-size: 1rem;
   background: white;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
 }
 
 .form-select:focus,
 .form-input:focus {
   outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+  border-color: var(--primary-green);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
 }
 
 .form-select:disabled {
-  background: #f5f5f5;
-  color: #999;
+  background: var(--background-secondary);
+  color: var(--text-light);
   cursor: not-allowed;
 }
 
 .selected-worker {
-  background: linear-gradient(135deg, #43e97b, #38f9d7);
+  background: var(--gradient-green);
   color: white;
   padding: 10px 15px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   font-size: 0.9rem;
   font-weight: 600;
   display: flex;
@@ -165,24 +166,24 @@
   display: block;
   padding: 15px 20px;
   background: white;
-  border: 2px solid #e1e8ed;
-  border-radius: 10px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
   text-align: center;
   font-weight: 600;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
   font-size: 0.9rem;
 }
 
 .day-option input[type="radio"]:checked + .day-label {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--gradient-primary);
   color: white;
-  border-color: #667eea;
+  border-color: var(--primary-green);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 5px 15px rgba(34, 197, 94, 0.3);
 }
 
 .day-label:hover {
-  border-color: #667eea;
+  border-color: var(--primary-green);
   transform: translateY(-1px);
 }
 
@@ -194,21 +195,21 @@
 
 .preset-button {
   background: white;
-  border: 2px solid #e1e8ed;
-  border-radius: 10px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
   padding: 15px 20px;
   text-align: left;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
   font-size: 0.9rem;
-  color: #333;
+  color: var(--text-color);
 }
 
 .preset-button:hover {
-  border-color: #43e97b;
-  background: linear-gradient(135deg, #f8fff9, #f0fdf4);
+  border-color: var(--primary-green);
+  background: var(--light-green);
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(67, 233, 123, 0.2);
+  box-shadow: 0 5px 15px rgba(34, 197, 94, 0.2);
 }
 
 .form-row {
@@ -219,10 +220,10 @@
 }
 
 .intensity-display {
-  background: linear-gradient(135deg, #667eea, #764ba2);
+  background: var(--gradient-primary);
   color: white;
   padding: 15px 20px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   text-align: center;
   display: flex;
   align-items: center;
@@ -241,7 +242,7 @@
 }
 
 .form-help {
-  color: #666;
+  color: var(--text-secondary);
   font-size: 0.8rem;
   font-style: italic;
 }
@@ -251,17 +252,17 @@
   gap: 20px;
   justify-content: flex-end;
   padding-top: 20px;
-  border-top: 1px solid #e1e8ed;
+  border-top: 1px solid var(--border-color);
 }
 
 .btn-primary,
 .btn-secondary {
   padding: 15px 30px;
-  border-radius: 10px;
+  border-radius: var(--radius-lg);
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all var(--transition-normal);
   border: none;
   display: flex;
   align-items: center;
@@ -269,13 +270,13 @@
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #43e97b, #38f9d7);
+  background: var(--gradient-green);
   color: white;
 }
 
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(67, 233, 123, 0.3);
+  box-shadow: 0 10px 25px rgba(34, 197, 94, 0.3);
 }
 
 .btn-primary:disabled {
@@ -285,22 +286,22 @@
 }
 
 .btn-secondary {
-  background: #f8fafb;
-  color: #666;
-  border: 2px solid #e1e8ed;
+  background: var(--background-secondary);
+  color: var(--text-secondary);
+  border: 2px solid var(--border-color);
 }
 
 .btn-secondary:hover:not(:disabled) {
-  background: #e1e8ed;
-  color: #333;
+  background: var(--border-color);
+  color: var(--text-color);
 }
 
 .error-message {
-  background: linear-gradient(135deg, #ffebee, #fce4ec);
-  color: #c62828;
+  background: linear-gradient(135deg, #FEF2F2, #FDE8E8);
+  color: var(--danger-color);
   padding: 15px 20px;
-  border-radius: 10px;
-  border-left: 4px solid #c62828;
+  border-radius: var(--radius-lg);
+  border-left: 4px solid var(--danger-color);
   font-weight: 600;
   display: flex;
   align-items: center;
@@ -328,7 +329,19 @@
 .form-section:nth-child(3) { animation-delay: 0.3s; }
 .form-section:nth-child(4) { animation-delay: 0.4s; }
 
-/* Responsive */
+/* Asegurar que no haya fondos oscuros */
+.horario-form-page * {
+  color: inherit;
+}
+
+.horario-form-page .form-card {
+  background: white !important;
+}
+
+.horario-form-page .form-section {
+  background: white !important;
+  color: var(--text-color);
+}
 @media (max-width: 768px) {
   .horario-form-page {
     padding: 20px 15px;
