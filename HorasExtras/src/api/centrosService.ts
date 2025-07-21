@@ -32,5 +32,8 @@ export const centrosService = {
   },
    obtenerPorCliente(clienteId: string): Promise<Centro[]> {
     return api.get(`/centros/por-cliente/${clienteId}`).then(res => res.data);
+  },
+   crearLote(data: Centro[]): Promise<void> {
+    return api.post("/centros/lote", data);
   }
 };

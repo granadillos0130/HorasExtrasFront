@@ -4,31 +4,203 @@
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background: rgba(30, 41, 59, 0.8);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: var(--spacing-lg);
+  animation: fadeIn 0.3s ease;
 }
 
 .modal-content {
   background: white;
-  padding: 1.5rem;
-  border-radius: 10px;
-  width: 400px;
+  padding: var(--spacing-xl);
+  border-radius: var(--radius-2xl);
+  width: 100%;
+  max-width: 500px;
   max-height: 80vh;
   overflow-y: auto;
   position: relative;
+  box-shadow: var(--shadow-xl);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  animation: slideInUp 0.4s ease;
+}
+
+.modal-content::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-2xl);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask-composite: xor;
+}
+
+.modal-content h2 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 var(--spacing-xl);
+  padding-right: 40px;
+  line-height: 1.3;
 }
 
 .cerrar-btn {
   position: absolute;
-  top: 10px;
-  right: 10px;
-  background: crimson;
+  top: var(--spacing-lg);
+  right: var(--spacing-lg);
+  width: 40px;
+  height: 40px;
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
   color: white;
   border: none;
-  border-radius: 5px;
-  padding: 0.3rem 0.6rem;
+  border-radius: 50%;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: bold;
+  transition: all var(--transition-normal);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  z-index: 10;
+}
+
+.cerrar-btn:hover {
+  transform: scale(1.1) rotate(90deg);
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+}
+
+.cerrar-btn:active {
+  transform: scale(0.95) rotate(90deg);
+}
+
+/* Contenido del modal */
+.modal-content p {
+  color: var(--text-secondary);
+  font-size: 1.1rem;
+  text-align: center;
+  padding: var(--spacing-xl) 0;
+  font-style: italic;
+}
+
+.modal-content ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.modal-content li {
+  background: var(--background-color);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-md);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-content li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: var(--gradient-primary);
+  border-radius: 0 4px 4px 0;
+}
+
+.modal-content li:hover {
+  border-color: var(--primary-green);
+  background: var(--light-green);
+  transform: translateX(4px);
+  box-shadow: var(--shadow-md);
+}
+
+.modal-content li strong {
+  color: var(--primary-green);
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: block;
+  margin-bottom: var(--spacing-sm);
+}
+
+.modal-content li:last-child {
+  margin-bottom: 0;
+}
+
+/* Scrollbar personalizado para el modal */
+.modal-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-content::-webkit-scrollbar-track {
+  background: var(--background-secondary);
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+  background: var(--gradient-primary);
+  border-radius: 3px;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+  background: var(--gradient-green);
+}
+
+/* Animaciones de entrada */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideUp {
+  from {
+    opacity: 0;
+    transform: translateY(50px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .modal-overlay {
+    padding: var(--spacing-md);
+  }
+  
+  .modal-content {
+    padding: var(--spacing-lg);
+    max-width: none;
+  }
+  
+  .modal-content h2 {
+    font-size: 1.5rem;
+    padding-right: 50px;
+  }
+  
+  .cerrar-btn {
+    top: var(--spacing-md);
+    right: var(--spacing-md);
+    width: 35px;
+    height: 35px;
+    font-size: 1rem;
+  }
 }

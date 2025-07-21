@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import CentroBuscador from "../components/shared/CentroBuscador";
 import CentroForm from "../components/centros/CentroForm";
 import CentroCard from "../components/centros/CentroCard";
+import CentroLoteForm from "../components/centros/CentroLote";
 import CentroEstadisticasModal from "../components/centros/CentroEstadisticasModal";
 import type { Centro } from "../types/centros";
 import type { Trabajador } from "../types/trabajadores";
@@ -18,6 +19,7 @@ const CentrosPage: React.FC = () => {
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
   const [selectedCentro, setSelectedCentro] = useState<string>("");
   const [selectedTrabajador, setSelectedTrabajador] = useState<number>(0);
+  const [showLoteForm, setShowLoteForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [loadingAssign, setLoadingAssign] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -166,6 +168,13 @@ const CentrosPage: React.FC = () => {
               >
                 {showForm ? "❌ Cancelar" : "➕ Nuevo Centro"}
               </button>
+              <button
+  className="btn-nuevo btn-lote"
+  onClick={() => setShowLoteForm(!showLoteForm)}
+>
+  {showLoteForm ? "❌ Cancelar Lote" : "📦 Registrar Lote"}
+</button>
+
             </div>
           </div>
 
@@ -187,6 +196,24 @@ const CentrosPage: React.FC = () => {
             </div>
           )}
         </div>
+        {showLoteForm && (
+  <div className="form-section">
+    <div className="form-header">
+      <div className="form-icon">📦</div>
+      <div>
+        <h3>Registrar Lote de Centros</h3>
+        <p>Agrega varios centros a la vez</p>
+      </div>
+    </div>
+    <CentroLoteForm
+      onSuccess={() => {
+        setShowLoteForm(false);
+        cargarCentros();
+      }}
+    />
+  </div>
+)}
+
 
         <div className="content-card">
           <div className="assign-header">
