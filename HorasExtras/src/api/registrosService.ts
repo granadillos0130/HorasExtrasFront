@@ -49,4 +49,10 @@ export const registrosService = {
     });
     return res.data;
   },
+   async obtenerTodosPorFecha(fecha: string): Promise<Registro[]> {
+    const res = await api.get<Registro[]>("/registros/porFechaTodos", {
+      params: { fecha },
+    });
+    return res.data;
+  },
 };
