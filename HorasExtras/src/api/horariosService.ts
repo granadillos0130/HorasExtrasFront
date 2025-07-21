@@ -13,6 +13,9 @@ export const horariosService = {
     const res = await api.get<Horario[]>(`/horarios/porTrabajador/${trabajadorId}`);
     return res.data;
   },
+  async crearLote(horarios: Horario[]): Promise<void> {
+    await api.post("/horarios/lote", horarios);
+  },
 
   // Crear un horario
   async crear(data: Omit<Horario, "id" | "trabajadorNombre">): Promise<void> {
@@ -28,4 +31,5 @@ export const horariosService = {
   async eliminar(id: number): Promise<void> {
     await api.delete(`/horarios/${id}`);
   },
+  
 };

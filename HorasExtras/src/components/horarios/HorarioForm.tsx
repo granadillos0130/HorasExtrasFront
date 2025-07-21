@@ -20,8 +20,6 @@ const diasSemana = [
   { value: "Domingo", label: "Domingo" }
 ];
 
-
-
 const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
   const [loading, setLoading] = useState(false);
@@ -29,9 +27,9 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState<HorarioDto>({
+  const [formData, setFormData] = useState({
     trabajadorId: 0,
-    dia: "Lunes",
+    diasSeleccionados: [] as string[],
     horaInicio: "08:00",
     horaFin: "17:00",
     intensidadHoraria: 8
@@ -80,6 +78,11 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
       return;
     }
 
+    if (formData.diasSeleccionados.length === 0) {
+      setError("Por favor seleccione al menos un día");
+      return;
+    }
+
     if (formData.intensidadHoraria <= 0) {
       setError("La intensidad horaria debe ser mayor a 0");
       return;
@@ -89,8 +92,27 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
     setError(null);
     
     try {
-      await horariosService.crear(formData);
-      alert("Horario creado correctamente");
+      // Crear array de horarios para cada día seleccionado
+      const horariosDto: HorarioDto[] = formData.diasSeleccionados.map(dia => ({
+        trabajadorId: formData.trabajadorId,
+        dia,
+        horaInicio: formData.horaInicio,
+        horaFin: formData.horaFin,
+        intensidadHoraria: formData.intensidadHoraria
+      }));
+
+      // Si es un solo día, usar el método individual, si son varios, usar el lote
+      if (horariosDto.length === 1) {
+        await horariosService.crear(horariosDto[0]);
+      } else {
+        await horariosService.crearLote(horariosDto);
+      }
+
+      const mensaje = horariosDto.length === 1 
+        ? "Horario creado correctamente" 
+        : `${horariosDto.length} horarios creados correctamente`;
+      
+      alert(mensaje);
       
       if (onSuccess) {
         onSuccess();
@@ -101,20 +123,20 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
       // Limpiar formulario
       setFormData({
         trabajadorId: 0,
-        dia: "Lunes",
+        diasSeleccionados: [],
         horaInicio: "08:00",
         horaFin: "17:00",
         intensidadHoraria: 8
       });
     } catch (err) {
-      setError("Error al crear el horario. Verifique que no exista un horario para este trabajador en este día.");
+      setError("Error al crear los horarios. Verifique que no existan horarios duplicados para este trabajador en los días seleccionados.");
       console.error("Error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (field: keyof HorarioDto, value: string | number) => {
+  const handleChange = (field: string, value: string | number) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value
@@ -122,11 +144,37 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
     setError(null);
   };
 
-
+  const handleDayToggle = (dia: string) => {
+    setFormData(prev => {
+      const diasSeleccionados = prev.diasSeleccionados.includes(dia)
+        ? prev.diasSeleccionados.filter(d => d !== dia)
+        : [...prev.diasSeleccionados, dia];
+      
+      return {
+        ...prev,
+        diasSeleccionados
+      };
+    });
+    setError(null);
+  };
 
   const getSelectedWorkerName = () => {
     const worker = trabajadores.find(t => t.id === formData.trabajadorId);
     return worker ? worker.nombre : "";
+  };
+
+  const selectAllDays = () => {
+    setFormData(prev => ({
+      ...prev,
+      diasSeleccionados: diasSemana.map(d => d.value)
+    }));
+  };
+
+  const clearAllDays = () => {
+    setFormData(prev => ({
+      ...prev,
+      diasSeleccionados: []
+    }));
   };
 
   return (
@@ -182,21 +230,46 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
             </div>
 
             <div className="form-section">
-              <h3>Día de la Semana</h3>
+              <div className="days-header">
+                <h3>Días de la Semana</h3>
+                <div className="days-actions">
+                  <button 
+                    type="button" 
+                    onClick={selectAllDays}
+                    className="btn-link"
+                    disabled={loading}
+                  >
+                    Seleccionar todos
+                  </button>
+                  <button 
+                    type="button" 
+                    onClick={clearAllDays}
+                    className="btn-link"
+                    disabled={loading}
+                  >
+                    Limpiar
+                  </button>
+                </div>
+              </div>
+              
               <div className="days-grid">
                 {diasSemana.map(dia => (
-                  <label key={dia.value} className="day-option">
+                  <label key={dia.value} className={`day-option ${formData.diasSeleccionados.includes(dia.value) ? 'selected' : ''}`}>
                     <input
-                      type="radio"
-                      name="dia"
-                      value={dia.value}
-                      checked={formData.dia === dia.value}
-                      onChange={(e) => handleChange("dia", e.target.value)}
+                      type="checkbox"
+                      checked={formData.diasSeleccionados.includes(dia.value)}
+                      onChange={() => handleDayToggle(dia.value)}
                     />
                     <span className="day-label">{dia.label}</span>
                   </label>
                 ))}
               </div>
+              
+              {formData.diasSeleccionados.length > 0 && (
+                <div className="selected-days-summary">
+                  📅 Días seleccionados ({formData.diasSeleccionados.length}): {formData.diasSeleccionados.join(", ")}
+                </div>
+              )}
             </div>
 
             <div className="form-section">
@@ -237,6 +310,16 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
               </div>
             </div>
 
+            {formData.diasSeleccionados.length > 1 && (
+              <div className="batch-info">
+                <div className="batch-icon">📋</div>
+                <div>
+                  <strong>Creación en lote</strong>
+                  <p>Se crearán {formData.diasSeleccionados.length} horarios con la misma configuración horaria</p>
+                </div>
+              </div>
+            )}
+
             <div className="form-actions">
               <button
                 type="button"
@@ -249,9 +332,9 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
               <button 
                 type="submit" 
                 className="btn-primary"
-                disabled={loading || formData.trabajadorId === 0}
+                disabled={loading || formData.trabajadorId === 0 || formData.diasSeleccionados.length === 0}
               >
-                {loading ? "Creando..." : "✅ Crear Horario"}
+                {loading ? "Creando..." : `✅ Crear ${formData.diasSeleccionados.length > 1 ? `${formData.diasSeleccionados.length} Horarios` : 'Horario'}`}
               </button>
             </div>
           </form>
