@@ -2,17 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { trabajadoresService } from "../../api/trabajadoresService";
-import { epsService } from "../../api/epsService";
-import { arlService } from "../../api/arlService";
-import { pensionService } from "../../api/pensionService";
-import { bancoService } from "../../api/bancoService";
-import { clinicaService } from "../../api/clinicaService";
 import type { Trabajador } from "../../types/trabajadores";
-import type { Eps } from "../../types/eps";
-import type { Arl } from "../../types/arl";
-import type { Pension } from "../../types/pension";
-import type { Banco } from "../../types/banco";
-import type { Clinica } from "../../types/clinica";
 import "../../styles/components/trabajador/TrabajadorEditPage.css";
 
 const TrabajadorEditPage: React.FC = () => {
@@ -48,14 +38,33 @@ const TrabajadorEditPage: React.FC = () => {
     personaContacto: "",
     telefonoContacto: "",
     direccionContacto: "",
-    parentescoContacto: ""
-  });
+    parentescoContacto: "",
 
-  const [epsData, setEpsData] = useState<Partial<Eps>>({});
-  const [arlData, setArlData] = useState<Partial<Arl>>({});
-  const [pensionData, setPensionData] = useState<Partial<Pension>>({});
-  const [bancoData, setBancoData] = useState<Partial<Banco>>({});
-  const [clinicaData, setClinicaData] = useState<Partial<Clinica>>({});
+    // ===== SERVICIOS DE SEGURIDAD SOCIAL =====
+    // EPS
+    eps: "",
+    epsFechaInicio: "",
+    epsFechaFin: "",
+
+    // ARL
+    arl: "",
+    arlFechaInicio: "",
+    arlFechaFin: "",
+
+    // PENSIÓN
+    fondoPension: "",
+    pensionFechaInicio: "",
+    pensionFechaFin: "",
+
+    // BANCO
+    banco: "",
+    numeroCuenta: "",
+
+    // CLÍNICA
+    nombreClinica: "",
+    clinicaFechaInicio: "",
+    clinicaFechaFin: ""
+  });
 
   // Estados para manejar secciones colapsables
   const [expandedSections, setExpandedSections] = useState({
@@ -99,48 +108,48 @@ const TrabajadorEditPage: React.FC = () => {
         personaContacto: trabajadorData.personaContacto || "",
         telefonoContacto: trabajadorData.telefonoContacto || "",
         direccionContacto: trabajadorData.direccionContacto || "",
-        parentescoContacto: trabajadorData.parentescoContacto || ""
+        parentescoContacto: trabajadorData.parentescoContacto || "",
+
+        // ===== CARGAR SERVICIOS DE SEGURIDAD SOCIAL =====
+        // EPS
+        eps: trabajadorData.eps?.nombre || "",
+        epsFechaInicio: trabajadorData.eps?.fechaInicio ? trabajadorData.eps.fechaInicio.split('T')[0] : "",
+        epsFechaFin: trabajadorData.eps?.fechaFin ? trabajadorData.eps.fechaFin.split('T')[0] : "",
+
+        // ARL
+        arl: trabajadorData.arl?.nombre || "",
+        arlFechaInicio: trabajadorData.arl?.fechaInicio ? trabajadorData.arl.fechaInicio.split('T')[0] : "",
+        arlFechaFin: trabajadorData.arl?.fechaFin ? trabajadorData.arl.fechaFin.split('T')[0] : "",
+
+        // PENSIÓN
+        fondoPension: trabajadorData.pension?.nombre || "",
+        pensionFechaInicio: trabajadorData.pension?.fechaInicio ? trabajadorData.pension.fechaInicio.split('T')[0] : "",
+        pensionFechaFin: trabajadorData.pension?.fechaFin ? trabajadorData.pension.fechaFin.split('T')[0] : "",
+
+        // BANCO
+        banco: trabajadorData.banco?.nombre || "",
+        numeroCuenta: trabajadorData.banco?.numeroCuenta || "",
+
+        // CLÍNICA
+        nombreClinica: trabajadorData.clinica?.nombre || "",
+        clinicaFechaInicio: trabajadorData.clinica?.fechaInicio ? trabajadorData.clinica.fechaInicio.split('T')[0] : "",
+        clinicaFechaFin: trabajadorData.clinica?.fechaFin ? trabajadorData.clinica.fechaFin.split('T')[0] : ""
       });
 
-      // Cargar datos de servicios si existen
-      if (trabajadorData.eps) {
-        setEpsData({
-          ...trabajadorData.eps,
-          fechaInicio: trabajadorData.eps.fechaInicio ? trabajadorData.eps.fechaInicio.split('T')[0] : "",
-          fechaFin: trabajadorData.eps.fechaFin ? trabajadorData.eps.fechaFin.split('T')[0] : ""
-        });
+      // Expandir secciones si tienen datos
+      if (trabajadorData.eps?.nombre) {
         setExpandedSections(prev => ({ ...prev, eps: true }));
       }
-      
-      if (trabajadorData.arl) {
-        setArlData({
-          ...trabajadorData.arl,
-          fechaInicio: trabajadorData.arl.fechaInicio ? trabajadorData.arl.fechaInicio.split('T')[0] : "",
-          fechaFin: trabajadorData.arl.fechaFin ? trabajadorData.arl.fechaFin.split('T')[0] : ""
-        });
+      if (trabajadorData.arl?.nombre) {
         setExpandedSections(prev => ({ ...prev, arl: true }));
       }
-      
-      if (trabajadorData.pension) {
-        setPensionData({
-          ...trabajadorData.pension,
-          fechaInicio: trabajadorData.pension.fechaInicio ? trabajadorData.pension.fechaInicio.split('T')[0] : "",
-          fechaFin: trabajadorData.pension.fechaFin ? trabajadorData.pension.fechaFin.split('T')[0] : ""
-        });
+      if (trabajadorData.pension?.nombre) {
         setExpandedSections(prev => ({ ...prev, pension: true }));
       }
-      
-      if (trabajadorData.banco) {
-        setBancoData(trabajadorData.banco);
+      if (trabajadorData.banco?.nombre) {
         setExpandedSections(prev => ({ ...prev, banco: true }));
       }
-      
-      if (trabajadorData.clinica) {
-        setClinicaData({
-          ...trabajadorData.clinica,
-          fechaInicio: trabajadorData.clinica.fechaInicio ? trabajadorData.clinica.fechaInicio.split('T')[0] : "",
-          fechaFin: trabajadorData.clinica.fechaFin ? trabajadorData.clinica.fechaFin.split('T')[0] : ""
-        });
+      if (trabajadorData.clinica?.nombre) {
         setExpandedSections(prev => ({ ...prev, clinica: true }));
       }
       
@@ -213,108 +222,64 @@ const TrabajadorEditPage: React.FC = () => {
 
     setSaving(true);
     try {
-      // 1. Actualizar trabajador
-      await trabajadoresService.update(trabajador.id, formData);
+      // ===== ENVIAR TODO EN UNA SOLA LLAMADA =====
+      const updateDto = {
+        // Información básica del trabajador
+        nombre: formData.nombre,
+        cedula: formData.cedula,
+        rh: formData.rh,
+        fechaNacimiento: formData.fechaNacimiento,
+        edad: formData.edad,
+        estadoCivil: formData.estadoCivil,
+        genero: formData.genero,
+        cantidadHijos: formData.cantidadHijos,
+        nivelEscolaridad: formData.nivelEscolaridad,
+        salario: formData.salario,
+        fechaContratacion: formData.fechaContratacion,
+        correo: formData.correo,
+        personaContacto: formData.personaContacto,
+        telefonoContacto: formData.telefonoContacto,
+        direccionContacto: formData.direccionContacto,
+        parentescoContacto: formData.parentescoContacto,
+        tipoContratacion: formData.tipoContratacion,
 
-      // 2. Actualizar/Crear EPS
-      if (epsData.nombre?.trim()) {
-        if (epsData.id) {
-          await epsService.actualizar(epsData.id, {
-            nombre: epsData.nombre,
-            trabajadorId: trabajador.id,
-            fechaInicio: epsData.fechaInicio || "",
-            fechaFin: epsData.fechaFin || ""
-          });
-        } else {
-          await epsService.crear({
-            nombre: epsData.nombre,
-            trabajadorId: trabajador.id,
-            fechaInicio: epsData.fechaInicio || "",
-            fechaFin: epsData.fechaFin || ""
-          });
-        }
-      }
+        // ===== SERVICIOS DE SEGURIDAD SOCIAL =====
+        // EPS
+        eps: formData.eps,
+        epsFechaInicio: formData.epsFechaInicio,
+        epsFechaFin: formData.epsFechaFin,
 
-      // 3. Actualizar/Crear ARL
-      if (arlData.nombre?.trim()) {
-        if (arlData.id) {
-          await arlService.actualizar(arlData.id, {
-            nombre: arlData.nombre,
-            trabajadorId: trabajador.id,
-            fechaInicio: arlData.fechaInicio || "",
-            fechaFin: arlData.fechaFin || ""
-          });
-        } else {
-          await arlService.crear({
-            nombre: arlData.nombre,
-            trabajadorId: trabajador.id,
-            fechaInicio: arlData.fechaInicio || "",
-            fechaFin: arlData.fechaFin || ""
-          });
-        }
-      }
+        // ARL
+        arl: formData.arl,
+        arlFechaInicio: formData.arlFechaInicio,
+        arlFechaFin: formData.arlFechaFin,
 
-      // 4. Actualizar/Crear Pensión
-      if (pensionData.nombre?.trim()) {
-        if (pensionData.id) {
-          await pensionService.actualizar(pensionData.id, {
-            nombre: pensionData.nombre,
-            trabajadorId: trabajador.id,
-            fechaInicio: pensionData.fechaInicio || "",
-            fechaFin: pensionData.fechaFin || ""
-          });
-        } else {
-          await pensionService.crear({
-            nombre: pensionData.nombre,
-            trabajadorId: trabajador.id,
-            fechaInicio: pensionData.fechaInicio || "",
-            fechaFin: pensionData.fechaFin || ""
-          });
-        }
-      }
+        // PENSIÓN
+        fondoPension: formData.fondoPension,
+        pensionFechaInicio: formData.pensionFechaInicio,
+        pensionFechaFin: formData.pensionFechaFin,
 
-      // 5. Actualizar/Crear Banco
-      if (bancoData.nombre?.trim() && bancoData.numeroCuenta?.trim()) {
-        if (bancoData.id) {
-          await bancoService.actualizar(bancoData.id, {
-            nombre: bancoData.nombre,
-            numeroCuenta: bancoData.numeroCuenta,
-            trabajadorId: trabajador.id
-          });
-        } else {
-          await bancoService.crear({
-            nombre: bancoData.nombre,
-            numeroCuenta: bancoData.numeroCuenta,
-            trabajadorId: trabajador.id
-          });
-        }
-      }
+        // BANCO
+        banco: formData.banco,
+        numeroCuenta: formData.numeroCuenta,
 
-      // 6. Actualizar/Crear Clínica
-      if (clinicaData.nombre?.trim()) {
-        if (clinicaData.id) {
-          await clinicaService.actualizar(clinicaData.id, {
-            nombre: clinicaData.nombre,
-            trabajadorId: trabajador.id,
-            fechaInicio: clinicaData.fechaInicio || "",
-            fechaFin: clinicaData.fechaFin || ""
-          });
-        } else {
-          await clinicaService.crear({
-            nombre: clinicaData.nombre,
-            trabajadorId: trabajador.id,
-            fechaInicio: clinicaData.fechaInicio || "",
-            fechaFin: clinicaData.fechaFin || ""
-          });
-        }
-      }
+        // CLÍNICA
+        nombreClinica: formData.nombreClinica,
+        clinicaFechaInicio: formData.clinicaFechaInicio,
+        clinicaFechaFin: formData.clinicaFechaFin
+      };
+
+      console.log("Enviando datos:", updateDto);
+
+      // Una sola llamada para actualizar todo
+      await trabajadoresService.update(trabajador.id, updateDto);
 
       alert("Trabajador actualizado correctamente");
       navigate("/trabajadores");
       
     } catch (error) {
       console.error("Error al actualizar trabajador:", error);
-      alert("Error al actualizar el trabajador");
+      alert("Error al actualizar el trabajador: " + (error as any)?.message || "Error desconocido");
     } finally {
       setSaving(false);
     }
@@ -770,9 +735,10 @@ const TrabajadorEditPage: React.FC = () => {
                   <div className="form-group">
                     <label className="form-label">Nombre de EPS</label>
                     <input
+                      name="eps"
                       placeholder="Ej: Sanitas, Sura, Nueva EPS"
-                      value={epsData.nombre || ""}
-                      onChange={(e) => setEpsData(prev => ({ ...prev, nombre: e.target.value }))}
+                      value={formData.eps}
+                      onChange={handleFormChange}
                       className="form-input"
                       disabled={saving}
                     />
@@ -782,8 +748,9 @@ const TrabajadorEditPage: React.FC = () => {
                     <label className="form-label">Fecha de Inicio</label>
                     <input
                       type="date"
-                      value={epsData.fechaInicio || ""}
-                      onChange={(e) => setEpsData(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                      name="epsFechaInicio"
+                      value={formData.epsFechaInicio}
+                      onChange={handleFormChange}
                       className="form-input"
                       disabled={saving}
                     />
@@ -793,8 +760,9 @@ const TrabajadorEditPage: React.FC = () => {
                     <label className="form-label">Fecha de Fin (Opcional)</label>
                     <input
                       type="date"
-                      value={epsData.fechaFin || ""}
-                      onChange={(e) => setEpsData(prev => ({ ...prev, fechaFin: e.target.value }))}
+                      name="epsFechaFin"
+                      value={formData.epsFechaFin}
+                      onChange={handleFormChange}
                       className="form-input"
                       disabled={saving}
                     />
@@ -826,9 +794,10 @@ const TrabajadorEditPage: React.FC = () => {
                   <div className="form-group">
                     <label className="form-label">Nombre de ARL</label>
                     <input
+                      name="arl"
                       placeholder="Ej: Sura ARL, Positiva, Colmena"
-                      value={arlData.nombre || ""}
-                      onChange={(e) => setArlData(prev => ({ ...prev, nombre: e.target.value }))}
+                      value={formData.arl}
+                      onChange={handleFormChange}
                       className="form-input"
                       disabled={saving}
                     />
@@ -838,8 +807,9 @@ const TrabajadorEditPage: React.FC = () => {
                     <label className="form-label">Fecha de Inicio</label>
                     <input
                       type="date"
-                      value={arlData.fechaInicio || ""}
-                      onChange={(e) => setArlData(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                      name="arlFechaInicio"
+                      value={formData.arlFechaInicio}
+                      onChange={handleFormChange}
                       className="form-input"
                       disabled={saving}
                     />
@@ -849,8 +819,9 @@ const TrabajadorEditPage: React.FC = () => {
                     <label className="form-label">Fecha de Fin (Opcional)</label>
                     <input
                       type="date"
-                      value={arlData.fechaFin || ""}
-                      onChange={(e) => setArlData(prev => ({ ...prev, fechaFin: e.target.value }))}
+                      name="arlFechaFin"
+                      value={formData.arlFechaFin}
+                      onChange={handleFormChange}
                       className="form-input"
                       disabled={saving}
                     />
@@ -882,9 +853,10 @@ const TrabajadorEditPage: React.FC = () => {
                   <div className="form-group">
                     <label className="form-label">Nombre del Fondo</label>
                     <input
+                      name="fondoPension"
                       placeholder="Ej: Protección, Porvenir, Colfondos"
-                      value={pensionData.nombre || ""}
-                      onChange={(e) => setPensionData(prev => ({ ...prev, nombre: e.target.value }))}
+                      value={formData.fondoPension}
+                      onChange={handleFormChange}
                       className="form-input"
                       disabled={saving}
                     />
@@ -894,8 +866,9 @@ const TrabajadorEditPage: React.FC = () => {
                     <label className="form-label">Fecha de Inicio</label>
                     <input
                       type="date"
-                      value={pensionData.fechaInicio || ""}
-                      onChange={(e) => setPensionData(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                      name="pensionFechaInicio"
+                      value={formData.pensionFechaInicio}
+                      onChange={handleFormChange}
                       className="form-input"
                       disabled={saving}
                     />
@@ -905,8 +878,9 @@ const TrabajadorEditPage: React.FC = () => {
                     <label className="form-label">Fecha de Fin (Opcional)</label>
                     <input
                       type="date"
-                      value={pensionData.fechaFin || ""}
-                      onChange={(e) => setPensionData(prev => ({ ...prev, fechaFin: e.target.value }))}
+                      name="pensionFechaFin"
+                      value={formData.pensionFechaFin}
+                      onChange={handleFormChange}
                       className="form-input"
                       disabled={saving}
                     />
@@ -938,9 +912,10 @@ const TrabajadorEditPage: React.FC = () => {
                   <div className="form-group">
                     <label className="form-label">Nombre del Banco</label>
                     <input
+                      name="banco"
                       placeholder="Ej: Bancolombia, Banco de Bogotá, Nequi"
-                      value={bancoData.nombre || ""}
-                      onChange={(e) => setBancoData(prev => ({ ...prev, nombre: e.target.value }))}
+                      value={formData.banco}
+                      onChange={handleFormChange}
                       className="form-input"
                       disabled={saving}
                     />
@@ -949,9 +924,10 @@ const TrabajadorEditPage: React.FC = () => {
                   <div className="form-group">
                     <label className="form-label">Número de Cuenta</label>
                     <input
+                      name="numeroCuenta"
                       placeholder="Ej: 12345678901"
-                      value={bancoData.numeroCuenta || ""}
-                      onChange={(e) => setBancoData(prev => ({ ...prev, numeroCuenta: e.target.value }))}
+                      value={formData.numeroCuenta}
+                      onChange={handleFormChange}
                       className="form-input"
                       disabled={saving}
                     />
@@ -983,9 +959,10 @@ const TrabajadorEditPage: React.FC = () => {
                   <div className="form-group">
                     <label className="form-label">Nombre de la Clínica</label>
                     <input
+                      name="nombreClinica"
                       placeholder="Ej: Clínica del Country, Hospital San Ignacio"
-                      value={clinicaData.nombre || ""}
-                      onChange={(e) => setClinicaData(prev => ({ ...prev, nombre: e.target.value }))}
+                      value={formData.nombreClinica}
+                      onChange={handleFormChange}
                       className="form-input"
                       disabled={saving}
                     />
@@ -995,8 +972,9 @@ const TrabajadorEditPage: React.FC = () => {
                     <label className="form-label">Fecha de Inicio</label>
                     <input
                       type="date"
-                      value={clinicaData.fechaInicio || ""}
-                      onChange={(e) => setClinicaData(prev => ({ ...prev, fechaInicio: e.target.value }))}
+                      name="clinicaFechaInicio"
+                      value={formData.clinicaFechaInicio}
+                      onChange={handleFormChange}
                       className="form-input"
                       disabled={saving}
                     />
@@ -1006,8 +984,9 @@ const TrabajadorEditPage: React.FC = () => {
                     <label className="form-label">Fecha de Fin (Opcional)</label>
                     <input
                       type="date"
-                      value={clinicaData.fechaFin || ""}
-                      onChange={(e) => setClinicaData(prev => ({ ...prev, fechaFin: e.target.value }))}
+                      name="clinicaFechaFin"
+                      value={formData.clinicaFechaFin}
+                      onChange={handleFormChange}
                       className="form-input"
                       disabled={saving}
                     />

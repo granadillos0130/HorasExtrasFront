@@ -1,5 +1,5 @@
 import { api } from "../api/api";
-import type { Trabajador } from "../types/trabajadores";
+import type { Trabajador,CrearTrabajadorDto } from "../types/trabajadores";
 
 
 export const trabajadoresService = {
@@ -21,12 +21,12 @@ export const trabajadoresService = {
     return res.data;
   },
 
-  // Actualizar un trabajador
-  async update(id: number, data: Partial<Trabajador>): Promise<Trabajador> {
+   async update(id: number, data: CrearTrabajadorDto): Promise<Trabajador> {
+    console.log('Enviando al backend:', data); // Para debugging
+    
     const res = await api.put<Trabajador>(`/trabajadores/${id}`, data);
     return res.data;
   },
-
   // Eliminar un trabajador
   async delete(id: number): Promise<void> {
     await api.delete(`/trabajadores/${id}`);
