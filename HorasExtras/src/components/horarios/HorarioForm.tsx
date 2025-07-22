@@ -54,21 +54,32 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
 
   // Calcular intensidad horaria automáticamente
   useEffect(() => {
-    if (formData.horaInicio && formData.horaFin) {
-      const inicio = new Date(`2000-01-01T${formData.horaInicio}`);
-      const fin = new Date(`2000-01-01T${formData.horaFin}`);
-      
-      let diffMs = fin.getTime() - inicio.getTime();
-      
-      // Si el horario pasa a través de medianoche
-      if (diffMs < 0) {
-        diffMs += 24 * 60 * 60 * 1000; // Agregar 24 horas
-      }
-      
-      const diffHours = diffMs / (1000 * 60 * 60);
-      setFormData(prev => ({ ...prev, intensidadHoraria: Math.round(diffHours * 10) / 10 }));
+  if (formData.horaInicio && formData.horaFin) {
+    const inicio = new Date(`2000-01-01T${formData.horaInicio}`);
+    const fin = new Date(`2000-01-01T${formData.horaFin}`);
+    
+    let diffMs = fin.getTime() - inicio.getTime();
+
+    // Si el horario pasa a través de medianoche
+    if (diffMs < 0) {
+      diffMs += 24 * 60 * 60 * 1000;
     }
-  }, [formData.horaInicio, formData.horaFin]);
+
+    let diffHours = diffMs / (1000 * 60 * 60);
+
+    // 👇 Aquí restás las 2 horas del almuerzo
+    diffHours -= 2;
+
+    // Asegurate de que no sea negativo (en caso de error)
+    diffHours = Math.max(0, diffHours);
+
+    setFormData(prev => ({
+      ...prev,
+      intensidadHoraria: Math.round(diffHours * 10) / 10
+    }));
+  }
+}, [formData.horaInicio, formData.horaFin]);
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

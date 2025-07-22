@@ -12,7 +12,7 @@ import "../../styles/components/registros/RegistroForm.css";
 
 interface Props {
   onSuccess: () => void;
-  fechaInicial?: string; // 👈 Nueva prop para fecha inicial
+  fechaInicial?: string;
 }
 
 const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
@@ -24,21 +24,19 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     Trabajador_ID: 0,
     Centro_ID: "",
     Nombr_Centro: "",
-    Fecha: fechaInicial || new Date().toISOString().split("T")[0], // 👈 Usar fecha inicial si está disponible
+    Fecha: fechaInicial || new Date().toISOString().split("T")[0],
     Hora_Ingreso: "08:00",
     Hora_Salida: "17:00",
     Tiempo_Almuerzo: "01:00",
-    // 👇 Nombres corregidos para coincidir con la interfaz (camelCase)
     desplazamientoIda: "",
     desplazamientoRegreso: "",
   });
 
-  // 👇 Actualizar fecha cuando cambie fechaInicial
   useEffect(() => {
     if (fechaInicial) {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        Fecha: fechaInicial
+        Fecha: fechaInicial,
       }));
     }
   }, [fechaInicial]);
@@ -60,6 +58,18 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     cargarDatos();
   }, []);
 
+  const convertirATimeSpan = (valor: string): string => {
+    const parts = valor.trim().split(":");
+    if (parts.length === 1 && /^\d+$/.test(parts[0])) {
+      return `00:${parts[0].padStart(2, "0")}:00`;
+    } else if (parts.length === 2) {
+      return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}:00`;
+    } else if (parts.length === 3) {
+      return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}:${parts[2].padStart(2, "0")}`;
+    }
+    return "";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -77,12 +87,11 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
       const payload: RegistroInputDto = {
         ...formData,
         Tiempo_Almuerzo: normalizarHora(formData.Tiempo_Almuerzo),
-        // 👇 Solo incluir desplazamiento si tiene valor (nombres corregidos)
-        desplazamientoIda: formData.desplazamientoIda?.trim() 
-          ? normalizarHora(formData.desplazamientoIda) 
+        desplazamientoIda: formData.desplazamientoIda?.trim()
+          ? convertirATimeSpan(formData.desplazamientoIda)
           : undefined,
-        desplazamientoRegreso: formData.desplazamientoRegreso?.trim() 
-          ? normalizarHora(formData.desplazamientoRegreso) 
+        desplazamientoRegreso: formData.desplazamientoRegreso?.trim()
+          ? convertirATimeSpan(formData.desplazamientoRegreso)
           : undefined,
       };
 
@@ -111,7 +120,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     }));
   };
 
-  const handleTrabajadorChange = (trabajadorId: number, trabajador?: Trabajador) => {
+  const handleTrabajadorChange = (trabajadorId: number) => {
     setFormData((prev) => ({
       ...prev,
       Trabajador_ID: trabajadorId,
@@ -119,7 +128,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
   };
 
   const handleCentroChange = (centroId: string) => {
-    const centroSeleccionado = centros.find(c => c.id === centroId);
+    const centroSeleccionado = centros.find((c) => c.id === centroId);
     setFormData((prev) => ({
       ...prev,
       Centro_ID: centroId,
@@ -131,24 +140,27 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     <div className="registros-form-container">
       <h3>Crear Nuevo Registro</h3>
       {fechaInicial && (
-        <div style={{ 
-          background: 'linear-gradient(135deg, #43e97b, #38f9d7)', 
-          color: 'white', 
-          padding: '10px 15px', 
-          borderRadius: '8px', 
-          marginBottom: '20px',
-          textAlign: 'center',
-          fontWeight: '600'
-        }}>
-          📅 Fecha preseleccionada: {new Date(fechaInicial).toLocaleDateString('es-ES', { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #43e97b, #38f9d7)',
+            color: 'white',
+            padding: '10px 15px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            textAlign: 'center',
+            fontWeight: '600',
+          }}
+        >
+          📅 Fecha preseleccionada:{" "}
+          {new Date(fechaInicial).toLocaleDateString("es-ES", {
+            weekday: "long",
+            year: "numeric",
+            month: "long",
+            day: "numeric",
           })}
         </div>
       )}
-      
+
       <form onSubmit={handleSubmit} className="registros-form">
         <div className="form-row">
           <div className="form-group">
@@ -232,44 +244,51 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           </div>
         </div>
 
-        {/* 👇 Nueva sección para desplazamientos */}
-        <div className="form-section-header" style={{ 
-          marginTop: '25px',
-          marginBottom: '15px',
-          padding: '10px 0',
-          borderTop: '2px solid #e1e8ed',
-          color: '#666'
-        }}>
-          <h4 style={{ margin: 0, fontSize: '1.1rem' }}>🚗 Tiempos de Desplazamiento (Opcional)</h4>
-          <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem', color: '#888' }}>
+        {/* 🚗 Desplazamientos */}
+        <div
+          className="form-section-header"
+          style={{
+            marginTop: "25px",
+            marginBottom: "15px",
+            padding: "10px 0",
+            borderTop: "2px solid #e1e8ed",
+            color: "#666",
+          }}
+        >
+          <h4 style={{ margin: 0, fontSize: "1.1rem" }}>
+            🚗 Tiempos de Desplazamiento (Opcional)
+          </h4>
+          <p
+            style={{ margin: "5px 0 0 0", fontSize: "0.9rem", color: "#888" }}
+          >
             Si el trabajador tiene tiempo de desplazamiento, ingrésalo aquí
           </p>
         </div>
 
         <div className="form-row">
           <div className="form-group">
-            <label>Desplazamiento Ida (Opcional)</label>
+            <label>Desplazamiento Ida</label>
             <input
-              type="time"
+              type="text"
               value={formData.desplazamientoIda || ""}
               onChange={(e) => handleInputChange("desplazamientoIda", e.target.value)}
-              placeholder="HH:MM"
+              placeholder="Ej: 00:20, 1:15, 45"
             />
-            <small style={{ color: '#666', fontSize: '0.8rem' }}>
-              Tiempo adicional de viaje al lugar de trabajo
+            <small style={{ color: "#666", fontSize: "0.8rem" }}>
+              Tiempo de ida (formato HH:mm o solo minutos)
             </small>
           </div>
 
           <div className="form-group">
-            <label>Desplazamiento Regreso (Opcional)</label>
+            <label>Desplazamiento Regreso</label>
             <input
-              type="time"
+              type="text"
               value={formData.desplazamientoRegreso || ""}
               onChange={(e) => handleInputChange("desplazamientoRegreso", e.target.value)}
-              placeholder="HH:MM"
+              placeholder="Ej: 00:30, 1:00, 20"
             />
-            <small style={{ color: '#666', fontSize: '0.8rem' }}>
-              Tiempo adicional de regreso del trabajo
+            <small style={{ color: "#666", fontSize: "0.8rem" }}>
+              Tiempo de regreso (formato HH:mm o solo minutos)
             </small>
           </div>
         </div>

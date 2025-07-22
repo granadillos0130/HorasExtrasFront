@@ -24,18 +24,7 @@ const CentroEstadisticasModal: React.FC<Props> = ({ visible, onClose, data }) =>
     workbook.modified = new Date();
 
 
-    try {
-      // Si tienes el logo como archivo, puedes cargarlo así:
-      const logoBuffer = await fetch('/path/to/your/logo.png').then(res => res.arrayBuffer());
-      const logoId = workbook.addImage({
-        buffer: logoBuffer,
-        extension: 'png',
-      });
-      
-      // Por ahora, crearemos un diseño sin imagen física pero con colores corporativos
-    } catch (error) {
-      console.warn('No se pudo cargar el logo');
-    }
+   
 
     // Configurar ancho de columnas
     worksheet.columns = [
@@ -86,7 +75,7 @@ const CentroEstadisticasModal: React.FC<Props> = ({ visible, onClose, data }) =>
 
     worksheet.mergeCells('A4:G4');
     const horarioCell = worksheet.getCell('A4');
-    horarioCell.value = `Horario: ${data.horaInicio} - ${data.horaFinal} | Total trabajadores: ${data.totalTrabajadores} | Mano de obra total: ${data.manoDeObraTotal} horas`;
+    horarioCell.value = `Fecha de inicio y final: ${data.fechaInicio} - ${data.fechaFinal} | Total trabajadores: ${data.totalTrabajadores} | Mano de obra total: ${data.manoDeObraTotal} horas`;
     horarioCell.font = { 
       size: 12, 
       italic: true, 
@@ -298,7 +287,7 @@ const CentroEstadisticasModal: React.FC<Props> = ({ visible, onClose, data }) =>
       <div className="modal-content">
         <h2>📊 Estadísticas - {data.centroNombre}</h2>
         <p><strong>ID:</strong> {data.centroId}</p>
-        <p><strong>Horario:</strong> {data.horaInicio} - {data.horaFinal}</p>
+        <p><strong>Fecha inicio y final:</strong> {data.fechaInicio} - {data.fechaFinal}</p>
         <p><strong>Total trabajadores:</strong> {data.totalTrabajadores}</p>
         <p><strong>Mano de obra total:</strong> {data.manoDeObraTotal} horas</p>
 

@@ -1,9 +1,11 @@
 export interface Centro {
   id: string;
   nombreCentro: string;
-  fechaHoraInicio?: string; // opcional
+  fechaInicio: string;
+  fechaFinal?: string | null;
   clienteId: string;
 }
+
 
 export interface EstadisticaTrabajador {
   trabajadorId: number;
@@ -19,8 +21,8 @@ export interface EstadisticaTrabajador {
 export interface CentroEstadisticas {
   centroId: string;
   centroNombre: string;
-  horaInicio: string;
-  horaFinal: string;
+  fechaInicio: string;
+  fechaFinal: string;
   totalTrabajadores: number;
   manoDeObraTotal: number;
   trabajadores: EstadisticaTrabajador[];

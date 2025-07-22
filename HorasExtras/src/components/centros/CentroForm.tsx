@@ -13,7 +13,8 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => { // ✅ valor
   const [formData, setFormData] = useState<Centro>({
     id: "",
     nombreCentro: "",
-    fechaHoraInicio: "", // opcional
+    fechaInicio: "",
+    fechaFinal:"", // opcional
     clienteId: ""
   });
 
@@ -38,41 +39,48 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => { // ✅ valor
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
 
-    if (!formData.id.trim() || !formData.nombreCentro.trim()) {
-      setError("Por favor, complete los campos obligatorios.");
-      return;
+  if (!formData.id.trim() || !formData.nombreCentro.trim()) {
+    setError("Por favor, complete los campos obligatorios.");
+    return;
+  }
+
+  setLoading(true);
+  setError(null);
+
+  try {
+    const payload = {
+  ...formData,
+  fechaFinal: formData.fechaFinal?.trim() === "" ? null : formData.fechaFinal
+};
+
+
+    await centrosService.crear(payload);
+    alert("Centro creado con éxito ✅");
+    onSuccess();
+    setFormData({
+      id: "",
+      nombreCentro: "",
+      fechaInicio: "",
+      fechaFinal: "",
+      clienteId: ""
+    });
+  } catch (err: unknown) {
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "response" in err &&
+      (err as { response?: { status?: number } }).response?.status === 409
+    ) {
+      setError("Ya existe un centro con ese ID.");
+    } else {
+      setError("Error al crear el centro.");
     }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      await centrosService.crear(formData);
-      alert("Centro creado con éxito ✅");
-      onSuccess();
-      setFormData({
-        id: "",
-        nombreCentro: "",
-        fechaHoraInicio: "",
-        clienteId: ""
-      });
-    } catch (err: unknown) { // ✅ cambiamos any por unknown
-      if (
-        typeof err === "object" &&
-        err !== null &&
-        "response" in err &&
-        (err as { response?: { status?: number } }).response?.status === 409
-      ) {
-        setError("Ya existe un centro con ese ID.");
-      } else {
-        setError("Error al crear el centro.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   return (
@@ -118,18 +126,30 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => { // ✅ valor
           </div>
 
           {/* Fecha y hora de inicio opcional */}
-          <div className="form-row">
-            <div className="form-group full-width">
-              <label>Fecha y Hora de Inicio (opcional)</label>
-              <input
-                type="datetime-local"
-                name="fechaHoraInicio"
-                value={formData.fechaHoraInicio || ""}
-                onChange={handleChange}
-                disabled={loading}
-              />
-            </div>
-          </div>
+         <div className="form-row">
+  <div className="form-group">
+    <label>Fecha de Inicio</label>
+    <input
+      type="date"
+      name="fechaInicio"
+      value={formData.fechaInicio}
+      onChange={handleChange}
+      disabled={loading}
+      required
+    />
+  </div>
+  <div className="form-group">
+    <label>Fecha Final (opcional)</label>
+    <input
+      type="date"
+      name="fechaFinal"
+      value={formData.fechaFinal || ""}
+      onChange={handleChange}
+      disabled={loading}
+    />
+  </div>
+</div>
+
 
           {/* Cliente */}
           <div className="form-row">
