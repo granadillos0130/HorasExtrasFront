@@ -15,9 +15,8 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 
 import { estadisticasService } from "../api/estadisticasService";
 import type { Centro, TrabajadorEstadistica } from "../types/estadisticas";
+import CentroBuscador from "../components/shared/CentroBuscador"; // 🚀 Importar el componente
 import "../styles/pages/EstadisticasPage.css";
-
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
 const EstadisticasPage: React.FC = () => {
   const [centros, setCentros] = useState<Centro[]>([]);
@@ -26,9 +25,9 @@ const EstadisticasPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [loadingCentros, setLoadingCentros] = useState(true);
 
-  // 🚀 CAMBIO: nuevos estados para el buscador
-  const [busqueda, setBusqueda] = useState<string>("");
-  const [mostrarResultados, setMostrarResultados] = useState<boolean>(false);
+  // 🗑️ ELIMINAR: estados del buscador manual ya no son necesarios
+  // const [busqueda, setBusqueda] = useState<string>("");
+  // const [mostrarResultados, setMostrarResultados] = useState<boolean>(false);
 
   useEffect(() => {
     const cargarCentros = async () => {
@@ -60,6 +59,11 @@ const EstadisticasPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 🚀 NUEVO: Handler para el CentroBuscador
+  const handleCentroChange = (selectedCentroId: string) => {
+    setCentroId(selectedCentroId);
   };
 
   const chartData = {
@@ -99,55 +103,53 @@ const EstadisticasPage: React.FC = () => {
   };
 
   const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: "top" as const,
-      labels: {
-        usePointStyle: true,
-        padding: 20,
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: "top" as const,
+        labels: {
+          usePointStyle: true,
+          padding: 20,
+          font: {
+            size: 12,
+            weight: 600,
+          },
+        },
+      },
+      title: {
+        display: true,
+        text: "Distribución de Horas por Trabajador",
         font: {
-          size: 12,
+          size: 16,
           weight: 600,
+        },
+        padding: 20,
+      },
+      datalabels: {
+        color: "#000",
+        anchor: "end",
+        align: "end",
+        font: {
+          size: 11,
+          weight: "bold",
+        },
+        formatter: (value: number) => {
+          return value.toFixed(1);
         },
       },
     },
-    title: {
-      display: true,
-      text: "Distribución de Horas por Trabajador",
-      font: {
-        size: 16,
-        weight: 600,
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { font: { size: 11, weight: 500 } },
       },
-      padding: 20,
-    },
-    // 🚀 Aquí activamos los labels
-    datalabels: {
-      color: "#000",
-      anchor: "end",
-      align: "end",
-      font: {
-        size: 11,
-        weight: "bold",
-      },
-      formatter: (value: number) => {
-        return value.toFixed(1);
+      y: {
+        grid: { color: "rgba(0,0,0,0.1)" },
+        ticks: { font: { size: 11, weight: 500 } },
       },
     },
-  },
-  scales: {
-    x: {
-      grid: { display: false },
-      ticks: { font: { size: 11, weight: 500 } },
-    },
-    y: {
-      grid: { color: "rgba(0,0,0,0.1)" },
-      ticks: { font: { size: 11, weight: 500 } },
-    },
-  },
-};
-
+  };
 
   const getSelectedCentroName = () => {
     const centro = centros.find(c => c.id === centroId);
@@ -203,63 +205,35 @@ const EstadisticasPage: React.FC = () => {
           </div>
 
           <div className="estadisticas-toolbar">
-            {/* 🚀 CAMBIO: Buscador dinámico */}
-            <div className="form-group buscador-centros">
-              <label className="form-label">Centro de Trabajo</label>
-              <input
-                type="text"
-                className="form-input"
+            {/* 🚀 REEMPLAZAR: Usar CentroBuscador en lugar del buscador manual */}
+            {loadingCentros ? (
+              <div className="form-group">
+                <label className="form-label">Centro de Trabajo</label>
+                <div className="loading-input">🔄 Cargando centros...</div>
+              </div>
+            ) : (
+              <CentroBuscador
+                centros={centros}
+                value={centroId}
+                onChange={handleCentroChange}
                 placeholder="Buscar por nombre o ID..."
-                value={busqueda}
-                onChange={e => {
-                  setBusqueda(e.target.value);
-                  setMostrarResultados(true);
-                }}
-                onFocus={() => setMostrarResultados(true)}
+                label="Centro de Trabajo"
+                required={true}
+                showSelectedInfo={true}
               />
-              {mostrarResultados && (
-                <div className="resultados-dropdown">
-                  {centros
-                    .filter(c =>
-                      c.nombreCentro.toLowerCase().includes(busqueda.toLowerCase()) ||
-                      c.id.toLowerCase().includes(busqueda.toLowerCase())
-                    )
-                    .slice(0, 10)
-                    .map(c => (
-                      <div
-                        key={c.id}
-                        className="resultado-item"
-                        onClick={() => {
-                          setCentroId(c.id);
-                          setBusqueda(c.nombreCentro);
-                          setMostrarResultados(false);
-                        }}
-                      >
-                        🏢 <strong>{c.nombreCentro}</strong> <small>({c.id})</small>
-                      </div>
-                    ))}
-                  {centros.filter(c =>
-                    c.nombreCentro.toLowerCase().includes(busqueda.toLowerCase()) ||
-                    c.id.toLowerCase().includes(busqueda.toLowerCase())
-                  ).length === 0 && (
-                    <div className="resultado-item no-resultados">
-                      No se encontraron centros.
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            )}
 
             <button
               onClick={buscarEstadisticas}
               className="btn-search"
-              disabled={loading || centroId === ""}
+              disabled={loading || centroId === "" || loadingCentros}
             >
               {loading ? "🔄 Cargando..." : "📊 Generar Estadísticas"}
             </button>
           </div>
         </div>
 
+        {/* Resto del componente permanece igual... */}
         {loading && (
           <div className="results-card">
             <div className="loading-message">
