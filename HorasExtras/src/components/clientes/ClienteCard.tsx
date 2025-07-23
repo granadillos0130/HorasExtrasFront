@@ -52,7 +52,7 @@ const ClienteCard: React.FC<Props> = ({ cliente, onEditar, onEliminar }) => {
     const centrosFilt = centros.filter(centro => 
       centro.nombreCentro.toLowerCase().includes(terminoLower) ||
       centro.id.toLowerCase().includes(terminoLower) ||
-      centro.fechaHoraInicio?.toLowerCase().includes(terminoLower)
+      centro.fechaInicio?.toLowerCase().includes(terminoLower)
     );
     setCentrosFiltrados(centrosFilt);
   };
@@ -159,7 +159,7 @@ const ClienteCard: React.FC<Props> = ({ cliente, onEditar, onEliminar }) => {
                       <h5>{centro.nombreCentro}</h5>
                       <div className="centro-details">
                         <span className="centro-fecha">
-                          📅 {centro.fechaHoraInicio}
+                          📅 {centro.fechaInicio}
                         </span>
                         <span className="centro-id">
                           🔢 {centro.id}

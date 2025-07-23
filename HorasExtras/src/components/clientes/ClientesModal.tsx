@@ -25,7 +25,7 @@ const CentrosClienteModal: React.FC<Props> = ({ visible, onClose, centros, nombr
           <ul>
             {centros.map((centro) => (
               <li key={centro.id}>
-                <strong>{centro.nombreCentro}</strong> - {centro.fechaHoraInicio} - {centro.id}
+                <strong>{centro.nombreCentro}</strong> - {centro.fechaInicio} - {centro.id}
               </li>
             ))}
           </ul>
