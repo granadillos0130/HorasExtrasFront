@@ -46,14 +46,6 @@ const DashboardPage: React.FC = () => {
       path: "/horarios",
       className: "horarios"
     },
-    {
-  id: "estadisticas-proyecto",
-  title: "Estadísticas por Proyecto",
-  description: "Resumen mensual de trabajadores por orden de compra",
-  icon: "📁",
-  path: "/estadisticas/proyecto",
-  className: "estadisticas"
-},
 {
   id:"clientes",
   title:"Clientes de trabajo",

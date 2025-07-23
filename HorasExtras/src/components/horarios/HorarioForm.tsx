@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { trabajadoresService } from "../../api/trabajadoresService";
 import { horariosService } from "../../api/horariosService";
+import TrabajadorBuscador from "../shared/TrabajadorBuscador";
 import type { Trabajador } from "../../types/trabajadores";
 import type { HorarioDto } from "../../types/horarios";
 import "../../styles/components/horario/HorariosForm.css"
@@ -25,6 +26,7 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [loadingTrabajadores, setLoadingTrabajadores] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [trabajadorSeleccionado, setTrabajadorSeleccionado] = useState<Trabajador | null>(null);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -54,32 +56,31 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
 
   // Calcular intensidad horaria automáticamente
   useEffect(() => {
-  if (formData.horaInicio && formData.horaFin) {
-    const inicio = new Date(`2000-01-01T${formData.horaInicio}`);
-    const fin = new Date(`2000-01-01T${formData.horaFin}`);
-    
-    let diffMs = fin.getTime() - inicio.getTime();
+    if (formData.horaInicio && formData.horaFin) {
+      const inicio = new Date(`2000-01-01T${formData.horaInicio}`);
+      const fin = new Date(`2000-01-01T${formData.horaFin}`);
+      
+      let diffMs = fin.getTime() - inicio.getTime();
 
-    // Si el horario pasa a través de medianoche
-    if (diffMs < 0) {
-      diffMs += 24 * 60 * 60 * 1000;
+      // Si el horario pasa a través de medianoche
+      if (diffMs < 0) {
+        diffMs += 24 * 60 * 60 * 1000;
+      }
+
+      let diffHours = diffMs / (1000 * 60 * 60);
+
+      // 👇 Aquí restás las 2 horas del almuerzo
+      diffHours -= 2;
+
+      // Asegurate de que no sea negativo (en caso de error)
+      diffHours = Math.max(0, diffHours);
+
+      setFormData(prev => ({
+        ...prev,
+        intensidadHoraria: Math.round(diffHours * 10) / 10
+      }));
     }
-
-    let diffHours = diffMs / (1000 * 60 * 60);
-
-    // 👇 Aquí restás las 2 horas del almuerzo
-    diffHours -= 2;
-
-    // Asegurate de que no sea negativo (en caso de error)
-    diffHours = Math.max(0, diffHours);
-
-    setFormData(prev => ({
-      ...prev,
-      intensidadHoraria: Math.round(diffHours * 10) / 10
-    }));
-  }
-}, [formData.horaInicio, formData.horaFin]);
-
+  }, [formData.horaInicio, formData.horaFin]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,6 +140,7 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
         horaFin: "17:00",
         intensidadHoraria: 8
       });
+      setTrabajadorSeleccionado(null);
     } catch (err) {
       setError("Error al crear los horarios. Verifique que no existan horarios duplicados para este trabajador en los días seleccionados.");
       console.error("Error:", err);
@@ -155,6 +157,15 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
     setError(null);
   };
 
+  const handleTrabajadorChange = (trabajadorId: number, trabajador?: Trabajador) => {
+    setFormData(prev => ({
+      ...prev,
+      trabajadorId
+    }));
+    setTrabajadorSeleccionado(trabajador || null);
+    setError(null);
+  };
+
   const handleDayToggle = (dia: string) => {
     setFormData(prev => {
       const diasSeleccionados = prev.diasSeleccionados.includes(dia)
@@ -167,11 +178,6 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
       };
     });
     setError(null);
-  };
-
-  const getSelectedWorkerName = () => {
-    const worker = trabajadores.find(t => t.id === formData.trabajadorId);
-    return worker ? worker.nombre : "";
   };
 
   const selectAllDays = () => {
@@ -216,28 +222,18 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
           <form onSubmit={handleSubmit} className="horario-form">
             <div className="form-section">
               <h3>Trabajador</h3>
-              <div className="form-group">
-                <label className="form-label">Seleccionar Trabajador</label>
-                <select
-                  value={formData.trabajadorId}
-                  onChange={(e) => handleChange("trabajadorId", Number(e.target.value))}
-                  className="form-select"
-                  disabled={loadingTrabajadores}
-                  required
-                >
-                  <option value={0}>
-                    {loadingTrabajadores ? "Cargando trabajadores..." : "Seleccione un trabajador"}
-                  </option>
-                  {trabajadores.map(t => (
-                    <option key={t.id} value={t.id}>{t.nombre}</option>
-                  ))}
-                </select>
-                {getSelectedWorkerName() && (
-                  <div className="selected-worker">
-                    👤 Trabajador seleccionado: <strong>{getSelectedWorkerName()}</strong>
-                  </div>
-                )}
-              </div>
+              
+              {/* Reemplazamos el select tradicional con TrabajadorBuscador */}
+              <TrabajadorBuscador
+                trabajadores={trabajadores}
+                value={formData.trabajadorId}
+                onChange={handleTrabajadorChange}
+                placeholder={loadingTrabajadores ? "Cargando trabajadores..." : "Buscar trabajador por nombre o cédula..."}
+                label="Seleccionar Trabajador"
+                disabled={loadingTrabajadores || loading}
+                required={true}
+                showSelectedInfo={true}
+              />
             </div>
 
             <div className="form-section">

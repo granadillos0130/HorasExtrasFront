@@ -3,6 +3,7 @@ import { horariosService } from "../api/horariosService";
 import { trabajadoresService } from "../api/trabajadoresService";
 import { useNavigate } from "react-router-dom";
 import HorariosTable from "../components/horarios/HorariosTable";
+import TrabajadorBuscador from "../components/shared/TrabajadorBuscador";
 import type { Horario } from "../types/horarios";
 import type { Trabajador } from "../types/trabajadores";
 import "../styles/pages/HorariosPage.css";
@@ -11,6 +12,7 @@ const HorariosPage: React.FC = () => {
   const [horarios, setHorarios] = useState<Horario[]>([]);
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
   const [filtroTrabajador, setFiltroTrabajador] = useState<number>(0);
+  const [trabajadorSeleccionado, setTrabajadorSeleccionado] = useState<Trabajador | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -89,16 +91,23 @@ const HorariosPage: React.FC = () => {
     cargarDatos();
   }, []);
 
-  const handleFiltroChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const id = Number(e.target.value);
-    setFiltroTrabajador(id);
-    cargarPorTrabajador(id);
+  // Manejador para el cambio de filtro de trabajador
+  const handleFiltroTrabajadorChange = (trabajadorId: number, trabajador?: Trabajador) => {
+    setFiltroTrabajador(trabajadorId);
+    setTrabajadorSeleccionado(trabajador || null);
+    cargarPorTrabajador(trabajadorId);
+  };
+
+  // Función para limpiar el filtro
+  const limpiarFiltro = () => {
+    setFiltroTrabajador(0);
+    setTrabajadorSeleccionado(null);
+    cargarTodos();
   };
 
   const getSelectedWorkerName = () => {
     if (filtroTrabajador === 0) return "Todos los trabajadores";
-    const worker = trabajadores.find(t => t.id === filtroTrabajador);
-    return worker ? worker.nombre : "Trabajador seleccionado";
+    return trabajadorSeleccionado ? trabajadorSeleccionado.nombre : "Trabajador seleccionado";
   };
 
   const getStats = () => {
@@ -156,19 +165,32 @@ const HorariosPage: React.FC = () => {
             </div>
 
             <div className="filter-group">
-              <label className="filter-label">Filtrar por Trabajador</label>
-              <select 
-                value={filtroTrabajador} 
-                onChange={handleFiltroChange}
-                className="filter-select"
-              >
-                <option value={0}>Todos los trabajadores</option>
-                {trabajadores.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.nombre}
-                  </option>
-                ))}
-              </select>
+              {/* Reemplazamos el select tradicional con TrabajadorBuscador */}
+              <div className="filter-container">
+                <TrabajadorBuscador
+                  trabajadores={trabajadores}
+                  value={filtroTrabajador}
+                  onChange={handleFiltroTrabajadorChange}
+                  placeholder="Buscar trabajador para filtrar..."
+                  label="Filtrar por Trabajador"
+                  disabled={loading}
+                  required={false}
+                  showSelectedInfo={false}
+                  className="filter-trabajador"
+                />
+                
+                {/* Botón para limpiar filtro */}
+                {filtroTrabajador !== 0 && (
+                  <button
+                    type="button"
+                    className="btn-clear-filter"
+                    onClick={limpiarFiltro}
+                    title="Mostrar todos los trabajadores"
+                  >
+                    🔄 Mostrar Todos
+                  </button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -206,6 +228,14 @@ const HorariosPage: React.FC = () => {
                   {horarios.length} horario{horarios.length !== 1 ? 's' : ''}
                 </span>
               </h3>
+              
+              {/* Indicador visual del filtro activo */}
+              {filtroTrabajador !== 0 && trabajadorSeleccionado && (
+                <div className="active-filter-indicator">
+                  🔍 Filtrando por: <strong>{trabajadorSeleccionado.nombre}</strong>
+                  <span className="filter-meta">CC: {trabajadorSeleccionado.cedula}</span>
+                </div>
+              )}
             </div>
 
             {horarios.length === 0 ? (
@@ -215,15 +245,25 @@ const HorariosPage: React.FC = () => {
                 <p>
                   {filtroTrabajador === 0 
                     ? "Aún no se han creado horarios en el sistema. Comienza asignando horarios a tus trabajadores."
-                    : "Este trabajador no tiene horarios asignados. Puedes crear uno nuevo."
+                    : `${trabajadorSeleccionado?.nombre || 'Este trabajador'} no tiene horarios asignados. Puedes crear uno nuevo.`
                   }
                 </p>
-                <button
-                  className="empty-state-action"
-                  onClick={() => navigate("/horarios/crear")}
-                >
-                  ➕ Crear Primer Horario
-                </button>
+                <div className="empty-state-actions">
+                  <button
+                    className="empty-state-action"
+                    onClick={() => navigate("/horarios/crear")}
+                  >
+                    ➕ Crear Primer Horario
+                  </button>
+                  {filtroTrabajador !== 0 && (
+                    <button
+                      className="empty-state-action secondary"
+                      onClick={limpiarFiltro}
+                    >
+                      👀 Ver Todos los Horarios
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               <HorariosTable 
