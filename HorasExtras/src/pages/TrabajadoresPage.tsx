@@ -6,22 +6,11 @@ import TrabajadorDetail from "../components/trabajadores/TrabajadorDetailModal";
 import TrabajadorBuscador from "../components/shared/TrabajadorBuscador";
 import { trabajadoresService } from "../api/trabajadoresService";
 import "../styles/pages/TrabajadoresPage.css";
-import EpsForm from "../components/SeguridadEmpleado/epsForm";
-import ArlForm from "../components/SeguridadEmpleado/arlForm";
-import PensionForm from "../components/SeguridadEmpleado/PensionForm";
-import ClinicaForm from "../components/SeguridadEmpleado/ClinicaForm";
-import BancoForm from "../components/SeguridadEmpleado/BancoForm";
-import { epsService } from "../api/epsService";
-import { arlService } from "../api/arlService";
-import { pensionService } from "../api/pensionService";
-import { clinicaService } from "../api/clinicaService";
-import { bancoService } from "../api/bancoService";
 import type { Trabajador } from "../types/trabajadores";
 
 const TrabajadoresPage: React.FC = () => {
   const { trabajadores, loading, error, refetch } = useTrabajadores();
   const [showForm, setShowForm] = useState(false);
-  const [nuevoTrabajadorId, setNuevoTrabajadorId] = useState<number | null>(null);
   const [detalleId, setDetalleId] = useState<number | null>(null);
   const [mostrarSoloNoVigentes, setMostrarSoloNoVigentes] = useState(false);
   
@@ -31,8 +20,9 @@ const TrabajadoresPage: React.FC = () => {
   const [terminoBusqueda, setTerminoBusqueda] = useState<string>("");
 
   const handleCreated = (id: number) => {
-    setNuevoTrabajadorId(id);
+    // Ya no necesitamos setNuevoTrabajadorId porque todo se crea de una vez
     setShowForm(false);
+    refetch();
   };
 
   const handleDelete = async (id: number, nombre: string) => {
@@ -301,57 +291,6 @@ const TrabajadoresPage: React.FC = () => {
               trabajadorId={detalleId}
               onClose={() => setDetalleId(null)}
             />
-          )}
-
-          {nuevoTrabajadorId && (
-            <div className="extra-section">
-              <h2>Completar información para el trabajador #{nuevoTrabajadorId}</h2>
-
-              <EpsForm
-                trabajadorId={nuevoTrabajadorId}
-                onSave={async (data) => {
-                  await epsService.crear(data);
-                  alert("EPS registrada correctamente");
-                }}
-                onCancel={() => console.log("EPS cancelada")}
-              />
-
-              <ArlForm
-                trabajadorId={nuevoTrabajadorId}
-                onSave={async (data) => {
-                  await arlService.crear(data);
-                  alert("ARL registrada correctamente");
-                }}
-                onCancel={() => console.log("ARL cancelada")}
-              />
-
-              <PensionForm
-                trabajadorId={nuevoTrabajadorId}
-                onSave={async (data) => {
-                  await pensionService.crear(data);
-                  alert("Pensión registrada correctamente");
-                }}
-                onCancel={() => console.log("Pensión cancelada")}
-              />
-
-              <ClinicaForm
-                trabajadorId={nuevoTrabajadorId}
-                onSave={async (data) => {
-                  await clinicaService.crear(data);
-                  alert("Clínica registrada correctamente");
-                }}
-                onCancel={() => console.log("Clínica cancelada")}
-              />
-
-              <BancoForm
-                trabajadorId={nuevoTrabajadorId}
-                onSave={async (data) => {
-                  await bancoService.crear(data);
-                  alert("Banco registrado correctamente");
-                }}
-                onCancel={() => console.log("Banco cancelado")}
-              />
-            </div>
           )}
         </div>
       </div>
