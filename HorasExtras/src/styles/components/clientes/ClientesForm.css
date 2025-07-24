@@ -1,0 +1,484 @@
+/* src/styles/components/clientes/ClienteForm.css */
+/* Selectores específicos para evitar conflictos con otros CSS */
+
+/* Contenedor principal con clase específica */
+.cliente-form-container {
+  background: white;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-xl);
+  position: relative;
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  max-width: 500px;
+  width: 100%;
+  margin: 0 auto;
+  animation: slideInUp 0.5s ease;
+  /* Aislamiento para evitar conflictos de z-index */
+  isolation: isolate;
+}
+
+.cliente-form-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  padding: 2px;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-xl);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: xor;
+  -webkit-mask-composite: xor;
+  z-index: -1;
+}
+
+/* Formulario específico - más específico que .cliente-form global */
+.cliente-form-container .cliente-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  /* Reset de estilos que podrían venir de otros CSS */
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+/* Título con selector específico */
+.cliente-form-container .cliente-form-title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0 0 var(--spacing-xl);
+  text-align: center;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+/* Grupos de campos con clase específica */
+.cliente-form-container .cliente-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-lg);
+  position: relative;
+  /* Reset para prevenir herencia */
+  align-items: stretch;
+  justify-content: flex-start;
+}
+
+/* Etiquetas con selector específico */
+.cliente-form-container .cliente-form-label {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: var(--spacing-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  /* Reset de estilos de label globales */
+  cursor: default;
+  user-select: none;
+}
+
+.cliente-form-container .cliente-form-label::before {
+  content: '';
+  width: 4px;
+  height: 16px;
+  background: var(--gradient-primary);
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+}
+
+.cliente-form-container .cliente-form-label .required-asterisk {
+  color: var(--danger-color);
+  font-weight: bold;
+  margin-left: auto;
+}
+
+/* Inputs con selector muy específico */
+.cliente-form-container .cliente-form input[type="text"].cliente-form-input {
+  padding: 18px 20px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  font-size: 1rem;
+  font-weight: 500;
+  background: white;
+  color: var(--text-color);
+  transition: all var(--transition-normal);
+  box-shadow: var(--shadow-sm);
+  /* Reset importante para prevenir conflictos */
+  font-family: inherit;
+  line-height: normal;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.cliente-form-container .cliente-form input[type="text"].cliente-form-input:focus {
+  outline: none;
+  border-color: var(--primary-green);
+  background: var(--light-green);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1), var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.cliente-form-container .cliente-form input[type="text"].cliente-form-input:disabled {
+  background: var(--background-secondary);
+  color: var(--text-light);
+  cursor: not-allowed;
+  border-color: var(--border-light);
+  /* Prevenir transformaciones en estado disabled */
+  transform: none;
+}
+
+/* Estados específicos con selectores únicos */
+.cliente-form-container .cliente-form-group.disabled::after {
+  content: '🔒 Campo bloqueado';
+  position: absolute;
+  right: 0;
+  top: 0;
+  background: var(--gradient-orange);
+  color: white;
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-md);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: var(--shadow-sm);
+  z-index: 2;
+}
+
+/* Placeholder específico */
+.cliente-form-container .cliente-form input[type="text"].cliente-form-input::placeholder {
+  color: var(--text-secondary);
+  font-style: italic;
+  opacity: 0.7;
+  transition: opacity var(--transition-fast);
+}
+
+.cliente-form-container .cliente-form input[type="text"].cliente-form-input:focus::placeholder {
+  opacity: 0.5;
+  transform: translateX(4px);
+}
+
+/* Contenedor de botones específico */
+.cliente-form-container .cliente-form-buttons {
+  display: flex;
+  gap: var(--spacing-md);
+  justify-content: center;
+  margin-top: var(--spacing-xl);
+  padding-top: var(--spacing-lg);
+  border-top: 1px solid var(--border-color);
+  /* Reset para prevenir herencia */
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+/* Botones con selectores muy específicos */
+.cliente-form-container .cliente-form-buttons .cliente-form-button {
+  padding: 15px 30px;
+  border-radius: var(--radius-lg);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: none;
+  position: relative;
+  overflow: hidden;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm);
+  /* Reset importante */
+  font-family: inherit;
+  text-decoration: none;
+  vertical-align: baseline;
+}
+
+/* Efecto de ondas específico */
+.cliente-form-container .cliente-form-buttons .cliente-form-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transition: all var(--transition-fast);
+  transform: translate(-50%, -50%);
+}
+
+.cliente-form-container .cliente-form-buttons .cliente-form-button:active::before {
+  width: 200px;
+  height: 200px;
+}
+
+/* Botón Guardar específico */
+.cliente-form-container .cliente-form-buttons .cliente-form-button.submit-button {
+  background: var(--gradient-primary);
+  color: white;
+  box-shadow: var(--shadow-md);
+}
+
+.cliente-form-container .cliente-form-buttons .cliente-form-button.submit-button:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 15px 30px rgba(34, 197, 94, 0.3);
+}
+
+.cliente-form-container .cliente-form-buttons .cliente-form-button.submit-button::after {
+  content: '💾';
+  margin-left: var(--spacing-xs);
+}
+
+/* Botón Cancelar específico */
+.cliente-form-container .cliente-form-buttons .cliente-form-button.cancel-button {
+  background: white;
+  color: var(--text-color);
+  border: 2px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+}
+
+.cliente-form-container .cliente-form-buttons .cliente-form-button.cancel-button:hover:not(:disabled) {
+  background: var(--background-secondary);
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.cliente-form-container .cliente-form-buttons .cliente-form-button.cancel-button::after {
+  content: '✕';
+  margin-left: var(--spacing-xs);
+}
+
+/* Estado deshabilitado específico */
+.cliente-form-container .cliente-form-buttons .cliente-form-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* Mensajes específicos */
+.cliente-form-container .cliente-form-help {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  font-style: italic;
+  line-height: 1.4;
+  margin-top: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--background-secondary);
+  border-radius: var(--radius-md);
+  border-left: 3px solid var(--primary-green);
+}
+
+.cliente-form-container .cliente-form-error-message {
+  color: var(--danger-color);
+  font-size: 0.8rem;
+  margin-top: var(--spacing-xs);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  animation: slideInUp 0.3s ease;
+}
+
+.cliente-form-container .cliente-form-error-message::before {
+  content: '⚠️';
+}
+
+/* Estados de validación específicos */
+.cliente-form-container .cliente-form-group.valid .cliente-form-input {
+  border-color: var(--success-color);
+  background: linear-gradient(135deg, white 0%, #F0FDF4 100%);
+}
+
+.cliente-form-container .cliente-form-group.valid::after {
+  content: '✓';
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  color: var(--success-color);
+  font-weight: bold;
+  font-size: 1.2rem;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.cliente-form-container .cliente-form-group.error .cliente-form-input {
+  border-color: var(--danger-color);
+  background: linear-gradient(135deg, white 0%, #FEF2F2 100%);
+  animation: shake 0.4s ease-in-out;
+}
+
+/* Loading state específico */
+.cliente-form-container.loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.cliente-form-container.loading::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(2px);
+  border-radius: var(--radius-xl);
+  z-index: 10;
+}
+
+.cliente-form-container .cliente-form-loading-spinner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 4px solid var(--border-color);
+  border-top: 4px solid var(--primary-green);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  z-index: 11;
+}
+
+/* Modo modal específico */
+.cliente-form-container.modal {
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-xl);
+  max-width: 600px;
+  margin: 0;
+}
+
+.cliente-form-container.modal .cliente-form-title {
+  font-size: 2rem;
+  margin-bottom: var(--spacing-2xl);
+}
+
+/* Animaciones específicas para evitar conflictos */
+@keyframes clienteFormShake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+@keyframes clienteFormSlideInUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes clienteFormSpin {
+  from { transform: translate(-50%, -50%) rotate(0deg); }
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* Actualizamos las referencias a las animaciones */
+.cliente-form-container .cliente-form-group.error .cliente-form-input {
+  animation: clienteFormShake 0.4s ease-in-out;
+}
+
+.cliente-form-container .cliente-form-error-message {
+  animation: clienteFormSlideInUp 0.3s ease;
+}
+
+.cliente-form-container .cliente-form-loading-spinner {
+  animation: clienteFormSpin 1s linear infinite;
+}
+
+/* Responsive específico */
+@media (max-width: 768px) {
+  .cliente-form-container {
+    padding: var(--spacing-lg);
+    margin: 0 var(--spacing-md);
+    max-width: none;
+  }
+  
+  .cliente-form-container .cliente-form-title {
+    font-size: 1.5rem;
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  .cliente-form-container .cliente-form input[type="text"].cliente-form-input {
+    padding: 15px 18px;
+    font-size: 16px; /* Evita zoom en iOS */
+  }
+  
+  .cliente-form-container .cliente-form-buttons {
+    flex-direction: column;
+    gap: var(--spacing-sm);
+  }
+  
+  .cliente-form-container .cliente-form-buttons .cliente-form-button {
+    width: 100%;
+    padding: 18px;
+    min-width: auto;
+  }
+  
+  .cliente-form-container .cliente-form-group.disabled::after {
+    position: static;
+    display: block;
+    text-align: center;
+    margin-top: var(--spacing-xs);
+    border-radius: var(--radius-lg);
+  }
+}
+
+@media (max-width: 480px) {
+  .cliente-form-container {
+    padding: var(--spacing-md);
+    border-radius: var(--radius-lg);
+  }
+  
+  .cliente-form-container .cliente-form-title {
+    font-size: 1.3rem;
+  }
+  
+  .cliente-form-container .cliente-form-label {
+    font-size: 0.85rem;
+  }
+  
+  .cliente-form-container .cliente-form input[type="text"].cliente-form-input {
+    padding: 12px 15px;
+    font-size: 0.95rem;
+  }
+  
+  .cliente-form-container .cliente-form-buttons .cliente-form-button {
+    padding: 15px;
+    font-size: 0.9rem;
+  }
+}
+
+/* Especificidad alta para sobreescribir estilos globales si es necesario */
+.cliente-form-container.cliente-form-container .cliente-form input[type="text"].cliente-form-input {
+  /* Fuerza estos estilos sobre cualquier global */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* Prevenir conflictos con Bootstrap u otros frameworks */
+.cliente-form-container * {
+  box-sizing: border-box;
+}
+
+.cliente-form-container *:focus {
+  outline: none;
+}
+
+/* Aislamiento de estilos para prevenir sangrado */
+.cliente-form-container {
+  contain: layout style;
+}
