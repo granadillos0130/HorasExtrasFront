@@ -8,6 +8,10 @@ export const trabajadoresService = {
     const res = await api.get<Trabajador[]>("/trabajadores");
     return res.data;
   },
+  async getAnalistas(): Promise<{ id: number; nombreCompleto: string }[]> {
+  const res = await api.get("/trabajadores/analistas");
+  return res.data;
+},
 
   // Obtener un trabajador por ID
   async getById(id: number): Promise<Trabajador> {
@@ -38,5 +42,6 @@ export const trabajadoresService = {
       "Content-Type": "application/json",
     },
   });
+  
 }
 };

@@ -19,6 +19,8 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
   const [centros, setCentros] = useState<Centro[]>([]);
   const [loading, setLoading] = useState(false);
+  const [analistas, setAnalistas] = useState<{ id: number; nombreCompleto: string }[]>([]);
+
 
   const [formData, setFormData] = useState<RegistroInputDto>({
     Trabajador_ID: 0,
@@ -43,17 +45,20 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
 
   useEffect(() => {
     const cargarDatos = async () => {
-      try {
-        const [trabajadoresData, centrosData] = await Promise.all([
-          trabajadoresService.getAll(),
-          centrosService.getAll(),
-        ]);
-        setTrabajadores(trabajadoresData);
-        setCentros(centrosData);
-      } catch (error) {
-        console.error("Error al cargar datos:", error);
-      }
-    };
+  try {
+    const [trabajadoresData, centrosData, analistasData] = await Promise.all([
+      trabajadoresService.getAll(),
+      centrosService.getAll(),
+      trabajadoresService.getAnalistas(), // 🔥 aquí está el llamado
+    ]);
+    setTrabajadores(trabajadoresData);
+    setCentros(centrosData);
+    setAnalistas(analistasData); // ⚡
+  } catch (error) {
+    console.error("Error al cargar datos:", error);
+  }
+};
+
 
     cargarDatos();
   }, []);
@@ -243,6 +248,23 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
             </select>
           </div>
         </div>
+        <div className="form-row">
+  <div className="form-group">
+    <label>Analista encargado</label>
+    <select
+      value={formData.AnalistaId || ""}
+      onChange={(e) => handleInputChange("AnalistaId", Number(e.target.value))}
+    >
+      <option value="">-- Selecciona un analista --</option>
+      {analistas.map((a) => (
+        <option key={a.id} value={a.id}>
+          {a.nombreCompleto}
+        </option>
+      ))}
+    </select>
+  </div>
+</div>
+
 
         {/* 🚗 Desplazamientos */}
         <div

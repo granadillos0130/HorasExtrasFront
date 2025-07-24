@@ -8,8 +8,9 @@ export interface RegistroInputDto {
   Hora_Ingreso: string; // "HH:mm"
   Hora_Salida: string; // "HH:mm"
   Tiempo_Almuerzo: string; // "HH:mm:ss"
-   desplazamientoIda?: string;
+  desplazamientoIda?: string;
   desplazamientoRegreso?: string;
+   AnalistaId?: number;
 }
 
 
