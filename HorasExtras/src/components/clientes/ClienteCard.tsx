@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import type { Cliente } from "../../types/cliente";
 import type { Centro } from "../../types/centros";
 import { centrosService } from "../../api/centrosService";
+import "../../styles/components/clientes/ClientesCard.css"
 
 interface Props {
   cliente: Cliente;
