@@ -1,10 +1,20 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { registrosService } from "../api/registrosService";
+import { trabajadoresService } from "../api/trabajadoresService";
 import RegistrosForm from "../components/registros/RegistrosForm";
 import RegistrosLoteForm from "../components/registros/RegistrosLoteForm";
 import type { Registro } from "../types/registros";
+import { Trabajador } from "../types/trabajadores";
+
+interface EstadisticaDia {
+  fecha: string;
+  totalTrabajadores: number;
+  trabajadoresConRegistro: number;
+  porcentaje: number;
+  registros: Registro[];
+}
 
 const RegistrosPage: React.FC = () => {
   const [añoSeleccionado, setAñoSeleccionado] = useState<number>(new Date().getFullYear());
@@ -14,6 +24,9 @@ const RegistrosPage: React.FC = () => {
   const [mostrarFormulario, setMostrarFormulario] = useState<'individual' | 'lote' | null>(null);
   const [loading, setLoading] = useState(false);
   const [exportandoExcel, setExportandoExcel] = useState(false);
+  const [trabajadoresActivos, setTrabajadoresActivos] = useState<Trabajador[]>([]);
+  const [estadisticasMes, setEstadisticasMes] = useState<Map<string, EstadisticaDia>>(new Map());
+  const [cargandoEstadisticas, setCargandoEstadisticas] = useState(false);
 
   const meses = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -21,6 +34,121 @@ const RegistrosPage: React.FC = () => {
   ];
 
   const diasSemana = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+  // Cargar trabajadores activos al iniciar
+  useEffect(() => {
+    cargarTrabajadoresActivos();
+  }, []);
+
+  // Cargar estadísticas cuando se selecciona un mes
+  useEffect(() => {
+    if (mesSeleccionado !== null && trabajadoresActivos.length > 0) {
+      cargarEstadisticasDelMes();
+    }
+  }, [mesSeleccionado, añoSeleccionado, trabajadoresActivos]);
+
+  const cargarTrabajadoresActivos = async () => {
+    try {
+      const todos = await trabajadoresService.getAll();
+      const activos = todos.filter(t => t.estado === "Vigente");
+      setTrabajadoresActivos(activos);
+    } catch (error) {
+      console.error("Error al cargar trabajadores activos:", error);
+    }
+  };
+
+  const cargarEstadisticasDelMes = async () => {
+    if (mesSeleccionado === null) return;
+
+    setCargandoEstadisticas(true);
+    try {
+      const diasEnMes = new Date(añoSeleccionado, mesSeleccionado, 0).getDate();
+      const estadisticas = new Map<string, EstadisticaDia>();
+      
+      for (let dia = 1; dia <= diasEnMes; dia++) {
+        const fechaString = `${añoSeleccionado}-${mesSeleccionado.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
+        
+        try {
+          const registrosDia = await registrosService.obtenerTodosPorFecha(fechaString);
+          
+          // Obtener IDs únicos de trabajadores que tienen registro ese día
+          const trabajadoresConRegistro = new Set(registrosDia.map(r => r.trabajadorId));
+          const cantidadConRegistro = trabajadoresConRegistro.size;
+          const totalTrabajadores = trabajadoresActivos.length;
+          const porcentaje = totalTrabajadores > 0 ? (cantidadConRegistro / totalTrabajadores) * 100 : 0;
+
+          estadisticas.set(fechaString, {
+            fecha: fechaString,
+            totalTrabajadores,
+            trabajadoresConRegistro: cantidadConRegistro,
+            porcentaje,
+            registros: registrosDia
+          });
+        } catch (error) {
+          // Si no hay registros para ese día, porcentaje = 0
+          estadisticas.set(fechaString, {
+            fecha: fechaString,
+            totalTrabajadores: trabajadoresActivos.length,
+            trabajadoresConRegistro: 0,
+            porcentaje: 0,
+            registros: []
+          });
+        }
+      }
+      
+      setEstadisticasMes(estadisticas);
+    } catch (error) {
+      console.error("Error al cargar estadísticas del mes:", error);
+    } finally {
+      setCargandoEstadisticas(false);
+    }
+  };
+
+  const obtenerColorDia = (dia: number): { background: string, color: string, border: string } => {
+    if (mesSeleccionado === null) {
+      return {
+        background: 'linear-gradient(135deg, #f8fafb, #ffffff)',
+        color: '#333',
+        border: '#e1e8ed'
+      };
+    }
+
+    const fechaString = `${añoSeleccionado}-${mesSeleccionado.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
+    const estadistica = estadisticasMes.get(fechaString);
+
+    if (!estadistica) {
+      return {
+        background: 'linear-gradient(135deg, #f8fafb, #ffffff)',
+        color: '#333',
+        border: '#e1e8ed'
+      };
+    }
+
+    const { porcentaje } = estadistica;
+
+    if (porcentaje === 0) {
+      // Rojo - Sin registros
+      return {
+        background: 'linear-gradient(135deg, #fee2e2, #fecaca)',
+        color: '#dc2626',
+        border: '#fca5a5'
+      };
+    } else if (porcentaje < 100) {
+      // Naranja - Registros parciales
+      return {
+        background: 'linear-gradient(135deg, #fed7aa, #fdba74)',
+        color: '#ea580c',
+        border: '#fb923c'
+      };
+    } else {
+      // Verde - Registros completos
+      return {
+        background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)',
+        color: '#16a34a',
+        border: '#86efac'
+      };
+    }
+  };
 
   const obtenerDiasDelMes = (año: number, mes: number) => {
     const diasEnMes = new Date(año, mes, 0).getDate();
@@ -428,6 +556,10 @@ const RegistrosPage: React.FC = () => {
     if (diaSeleccionado) {
       obtenerRegistrosDelDia(diaSeleccionado);
     }
+    // Recargar estadísticas
+    if (mesSeleccionado !== null) {
+      cargarEstadisticasDelMes();
+    }
   };
 
   const formatearHora = (timeString: string) => {
@@ -459,12 +591,28 @@ const RegistrosPage: React.FC = () => {
         if (diaSeleccionado) {
           await obtenerRegistrosDelDia(diaSeleccionado);
         }
+        // Recargar estadísticas
+        if (mesSeleccionado !== null) {
+          cargarEstadisticasDelMes();
+        }
         alert("Registro eliminado correctamente");
       } catch (error) {
         console.error("Error al eliminar registro:", error);
         alert("Error al eliminar el registro");
       }
     }
+  };
+
+  const obtenerTooltipDia = (dia: number): string => {
+    if (mesSeleccionado === null) return '';
+
+    const fechaString = `${añoSeleccionado}-${mesSeleccionado.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
+    const estadistica = estadisticasMes.get(fechaString);
+
+    if (!estadistica) return '';
+
+    const { totalTrabajadores, trabajadoresConRegistro, porcentaje } = estadistica;
+    return `${trabajadoresConRegistro}/${totalTrabajadores} trabajadores (${porcentaje.toFixed(1)}%)`;
   };
 
   return (
@@ -491,6 +639,20 @@ const RegistrosPage: React.FC = () => {
           <p style={{ fontSize: '1.2rem', opacity: 0.9 }}>
             Visualiza todos los registros de todos los trabajadores por día
           </p>
+          <div style={{ 
+            fontSize: '0.95rem', 
+            opacity: 0.8, 
+            marginTop: '10px',
+            display: 'flex',
+            justifyContent: 'center',
+            gap: '20px',
+            flexWrap: 'wrap'
+          }}>
+            <span>🔴 Sin registros (0%)</span>
+            <span>🟠 Parcial (1-99%)</span>
+            <span>🟢 Completo (100%)</span>
+            <span>👥 {trabajadoresActivos.length} trabajadores activos</span>
+          </div>
         </div>
 
         {/* Selector de año */}
@@ -618,6 +780,15 @@ const RegistrosPage: React.FC = () => {
                 fontWeight: '600'
               }}>
                 📅 {meses[mesSeleccionado - 1]} {añoSeleccionado}
+                {cargandoEstadisticas && (
+                  <span style={{ 
+                    fontSize: '1rem', 
+                    color: '#666', 
+                    marginLeft: '10px' 
+                  }}>
+                    🔄 Cargando...
+                  </span>
+                )}
               </h2>
               <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
                 <button
@@ -658,6 +829,61 @@ const RegistrosPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Leyenda de colores */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '20px',
+              marginBottom: '20px',
+              flexWrap: 'wrap',
+              padding: '15px',
+              background: '#f8fafb',
+              borderRadius: '12px',
+              border: '2px solid #e1e8ed'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '20px',
+                  height: '20px',
+                  background: 'linear-gradient(135deg, #fee2e2, #fecaca)',
+                  border: '2px solid #fca5a5',
+                  borderRadius: '4px'
+                }}></div>
+                <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#dc2626' }}>
+                  Sin registros (0%)
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '20px',
+                  height: '20px',
+                  background: 'linear-gradient(135deg, #fed7aa, #fdba74)',
+                  border: '2px solid #fb923c',
+                  borderRadius: '4px'
+                }}></div>
+                <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#ea580c' }}>
+                  Parcial (1-99%)
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{
+                  width: '20px',
+                  height: '20px',
+                  background: 'linear-gradient(135deg, #dcfce7, #bbf7d0)',
+                  border: '2px solid #86efac',
+                  borderRadius: '4px'
+                }}></div>
+                <span style={{ fontSize: '0.9rem', fontWeight: '600', color: '#16a34a' }}>
+                  Completo (100%)
+                </span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.9rem', color: '#666' }}>
+                  👥 {trabajadoresActivos.length} trabajadores activos
+                </span>
+              </div>
+            </div>
+
             {/* Días de la semana */}
             <div style={{
               display: 'grid',
@@ -687,40 +913,75 @@ const RegistrosPage: React.FC = () => {
               gridTemplateColumns: 'repeat(7, 1fr)',
               gap: '10px'
             }}>
-              {obtenerDiasDelMes(añoSeleccionado, mesSeleccionado).map((dia, index) => (
-                <div key={index} style={{
-                  minHeight: '60px',
-                  border: '2px solid #e1e8ed',
-                  borderRadius: '10px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: dia ? 'pointer' : 'default',
-                  background: dia ? 'linear-gradient(135deg, #f8fafb, #ffffff)' : 'transparent',
-                  fontSize: '1.2rem',
-                  fontWeight: '600',
-                  color: dia ? '#333' : 'transparent',
-                  transition: 'all 0.3s ease'
-                }}
-                onClick={() => dia && seleccionarDia(dia)}
-                onMouseOver={(e) => {
-                  if (dia) {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
-                    e.currentTarget.style.color = 'white';
-                    e.currentTarget.style.transform = 'scale(1.05)';
-                  }
-                }}
-                onMouseOut={(e) => {
-                  if (dia) {
-                    e.currentTarget.style.background = 'linear-gradient(135deg, #f8fafb, #ffffff)';
-                    e.currentTarget.style.color = '#333';
-                    e.currentTarget.style.transform = 'scale(1)';
-                  }
-                }}
-                >
-                  {dia}
-                </div>
-              ))}
+              {obtenerDiasDelMes(añoSeleccionado, mesSeleccionado).map((dia, index) => {
+                const colores = dia ? obtenerColorDia(dia) : {
+                  background: 'transparent',
+                  color: 'transparent',
+                  border: 'transparent'
+                };
+                
+                return (
+                  <div 
+                    key={index} 
+                    style={{
+                      minHeight: '70px',
+                      border: `2px solid ${colores.border}`,
+                      borderRadius: '10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: dia ? 'pointer' : 'default',
+                      background: colores.background,
+                      fontSize: '1.2rem',
+                      fontWeight: '600',
+                      color: colores.color,
+                      transition: 'all 0.3s ease',
+                      position: 'relative'
+                    }}
+                    onClick={() => dia && seleccionarDia(dia)}
+                    title={dia ? obtenerTooltipDia(dia) : ''}
+                    onMouseOver={(e) => {
+                      if (dia) {
+                        e.currentTarget.style.transform = 'scale(1.05)';
+                        e.currentTarget.style.zIndex = '10';
+                        e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+                      }
+                    }}
+                    onMouseOut={(e) => {
+                      if (dia) {
+                        e.currentTarget.style.transform = 'scale(1)';
+                        e.currentTarget.style.zIndex = '1';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }
+                    }}
+                  >
+                    {dia && (
+                      <>
+                        <div style={{ fontSize: '1.2rem', fontWeight: '700' }}>
+                          {dia}
+                        </div>
+                        {estadisticasMes.get(`${añoSeleccionado}-${mesSeleccionado.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`) && (
+                          <div style={{ 
+                            fontSize: '0.7rem', 
+                            fontWeight: '600',
+                            marginTop: '2px',
+                            opacity: 0.8
+                          }}>
+                            {(() => {
+                              const fechaString = `${añoSeleccionado}-${mesSeleccionado.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
+                              const estadistica = estadisticasMes.get(fechaString);
+                              if (!estadistica) return '';
+                              const { trabajadoresConRegistro, totalTrabajadores } = estadistica;
+                              return `${trabajadoresConRegistro}/${totalTrabajadores}`;
+                            })()}
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -758,14 +1019,30 @@ const RegistrosPage: React.FC = () => {
                 paddingBottom: '15px',
                 borderBottom: '2px solid #f0f0f0'
               }}>
-                <h3 style={{
-                  margin: 0,
-                  fontSize: '1.5rem',
-                  fontWeight: '600',
-                  color: '#333'
-                }}>
-                  📅 {formatearFecha(diaSeleccionado + 'T00:00:00')}
-                </h3>
+                <div>
+                  <h3 style={{
+                    margin: '0 0 5px 0',
+                    fontSize: '1.5rem',
+                    fontWeight: '600',
+                    color: '#333'
+                  }}>
+                    📅 {formatearFecha(diaSeleccionado + 'T00:00:00')}
+                  </h3>
+                  {(() => {
+                    const estadistica = estadisticasMes.get(diaSeleccionado);
+                    if (!estadistica) return null;
+                    const { trabajadoresConRegistro, totalTrabajadores, porcentaje } = estadistica;
+                    return (
+                      <p style={{
+                        margin: 0,
+                        fontSize: '0.9rem',
+                        color: '#666'
+                      }}>
+                        👥 {trabajadoresConRegistro} de {totalTrabajadores} trabajadores ({porcentaje.toFixed(1)}%)
+                      </p>
+                    );
+                  })()}
+                </div>
                 <button
                   onClick={cerrarModal}
                   style={{
