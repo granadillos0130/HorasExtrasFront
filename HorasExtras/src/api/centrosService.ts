@@ -35,5 +35,11 @@ export const centrosService = {
   },
    crearLote(data: Centro[]): Promise<void> {
     return api.post("/centros/lote", data);
+  },
+   // Nuevo método para obtener centros por mes
+  obtenerPorMes(anio: number, mes: number): Promise<any[]> {
+    return api.get(`/centros/por-mes`, { 
+      params: { anio, mes } 
+    }).then(res => res.data);
   }
 };

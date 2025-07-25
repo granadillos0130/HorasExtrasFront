@@ -20,7 +20,8 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
   const [centros, setCentros] = useState<Centro[]>([]);
   const [loading, setLoading] = useState(false);
   const [analistas, setAnalistas] = useState<{ id: number; nombreCompleto: string }[]>([]);
-
+  const [registrosExistentes, setRegistrosExistentes] = useState<any[]>([]);
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
 
   const [formData, setFormData] = useState<RegistroInputDto>({
     Trabajador_ID: 0,
@@ -45,23 +46,45 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
 
   useEffect(() => {
     const cargarDatos = async () => {
-  try {
-    const [trabajadoresData, centrosData, analistasData] = await Promise.all([
-      trabajadoresService.getAll(),
-      centrosService.getAll(),
-      trabajadoresService.getAnalistas(), // 🔥 aquí está el llamado
-    ]);
-    setTrabajadores(trabajadoresData);
-    setCentros(centrosData);
-    setAnalistas(analistasData); // ⚡
-  } catch (error) {
-    console.error("Error al cargar datos:", error);
-  }
-};
-
+      try {
+        const [trabajadoresData, centrosData, analistasData] = await Promise.all([
+          trabajadoresService.getAll(),
+          centrosService.getAll(),
+          trabajadoresService.getAnalistas(),
+        ]);
+        setTrabajadores(trabajadoresData);
+        setCentros(centrosData);
+        setAnalistas(analistasData);
+      } catch (error) {
+        console.error("Error al cargar datos:", error);
+      }
+    };
 
     cargarDatos();
   }, []);
+
+  // Verificar registros existentes cuando cambie el trabajador o la fecha
+  useEffect(() => {
+    const verificarRegistrosExistentes = async () => {
+      if (formData.Trabajador_ID > 0 && formData.Fecha) {
+        try {
+          const registros = await registrosService.obtenerTodosPorFecha(formData.Fecha);
+          const registrosDelTrabajador = registros.filter(r => r.trabajadorId === formData.Trabajador_ID);
+          setRegistrosExistentes(registrosDelTrabajador);
+          setShowDuplicateWarning(registrosDelTrabajador.length > 0);
+        } catch (error) {
+          console.error("Error al verificar registros existentes:", error);
+          setRegistrosExistentes([]);
+          setShowDuplicateWarning(false);
+        }
+      } else {
+        setRegistrosExistentes([]);
+        setShowDuplicateWarning(false);
+      }
+    };
+
+    verificarRegistrosExistentes();
+  }, [formData.Trabajador_ID, formData.Fecha]);
 
   const convertirATimeSpan = (valor: string): string => {
     const parts = valor.trim().split(":");
@@ -81,6 +104,18 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     if (!formData.Trabajador_ID || !formData.Centro_ID || !formData.Nombr_Centro) {
       alert("Por favor complete todos los campos obligatorios");
       return;
+    }
+
+    // Advertencia adicional si hay registros duplicados
+    if (showDuplicateWarning) {
+      const trabajadorNombre = trabajadores.find(t => t.id === formData.Trabajador_ID)?.nombre || "este trabajador";
+      const confirmMessage = `⚠️ ATENCIÓN: Ya existe${registrosExistentes.length > 1 ? 'n' : ''} ${registrosExistentes.length} registro${registrosExistentes.length > 1 ? 's' : ''} para ${trabajadorNombre} en la fecha ${new Date(formData.Fecha).toLocaleDateString('es-ES')}.\n\n` +
+        `${registrosExistentes.length === 1 ? 'El tiempo de almuerzo NO se descontará de este nuevo registro.' : 'El tiempo de almuerzo ya fue descontado en el primer registro del día.'}\n\n` +
+        `¿Está seguro que desea continuar creando este registro adicional?`;
+      
+      if (!confirm(confirmMessage)) {
+        return;
+      }
     }
 
     setLoading(true);
@@ -166,6 +201,34 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
         </div>
       )}
 
+      {/* Advertencia de registro duplicado */}
+      {showDuplicateWarning && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #ff9500, #ff6b35)',
+            color: 'white',
+            padding: '12px 15px',
+            borderRadius: '8px',
+            marginBottom: '20px',
+            border: '2px solid #ff6b35',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+            <div>
+              <strong>Registro Duplicado Detectado</strong>
+              <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem' }}>
+                Ya existe{registrosExistentes.length > 1 ? 'n' : ''} <strong>{registrosExistentes.length}</strong> registro{registrosExistentes.length > 1 ? 's' : ''} para este trabajador en esta fecha.
+                {registrosExistentes.length === 1 
+                  ? ' El tiempo de almuerzo NO se descontará de este nuevo registro.'
+                  : ' El tiempo de almuerzo ya fue descontado en el primer registro del día.'
+                }
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="registros-form">
         <div className="form-row">
           <div className="form-group">
@@ -234,11 +297,27 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           </div>
 
           <div className="form-group">
-            <label>Tiempo Almuerzo *</label>
+            <label>
+              Tiempo Almuerzo *
+              {showDuplicateWarning && (
+                <span style={{ 
+                  color: '#ff6b35', 
+                  fontSize: '0.8rem', 
+                  fontWeight: 'normal',
+                  display: 'block'
+                }}>
+                  {registrosExistentes.length === 1 
+                    ? '⚠️ No se descontará (ya hay 1 registro)'
+                    : '⚠️ No se descontará (múltiples registros)'
+                  }
+                </span>
+              )}
+            </label>
             <select
               value={formData.Tiempo_Almuerzo}
               onChange={(e) => handleInputChange("Tiempo_Almuerzo", e.target.value)}
               required
+              style={showDuplicateWarning ? { borderColor: '#ff6b35' } : {}}
             >
               <option value="00:00:00">Sin almuerzo</option>
               <option value="00:30:00">30 minutos</option>
@@ -248,23 +327,23 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
             </select>
           </div>
         </div>
-        <div className="form-row">
-  <div className="form-group">
-    <label>Analista encargado</label>
-    <select
-      value={formData.AnalistaId || ""}
-      onChange={(e) => handleInputChange("AnalistaId", Number(e.target.value))}
-    >
-      <option value="">-- Selecciona un analista --</option>
-      {analistas.map((a) => (
-        <option key={a.id} value={a.id}>
-          {a.nombreCompleto}
-        </option>
-      ))}
-    </select>
-  </div>
-</div>
 
+        <div className="form-row">
+          <div className="form-group">
+            <label>Analista encargado</label>
+            <select
+              value={formData.AnalistaId || ""}
+              onChange={(e) => handleInputChange("AnalistaId", Number(e.target.value))}
+            >
+              <option value="">-- Selecciona un analista --</option>
+              {analistas.map((a) => (
+                <option key={a.id} value={a.id}>
+                  {a.nombreCompleto}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         {/* 🚗 Desplazamientos */}
         <div
@@ -317,6 +396,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
 
         <button type="submit" disabled={loading} className="btn-submit">
           {loading ? "Guardando..." : "Crear Registro"}
+          {showDuplicateWarning && " (Registro Adicional)"}
         </button>
       </form>
     </div>

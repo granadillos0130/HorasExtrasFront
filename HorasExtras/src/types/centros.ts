@@ -27,3 +27,20 @@ export interface CentroEstadisticas {
   manoDeObraTotal: number;
   trabajadores: EstadisticaTrabajador[];
 }
+// Nuevos tipos para el endpoint por-mes
+export interface TrabajadorCentro {
+  trabajadorId: number;
+  nombre: string;
+  totalHoras: number;
+  horasNormales: number;
+  extrasDiurnas: number;
+  extrasNocturnas: number;
+}
+
+export interface CentroPorMes {
+  centroId: string;
+  centroNombre: string;
+  fechaInicio: string;
+  fechaFinal?: string | null;
+  trabajadores: TrabajadorCentro[];
+}
