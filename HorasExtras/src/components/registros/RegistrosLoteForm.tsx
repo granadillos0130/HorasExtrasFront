@@ -12,13 +12,14 @@ import "../../styles/components/registros/RegistrosLoteForm.css";
 interface Props {
   onSuccess: () => void;
   onCancel: () => void;
-  fechaInicial?: string; // 👈 Nueva prop para fecha inicial
+  fechaInicial?: string;
 }
 
 const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial }) => {
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
   const [centros, setCentros] = useState<Centro[]>([]);
   const [loadingData, setLoadingData] = useState(true);
+  const [analistas, setAnalistas] = useState<{ id: number; nombreCompleto: string }[]>([]);
 
   const { loading, error, crearLote, reset } = useRegistrosLote();
 
@@ -27,17 +28,28 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
       Trabajador_ID: 0,
       Centro_ID: "",
       Nombr_Centro: "",
-      Fecha: fechaInicial || new Date().toISOString().split("T")[0], // 👈 Usar fecha inicial
+      Fecha: fechaInicial || new Date().toISOString().split("T")[0],
       Hora_Ingreso: "08:00",
       Hora_Salida: "17:00",
       Tiempo_Almuerzo: "01:00:00",
-      // 👇 Nombres corregidos para coincidir con la interfaz (camelCase)
       desplazamientoIda: "",
       desplazamientoRegreso: "",
     }
   ]);
 
-  // 👇 Actualizar fecha en todos los registros cuando cambie fechaInicial
+  // Función convertirATimeSpan idéntica a RegistrosForm
+  const convertirATimeSpan = (valor: string): string => {
+    const parts = valor.trim().split(":");
+    if (parts.length === 1 && /^\d+$/.test(parts[0])) {
+      return `00:${parts[0].padStart(2, "0")}:00`;
+    } else if (parts.length === 2) {
+      return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}:00`;
+    } else if (parts.length === 3) {
+      return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}:${parts[2].padStart(2, "0")}`;
+    }
+    return "";
+  };
+
   useEffect(() => {
     if (fechaInicial) {
       setRegistros(prev => prev.map(registro => ({
@@ -51,12 +63,14 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
     const cargarDatos = async () => {
       try {
         setLoadingData(true);
-        const [trabajadoresData, centrosData] = await Promise.all([
+        const [trabajadoresData, centrosData, analistasData] = await Promise.all([
           trabajadoresService.getAll(),
-          centrosService.getAll()
+          centrosService.getAll(),
+          trabajadoresService.getAnalistas(),
         ]);
         setTrabajadores(trabajadoresData);
         setCentros(centrosData);
+        setAnalistas(analistasData);
       } catch (error) {
         console.error("Error al cargar datos:", error);
       } finally {
@@ -76,7 +90,6 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
         Trabajador_ID: 0,
         Centro_ID: "",
         Nombr_Centro: "",
-        // 👇 Mantener fecha inicial si existe
         Fecha: fechaInicial || ultimoRegistro.Fecha,
       }
     ]);
@@ -165,17 +178,17 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
       return;
     }
 
+    const normalizarHora = (hora: string) =>
+      hora.length === 5 ? `${hora}:00` : hora;
+
     const registrosNormalizados = registros.map(registro => ({
       ...registro,
-      Tiempo_Almuerzo: registro.Tiempo_Almuerzo.length === 5 
-        ? `${registro.Tiempo_Almuerzo}:00` 
-        : registro.Tiempo_Almuerzo,
-      // 👇 Solo incluir desplazamiento si tiene valor (nombres corregidos)
-      desplazamientoIda: registro.desplazamientoIda?.trim() 
-        ? (registro.desplazamientoIda.length === 5 ? `${registro.desplazamientoIda}:00` : registro.desplazamientoIda)
+      Tiempo_Almuerzo: normalizarHora(registro.Tiempo_Almuerzo),
+      desplazamientoIda: registro.desplazamientoIda?.trim()
+        ? convertirATimeSpan(registro.desplazamientoIda)
         : undefined,
-      desplazamientoRegreso: registro.desplazamientoRegreso?.trim() 
-        ? (registro.desplazamientoRegreso.length === 5 ? `${registro.desplazamientoRegreso}:00` : registro.desplazamientoRegreso)
+      desplazamientoRegreso: registro.desplazamientoRegreso?.trim()
+        ? convertirATimeSpan(registro.desplazamientoRegreso)
         : undefined,
     }));
 
@@ -289,7 +302,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                       onChange={(e) => actualizarRegistro(index, "Fecha", e.target.value)}
                       className="form-input"
                       required
-                      disabled={!!fechaInicial} // 👈 Deshabilitar si hay fecha inicial
+                      disabled={!!fechaInicial}
                       style={fechaInicial ? { opacity: 0.7 } : {}}
                     />
                     {fechaInicial && (
@@ -325,12 +338,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                     <label className="form-label">Tiempo Almuerzo *</label>
                     <select
                       value={registro.Tiempo_Almuerzo}
-                      onChange={(e) => {
-                        const value = e.target.value.includes(":") && e.target.value.split(":").length === 2
-                          ? e.target.value + ":00"
-                          : e.target.value;
-                        actualizarRegistro(index, "Tiempo_Almuerzo", value);
-                      }}
+                      onChange={(e) => actualizarRegistro(index, "Tiempo_Almuerzo", e.target.value)}
                       className="form-select"
                       required
                     >
@@ -343,51 +351,73 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                   </div>
                 </div>
 
-                {/* 👇 Nueva fila para desplazamientos */}
-                <div style={{ 
-                  marginTop: '15px',
-                  padding: '15px',
-                  background: '#f8fafb',
-                  borderRadius: '10px',
-                  border: '1px dashed #e1e8ed'
-                }}>
-                  <h5 style={{ 
-                    margin: '0 0 10px 0',
-                    color: '#666',
-                    fontSize: '0.9rem',
-                    textAlign: 'center'
-                  }}>
-                    🚗 Tiempos de Desplazamiento (Opcional)
-                  </h5>
-                  
-                  <div className="form-row">
-                    <div className="form-group">
-                      <label className="form-label">Desplazamiento Ida</label>
-                      <input
-                        type="time"
-                        value={registro.desplazamientoIda || ""}
-                        onChange={(e) => actualizarRegistro(index, "desplazamientoIda", e.target.value)}
-                        className="form-input"
-                        placeholder="HH:MM"
-                      />
-                      <small style={{ color: '#666', fontSize: '0.7rem' }}>
-                        Tiempo adicional de viaje
-                      </small>
-                    </div>
+                {/* Campo de Analista - Nuevo */}
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Analista encargado</label>
+                    <select
+                      value={registro.AnalistaId || ""}
+                      onChange={(e) => actualizarRegistro(index, "AnalistaId", Number(e.target.value))}
+                      className="form-select"
+                    >
+                      <option value="">-- Selecciona un analista --</option>
+                      {analistas.map((a) => (
+                        <option key={a.id} value={a.id}>
+                          {a.nombreCompleto}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-                    <div className="form-group">
-                      <label className="form-label">Desplazamiento Regreso</label>
-                      <input
-                        type="time"
-                        value={registro.desplazamientoRegreso || ""}
-                        onChange={(e) => actualizarRegistro(index, "desplazamientoRegreso", e.target.value)}
-                        className="form-input"
-                        placeholder="HH:MM"
-                      />
-                      <small style={{ color: '#666', fontSize: '0.7rem' }}>
-                        Tiempo adicional de regreso
-                      </small>
-                    </div>
+                {/* Sección de Desplazamientos - Actualizada para ser idéntica a RegistrosForm */}
+                <div
+                  className="form-section-header"
+                  style={{
+                    marginTop: "25px",
+                    marginBottom: "15px",
+                    padding: "10px 0",
+                    borderTop: "2px solid #e1e8ed",
+                    color: "#666",
+                  }}
+                >
+                  <h4 style={{ margin: 0, fontSize: "1.1rem" }}>
+                    🚗 Tiempos de Desplazamiento (Opcional)
+                  </h4>
+                  <p
+                    style={{ margin: "5px 0 0 0", fontSize: "0.9rem", color: "#888" }}
+                  >
+                    Si el trabajador tiene tiempo de desplazamiento, ingrésalo aquí
+                  </p>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label">Desplazamiento Ida</label>
+                    <input
+                      type="text"
+                      value={registro.desplazamientoIda || ""}
+                      onChange={(e) => actualizarRegistro(index, "desplazamientoIda", e.target.value)}
+                      placeholder="Ej: 00:20, 1:15, 45"
+                      className="form-input"
+                    />
+                    <small style={{ color: "#666", fontSize: "0.8rem" }}>
+                      Tiempo de ida (formato HH:mm o solo minutos)
+                    </small>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Desplazamiento Regreso</label>
+                    <input
+                      type="text"
+                      value={registro.desplazamientoRegreso || ""}
+                      onChange={(e) => actualizarRegistro(index, "desplazamientoRegreso", e.target.value)}
+                      placeholder="Ej: 00:30, 1:00, 20"
+                      className="form-input"
+                    />
+                    <small style={{ color: "#666", fontSize: "0.8rem" }}>
+                      Tiempo de regreso (formato HH:mm o solo minutos)
+                    </small>
                   </div>
                 </div>
               </div>
