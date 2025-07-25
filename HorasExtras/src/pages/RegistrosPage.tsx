@@ -27,6 +27,7 @@ const RegistrosPage: React.FC = () => {
   const [trabajadoresActivos, setTrabajadoresActivos] = useState<Trabajador[]>([]);
   const [estadisticasMes, setEstadisticasMes] = useState<Map<string, EstadisticaDia>>(new Map());
   const [cargandoEstadisticas, setCargandoEstadisticas] = useState(false);
+  const [centroSeleccionado, setCentroSeleccionado] = useState<string | null>(null);
 
   const meses = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -102,6 +103,29 @@ const RegistrosPage: React.FC = () => {
     } finally {
       setCargandoEstadisticas(false);
     }
+  };
+
+  // Función para agrupar registros por centro
+  const agruparRegistrosPorCentro = (registros: Registro[]) => {
+    const centrosMap = new Map<string, { 
+      nombreCentro: string; 
+      centroId: string; 
+      trabajadores: Registro[] 
+    }>();
+
+    registros.forEach(registro => {
+      const centroKey = registro.centroId.toString();
+      if (!centrosMap.has(centroKey)) {
+        centrosMap.set(centroKey, {
+          nombreCentro: registro.nombreCentro || `Centro ${registro.centroId}`,
+          centroId: registro.centroId.toString(),
+          trabajadores: []
+        });
+      }
+      centrosMap.get(centroKey)?.trabajadores.push(registro);
+    });
+
+    return Array.from(centrosMap.values());
   };
 
   const obtenerColorDia = (dia: number): { background: string, color: string, border: string } => {
@@ -549,6 +573,7 @@ const RegistrosPage: React.FC = () => {
     setDiaSeleccionado(null);
     setRegistrosDelDia([]);
     setMostrarFormulario(null);
+    setCentroSeleccionado(null);
   };
 
   const handleFormSuccess = () => {
@@ -1114,172 +1139,272 @@ const RegistrosPage: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                  
-                  <div style={{
-                    display: 'grid',
-                    gap: '15px',
-                    maxHeight: '400px',
-                    overflowY: 'auto',
-                    padding: '10px'
-                  }}>
-                    {registrosDelDia.map((registro) => (
-                      <div key={registro.id} style={{
-                        background: 'linear-gradient(135deg, #f8fafb, #ffffff)',
-                        padding: '20px',
-                        borderRadius: '15px',
-                        border: '2px solid #e1e8ed',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
+
+                  {/* Vista por centros o trabajadores */}
+                  {centroSeleccionado === null ? (
+                    // VISTA DE CENTROS
+                    <div>
+                      <div style={{
+                        marginBottom: '20px',
+                        padding: '15px',
+                        background: '#f0f9ff',
+                        borderRadius: '12px',
+                        border: '2px solid #bfdbfe',
+                        textAlign: 'center'
                       }}>
-                        <div style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          marginBottom: '15px'
-                        }}>
+                        <h4 style={{ margin: '0 0 10px 0', color: '#1d4ed8' }}>
+                          🏢 Centros con Registros
+                        </h4>
+                        <p style={{ margin: 0, color: '#3730a3', fontSize: '0.9rem' }}>
+                          Haz clic en un centro para ver los trabajadores
+                        </p>
+                      </div>
+
+                      <div style={{
+                        display: 'grid',
+                        gap: '15px',
+                        maxHeight: '400px',
+                        overflowY: 'auto',
+                        padding: '10px'
+                      }}>
+                        {agruparRegistrosPorCentro(registrosDelDia).map((centro) => (
+                          <div 
+                            key={centro.centroId} 
+                            onClick={() => setCentroSeleccionado(centro.centroId)}
+                            style={{
+                              background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
+                              color: 'white',
+                              padding: '25px',
+                              borderRadius: '15px',
+                              cursor: 'pointer',
+                              transition: 'all 0.3s ease',
+                              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)',
+                              border: '2px solid transparent'
+                            }}
+                            onMouseOver={(e) => {
+                              e.currentTarget.style.transform = 'translateY(-3px)';
+                              e.currentTarget.style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.3)';
+                              e.currentTarget.style.borderColor = '#60a5fa';
+                            }}
+                            onMouseOut={(e) => {
+                              e.currentTarget.style.transform = 'translateY(0)';
+                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.2)';
+                              e.currentTarget.style.borderColor = 'transparent';
+                            }}
+                          >
+                            <div style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
+                            }}>
+                              <div>
+                                <h5 style={{
+                                  margin: '0 0 10px 0',
+                                  fontSize: '1.3rem',
+                                  fontWeight: '700'
+                                }}>
+                                  🏢 {centro.nombreCentro}
+                                </h5>
+                                <p style={{
+                                  margin: 0,
+                                  fontSize: '1rem',
+                                  opacity: 0.9
+                                }}>
+                                  👥 {centro.trabajadores.length} trabajador{centro.trabajadores.length !== 1 ? 'es' : ''} con registro
+                                </p>
+                              </div>
+                              <div style={{
+                                background: 'rgba(255,255,255,0.2)',
+                                padding: '10px 15px',
+                                borderRadius: '20px',
+                                fontSize: '1.5rem'
+                              }}>
+                                ➡️
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    // VISTA DE TRABAJADORES DEL CENTRO SELECCIONADO
+                    <div>
+                      {(() => {
+                        const centroData = agruparRegistrosPorCentro(registrosDelDia).find(c => c.centroId === centroSeleccionado);
+                        if (!centroData) return null;
+
+                        return (
                           <div>
-                            <h5 style={{
-                              margin: '0 0 5px 0',
-                              fontSize: '1.1rem',
-                              fontWeight: '600',
-                              color: '#333'
+                            <div style={{
+                              marginBottom: '20px',
+                              padding: '15px 20px',
+                              background: 'linear-gradient(135deg, #22c55e, #15803d)',
+                              color: 'white',
+                              borderRadius: '12px',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
                             }}>
-                              👤 {registro.trabajadorNombre || `Trabajador ${registro.trabajadorId}`}
-                            </h5>
-                            <p style={{
-                              margin: 0,
-                              color: '#666',
-                              fontSize: '0.9rem'
-                            }}>
-                              🏢 {registro.nombreCentro || `Centro ${registro.centroId}`}
-                            </p>
-                          </div>
-                          <div style={{
-                            display: 'flex',
-                            gap: '8px'
-                          }}>
-                            <button
-                              style={{
-                                background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-                                color: 'white',
-                                border: 'none',
-                                padding: '6px 12px',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                fontSize: '0.8rem'
-                              }}
-                              onClick={() => alert('Funcionalidad de editar próximamente')}
-                            >
-                              ✏️
-                            </button>
-                            <button
-                              style={{
-                                background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                                color: 'white',
-                                border: 'none',
-                                padding: '6px 12px',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                fontSize: '0.8rem'
-                              }}
-                              onClick={() => eliminarRegistro(registro.id)}
-                            >
-                              🗑️
-                            </button>
-                          </div>
-                        </div>
+                              <div>
+                                <h4 style={{ margin: '0 0 5px 0', fontSize: '1.2rem' }}>
+                                  🏢 {centroData.nombreCentro}
+                                </h4>
+                                <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.9 }}>
+                                  👥 {centroData.trabajadores.length} trabajador{centroData.trabajadores.length !== 1 ? 'es' : ''} registrado{centroData.trabajadores.length !== 1 ? 's' : ''}
+                                </p>
+                              </div>
+                              <button
+                                onClick={() => setCentroSeleccionado(null)}
+                                style={{
+                                  background: 'rgba(255,255,255,0.2)',
+                                  color: 'white',
+                                  border: '1px solid rgba(255,255,255,0.3)',
+                                  padding: '8px 16px',
+                                  borderRadius: '8px',
+                                  cursor: 'pointer',
+                                  fontWeight: '600',
+                                  fontSize: '0.9rem'
+                                }}
+                              >
+                                ← Volver a Centros
+                              </button>
+                            </div>
 
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))',
-                          gap: '10px',
-                          marginBottom: '15px'
-                        }}>
-                          <div style={{ textAlign: 'center', padding: '8px', background: 'white', borderRadius: '6px' }}>
-                            <div style={{ fontSize: '0.7rem', color: '#666' }}>Ingreso</div>
-                            <div style={{ fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>
-                              {formatearHora(registro.horaIngreso)}
-                            </div>
-                          </div>
-                          <div style={{ textAlign: 'center', padding: '8px', background: 'white', borderRadius: '6px' }}>
-                            <div style={{ fontSize: '0.7rem', color: '#666' }}>Salida</div>
-                            <div style={{ fontWeight: '600', color: '#333', fontSize: '0.9rem' }}>
-                              {formatearHora(registro.horaSalida)}
-                            </div>
-                          </div>
-                          <div style={{ textAlign: 'center', padding: '8px', background: '#f0fdf4', borderRadius: '6px' }}>
-                            <div style={{ fontSize: '0.7rem', color: '#15803d' }}>Total</div>
-                            <div style={{ fontWeight: '600', color: '#15803d', fontSize: '0.9rem' }}>
-                              {formatearHoras(registro.totalHoras)}
-                            </div>
-                          </div>
-                        </div>
-
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
-                          gap: '8px'
-                        }}>
-                          <div style={{ textAlign: 'center', padding: '6px', background: '#f0fdf4', borderRadius: '6px' }}>
-                            <div style={{ fontSize: '0.6rem', color: '#15803d' }}>Normal</div>
-                            <div style={{ fontWeight: '600', color: '#15803d', fontSize: '0.8rem' }}>
-                              {formatearHoras(registro.horasNormales)}
-                            </div>
-                          </div>
-                          <div style={{ textAlign: 'center', padding: '6px', background: '#fff7ed', borderRadius: '6px' }}>
-                            <div style={{ fontSize: '0.6rem', color: '#ea580c' }}>E.Diur</div>
-                            <div style={{ fontWeight: '600', color: '#ea580c', fontSize: '0.8rem' }}>
-                              {formatearHoras(registro.horasExtrasDiurnas)}
-                            </div>
-                          </div>
-                          <div style={{ textAlign: 'center', padding: '6px', background: '#f3f4f6', borderRadius: '6px' }}>
-                            <div style={{ fontSize: '0.6rem', color: '#6b7280' }}>E.Noct</div>
-                            <div style={{ fontWeight: '600', color: '#6b7280', fontSize: '0.8rem' }}>
-                              {formatearHoras(registro.horasExtrasNocturnas)}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Mostrar información de desplazamientos si existen */}
-                        {(registro.desplazamientoIda || registro.desplazamientoRegreso) && (
-                          <div style={{
-                            marginTop: '15px',
-                            padding: '10px',
-                            background: '#f0f9ff',
-                            borderRadius: '8px',
-                            border: '1px solid #bfdbfe'
-                          }}>
-                            <div style={{ fontSize: '0.7rem', color: '#1d4ed8', marginBottom: '5px', textAlign: 'center' }}>
-                              🚗 Desplazamientos
-                            </div>
                             <div style={{
                               display: 'grid',
-                              gridTemplateColumns: 'repeat(auto-fit, minmax(80px, 1fr))',
-                              gap: '8px'
+                              gap: '12px',
+                              maxHeight: '400px',
+                              overflowY: 'auto',
+                              padding: '10px'
                             }}>
-                              {registro.desplazamientoIda && (
-                                <div style={{ textAlign: 'center', padding: '4px', background: 'white', borderRadius: '4px' }}>
-                                  <div style={{ fontSize: '0.6rem', color: '#3730a3' }}>Ida</div>
-                                  <div style={{ fontWeight: '600', color: '#3730a3', fontSize: '0.7rem' }}>
-                                    {formatearHora(registro.desplazamientoIda)}
+                              {centroData.trabajadores.map((registro) => (
+                                <div key={registro.id} style={{
+                                  background: 'linear-gradient(135deg, #f8fafb, #ffffff)',
+                                  padding: '20px',
+                                  borderRadius: '15px',
+                                  border: '2px solid #e1e8ed',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                                  transition: 'all 0.3s ease'
+                                }}
+                                onMouseOver={(e) => {
+                                  e.currentTarget.style.transform = 'translateY(-2px)';
+                                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)';
+                                }}
+                                onMouseOut={(e) => {
+                                  e.currentTarget.style.transform = 'translateY(0)';
+                                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
+                                }}
+                                >
+                                  <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center'
+                                  }}>
+                                    <div style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '15px'
+                                    }}>
+                                      <div style={{
+                                        background: 'linear-gradient(135deg, #22c55e, #15803d)',
+                                        color: 'white',
+                                        width: '50px',
+                                        height: '50px',
+                                        borderRadius: '50%',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '1.5rem',
+                                        fontWeight: '700'
+                                      }}>
+                                        👤
+                                      </div>
+                                      <div>
+                                        <h5 style={{
+                                          margin: '0 0 5px 0',
+                                          fontSize: '1.1rem',
+                                          fontWeight: '600',
+                                          color: '#333'
+                                        }}>
+                                          {registro.trabajadorNombre || `Trabajador ${registro.trabajadorId}`}
+                                        </h5>
+                                        <p style={{
+                                          margin: 0,
+                                          color: '#666',
+                                          fontSize: '0.9rem'
+                                        }}>
+                                          🕐 {formatearHora(registro.horaIngreso)} - {formatearHora(registro.horaSalida)}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div style={{
+                                      display: 'flex',
+                                      flexDirection: 'column',
+                                      alignItems: 'center',
+                                      gap: '5px'
+                                    }}>
+                                      <div style={{
+                                        background: '#f0fdf4',
+                                        color: '#15803d',
+                                        padding: '6px 12px',
+                                        borderRadius: '20px',
+                                        fontSize: '0.9rem',
+                                        fontWeight: '600'
+                                      }}>
+                                        {formatearHoras(registro.totalHoras)} hrs
+                                      </div>
+                                      <div style={{
+                                        display: 'flex',
+                                        gap: '5px'
+                                      }}>
+                                        <button
+                                          style={{
+                                            background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '4px 8px',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                            fontSize: '0.7rem'
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            alert('Funcionalidad de editar próximamente');
+                                          }}
+                                        >
+                                          ✏️
+                                        </button>
+                                        <button
+                                          style={{
+                                            background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                                            color: 'white',
+                                            border: 'none',
+                                            padding: '4px 8px',
+                                            borderRadius: '4px',
+                                            cursor: 'pointer',
+                                            fontSize: '0.7rem'
+                                          }}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            eliminarRegistro(registro.id);
+                                          }}
+                                        >
+                                          🗑️
+                                        </button>
+                                      </div>
+                                    </div>
                                   </div>
                                 </div>
-                              )}
-                              {registro.desplazamientoRegreso && (
-                                <div style={{ textAlign: 'center', padding: '4px', background: 'white', borderRadius: '4px' }}>
-                                  <div style={{ fontSize: '0.6rem', color: '#3730a3' }}>Regreso</div>
-                                  <div style={{ fontWeight: '600', color: '#3730a3', fontSize: '0.7rem' }}>
-                                    {formatearHora(registro.desplazamientoRegreso)}
-                                  </div>
-                                </div>
-                              )}
+                              ))}
                             </div>
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                        );
+                      })()}
+                    </div>
+                  )}
                 </div>
               ) : (
+                // Mensaje cuando no hay registros
                 <div style={{
                   textAlign: 'center',
                   padding: '40px',
