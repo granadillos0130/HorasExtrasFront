@@ -11,6 +11,8 @@ export interface Trabajador {
   cantidadHijos: number;
   nivelEscolaridad: string;
   salario: number;
+  auxilioTransporte?: number;
+  valorHora?: number;
   fechaContratacion: string;
   tipoContratacion: string;
   correo: string;
@@ -76,6 +78,8 @@ export interface CrearTrabajadorDto {
   cantidadHijos: number;
   nivelEscolaridad: string;
   salario: number;
+  auxilioTransporte: number;
+  valorHora: number;
   fechaContratacion: string;
   correo: string;
   personaContacto: string;

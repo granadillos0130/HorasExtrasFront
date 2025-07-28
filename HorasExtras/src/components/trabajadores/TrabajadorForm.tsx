@@ -23,6 +23,8 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
     cantidadHijos: 0,
     nivelEscolaridad: "",
     salario: 0,
+    auxilioTransporte: 0,
+    valorHora: 0,
     fechaContratacion: "",
     correo: "",
     personaContacto: "",
@@ -52,6 +54,34 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
+  // ✅ Función para formatear números con puntos de miles
+  const formatearNumero = (valor: string): string => {
+    // Remover caracteres no numéricos
+    const numeroLimpio = valor.replace(/\D/g, '');
+    // Formatear con puntos de miles
+    return numeroLimpio.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // ✅ Función para formatear valor hora con decimales (ej: 14.573,91)
+  const formatearValorHora = (valor: number): string => {
+    if (!valor || valor === 0) return '0,00';
+    
+    // Separar parte entera y decimal
+    const parteEntera = Math.floor(valor);
+    const parteDecimal = Math.round((valor - parteEntera) * 100);
+    
+    // Formatear parte entera con puntos de miles
+    const enteroFormateado = parteEntera.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    
+    // Agregar parte decimal con coma
+    return `${enteroFormateado},${parteDecimal.toString().padStart(2, '0')}`;
+  };
+
+  // ✅ Función para obtener el valor numérico sin formato
+  const obtenerValorNumerico = (valorFormateado: string): number => {
+    return parseInt(valorFormateado.replace(/\./g, '')) || 0;
+  };
+
   // Auto-calcular edad si se ingresa fecha de nacimiento
   useEffect(() => {
     if (form.fechaNacimiento) {
@@ -66,15 +96,35 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
     }
   }, [form.fechaNacimiento]);
 
+  // Auto-calcular valor hora cuando cambia el salario o auxilio de transporte
+  useEffect(() => {
+    if (form.salario && form.salario > 0) {
+      const auxilioTransporte = form.auxilioTransporte || 0;
+      const parafiscales = (form.salario * 0.6544) + form.salario + auxilioTransporte;
+      const valorHora = parafiscales / 184;
+      setForm(prev => ({ ...prev, valorHora: Math.round(valorHora * 100) / 100 }));
+    }
+  }, [form.salario, form.auxilioTransporte]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]:
-        ["edad", "cantidadHijos", "salario"].includes(name)
-          ? Number(value)
-          : value
-    }));
+    
+    // ✅ Manejo especial para campos de dinero (salario y auxilio de transporte)
+    if (name === 'salario' || name === 'auxilioTransporte') {
+      const valorNumerico = obtenerValorNumerico(value);
+      setForm((prev) => ({
+        ...prev,
+        [name]: valorNumerico
+      }));
+    } else {
+      setForm((prev) => ({
+        ...prev,
+        [name]:
+          ["edad", "cantidadHijos", "valorHora"].includes(name)
+            ? Number(value)
+            : value
+      }));
+    }
     
     // Limpiar error cuando el usuario empiece a escribir
     if (errors[name]) {
@@ -100,6 +150,7 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
       }
       if (!form.tipoContratacion) newErrors.tipoContratacion = "El tipo de contratación es requerido";
       if (form.salario <= 0) newErrors.salario = "El salario debe ser mayor a 0";
+      if (form.auxilioTransporte && form.auxilioTransporte < 0) newErrors.auxilioTransporte = "El auxilio de transporte debe ser mayor o igual a 0";
     }
 
     if (step === 3) {
@@ -466,16 +517,45 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                   Salario <span className="required">*</span>
                 </label>
                 <input
-                  type="number"
+                  type="text"
                   name="salario"
-                  placeholder="1500000"
-                  value={form.salario || ''}
+                  placeholder="1.500.000"
+                  value={form.salario ? formatearNumero(form.salario.toString()) : ''}
                   onChange={handleChange}
                   className={`form-input ${errors.salario ? 'error' : ''}`}
-                  min="0"
                   disabled={loading}
                 />
                 {errors.salario && <span className="error-text">{errors.salario}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Auxilio de Transporte</label>
+                <input
+                  type="text"
+                  name="auxilioTransporte"
+                  placeholder="140.606"
+                  value={form.auxilioTransporte ? formatearNumero(form.auxilioTransporte.toString()) : ''}
+                  onChange={handleChange}
+                  className={`form-input ${errors.auxilioTransporte ? 'error' : ''}`}
+                  disabled={loading}
+                />
+                {errors.auxilioTransporte && <span className="error-text">{errors.auxilioTransporte}</span>}
+              </div>
+
+              <div className="form-group">
+                <label className="form-label">Valor Hora</label>
+                <input
+                  type="text"
+                  name="valorHora"
+                  value={formatearValorHora(form.valorHora || 0)}
+                  onChange={handleChange}
+                  className="form-input"
+                  disabled={true}
+                  placeholder="Se calcula automáticamente"
+                />
+                <small style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                  Fórmula: (Salario × 0.6544 + Salario + Auxilio) ÷ 184
+                </small>
               </div>
 
               <div className="form-group">
@@ -843,7 +923,9 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                 <div className="summary-section">
                   <h6>💼 Laboral</h6>
                   <p><strong>Correo:</strong> {form.correo}</p>
-                  <p><strong>Salario:</strong> ${form.salario?.toLocaleString()}</p>
+                  <p><strong>Salario:</strong> ${form.salario ? formatearNumero(form.salario.toString()) : '0'}</p>
+                  <p><strong>Auxilio Transporte:</strong> ${form.auxilioTransporte ? formatearNumero(form.auxilioTransporte.toString()) : '0'}</p>
+                  <p><strong>Valor Hora:</strong> ${formatearValorHora(form.valorHora || 0)}</p>
                   <p><strong>Tipo:</strong> {form.tipoContratacion}</p>
                 </div>
 
