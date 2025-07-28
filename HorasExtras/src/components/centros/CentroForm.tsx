@@ -27,9 +27,21 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
   const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [valorOrdenDisplay, setValorOrdenDisplay] = useState<string>("0");
 
   const estadosDisponibles = ["Activo", "Inactivo", "Suspendido", "Finalizado"];
   const tiposDisponibles = ["Obra", "Mantenimiento", "Proyecto", "Servicio"];
+
+  // Función para formatear número con puntos como separadores de miles
+  const formatearNumero = (valor: number): string => {
+    return valor.toLocaleString('es-CO');
+  };
+
+  // Función para convertir string formateado a número
+  const parseearNumero = (valorString: string): number => {
+    const numeroLimpio = valorString.replace(/\./g, '').replace(/,/g, '');
+    return numeroLimpio === '' ? 0 : Number(numeroLimpio);
+  };
 
   useEffect(() => {
     clientesService
@@ -37,6 +49,11 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
       .then(setClientes)
       .catch((err) => console.error("Error cargando clientes", err));
   }, []);
+
+  // Inicializar el valor display cuando cambie valorOrden
+  useEffect(() => {
+    setValorOrdenDisplay(formatearNumero(formData.valorOrden || 0));
+  }, [formData.valorOrden]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -46,6 +63,51 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
       [name]: type === 'number' ? (value === '' ? 0 : Number(value)) : value
     }));
     setError(null);
+  };
+
+  // Manejador especial para el campo de valor de orden
+  const handleValorOrdenChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const valor = e.target.value;
+    
+    // Permitir solo números y puntos
+    const valorLimpio = valor.replace(/[^\d]/g, '');
+    
+    if (valorLimpio === '') {
+      setValorOrdenDisplay('0');
+      setFormData(prev => ({ ...prev, valorOrden: 0 }));
+      return;
+    }
+
+    const numeroReal = Number(valorLimpio);
+    const valorFormateado = formatearNumero(numeroReal);
+    
+    setValorOrdenDisplay(valorFormateado);
+    setFormData(prev => ({ ...prev, valorOrden: numeroReal }));
+    setError(null);
+  };
+
+  // Manejar el foco en el input de valor
+  const handleValorOrdenFocus = () => {
+    // Mostrar el valor sin formatear para facilitar la edición
+    const valorActual = formData.valorOrden || 0;
+    if (valorActual === 0) {
+      setValorOrdenDisplay('');
+    } else {
+      setValorOrdenDisplay(valorActual.toString());
+    }
+  };
+
+  // Manejar cuando se pierde el foco
+  const handleValorOrdenBlur = () => {
+    // Volver a formatear el valor
+    if (valorOrdenDisplay === '' || valorOrdenDisplay === '0') {
+      setValorOrdenDisplay('0');
+      setFormData(prev => ({ ...prev, valorOrden: 0 }));
+    } else {
+      const numeroReal = parseearNumero(valorOrdenDisplay);
+      setFormData(prev => ({ ...prev, valorOrden: numeroReal }));
+      setValorOrdenDisplay(formatearNumero(numeroReal));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -91,6 +153,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
         fechaFactura: "",
         tipo: "Obra"
       });
+      setValorOrdenDisplay("0");
     } catch (err: unknown) {
       if (
         typeof err === "object" &&
@@ -229,17 +292,34 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
               />
             </div>
             <div className="form-group">
-              <label>Valor de la Orden</label>
-              <input
-                type="number"
-                name="valorOrden"
-                value={formData.valorOrden}
-                onChange={handleChange}
-                placeholder="0"
-                min="0"
-                step="0.01"
-                disabled={loading}
-              />
+              <label>Valor de la Orden (COP)</label>
+              <div className="valor-input-container" style={{ position: 'relative' }}>
+                <span style={{ 
+                  position: 'absolute', 
+                  left: '8px', 
+                  top: '50%', 
+                  transform: 'translateY(-50%)', 
+                  color: '#666',
+                  fontSize: '14px',
+                  pointerEvents: 'none'
+                }}>
+                  $
+                </span>
+                <input
+                  type="text"
+                  name="valorOrden"
+                  value={valorOrdenDisplay}
+                  onChange={handleValorOrdenChange}
+                  onFocus={handleValorOrdenFocus}
+                  onBlur={handleValorOrdenBlur}
+                  placeholder="0"
+                  disabled={loading}
+                  style={{ paddingLeft: '20px' }}
+                />
+              </div>
+              <small style={{ color: '#666', fontSize: '12px' }}>
+                Ejemplo: 1.000.000 = Un millón de pesos
+              </small>
             </div>
           </div>
 
