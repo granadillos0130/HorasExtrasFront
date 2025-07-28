@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { centrosService } from "../../api/centrosService";
 import { clientesService } from "../../api/clientesService";
-import type { Centro } from "../../types/centros";
 import type { Cliente } from "../../types/cliente";
 import "../../styles/components/centro/CentroForm.css";
 
@@ -9,19 +8,34 @@ interface Props {
   onSuccess?: () => void;
 }
 
+// Interfaz para el payload que se envía al backend
+interface CentroPayload {
+  id: string;
+  nombreCentro: string;
+  fechaInicio: string; // DateOnly en C# espera formato "YYYY-MM-DD"
+  fechaFinal?: string | null;
+  clienteId: string;
+  estado: boolean; // El backend espera boolean, no string
+  interventor?: string | null;
+  vendedor?: string | null;
+  valorOrden?: number;
+  fechaFactura?: string | null;
+  tipo?: string;
+}
+
 const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
-  const [formData, setFormData] = useState<Centro>({
+  const [formData, setFormData] = useState({
     id: "",
     nombreCentro: "",
     fechaInicio: "",
     fechaFinal: "",
     clienteId: "",
-    estado: "Activo", // Valor por defecto
+    estado: "Activo", // Mantenemos string en el formulario
     interventor: "",
     vendedor: "",
     valorOrden: 0,
     fechaFactura: "",
-    tipo: "Obra" // Valor por defecto
+    tipo: "Obra"
   });
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -123,17 +137,31 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
       return;
     }
 
+    if (!formData.fechaInicio) {
+      setError("Por favor, ingrese la fecha de inicio.");
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
     try {
-      const payload = {
-        ...formData,
+      // Preparar el payload con las conversiones necesarias para el backend
+      const payload: CentroPayload = {
+        id: formData.id.trim(),
+        nombreCentro: formData.nombreCentro.trim(),
+        fechaInicio: formData.fechaInicio, // Ya está en formato "YYYY-MM-DD"
         fechaFinal: formData.fechaFinal?.trim() === "" ? null : formData.fechaFinal,
+        clienteId: formData.clienteId,
+        estado: formData.estado === "Activo", // Convertir string a boolean
+        interventor: formData.interventor?.trim() === "" ? null : formData.interventor?.trim(),
+        vendedor: formData.vendedor?.trim() === "" ? null : formData.vendedor?.trim(),
+        valorOrden: formData.valorOrden || 0,
         fechaFactura: formData.fechaFactura?.trim() === "" ? null : formData.fechaFactura,
-        interventor: formData.interventor?.trim() === "" ? null : formData.interventor,
-        vendedor: formData.vendedor?.trim() === "" ? null : formData.vendedor
+        tipo: formData.tipo
       };
+
+      console.log("Enviando payload:", payload); // Log para debug
 
       await centrosService.crear(payload);
       alert("Centro creado con éxito ✅");
@@ -155,15 +183,28 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
       });
       setValorOrdenDisplay("0");
     } catch (err: unknown) {
+      console.error("Error completo:", err); // Log para debug
+      
       if (
         typeof err === "object" &&
         err !== null &&
-        "response" in err &&
-        (err as { response?: { status?: number } }).response?.status === 409
+        "response" in err
       ) {
-        setError("Ya existe un centro con ese ID.");
+        const response = (err as { response?: { status?: number; data?: any } }).response;
+        
+        if (response?.status === 409) {
+          setError("Ya existe un centro con ese ID.");
+        } else if (response?.status === 400) {
+          // Extraer mensaje de error del backend
+          const errorMessage = response?.data?.message || response?.data || "Datos inválidos.";
+          setError(typeof errorMessage === 'string' ? errorMessage : "Error en los datos enviados.");
+        } else if (response?.status === 404) {
+          setError("El cliente seleccionado no existe.");
+        } else {
+          setError(`Error del servidor (${response?.status || 'desconocido'}). Intente nuevamente.`);
+        }
       } else {
-        setError("Error al crear el centro.");
+        setError("Error de conexión. Verifique su conexión a internet.");
       }
     } finally {
       setLoading(false);

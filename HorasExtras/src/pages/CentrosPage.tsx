@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { centrosService } from "../api/centrosService";
 import CentroForm from "../components/centros/CentroForm";
+import InformacionEjecucionPage from "./InformacionEjecucionPage";
 import type { CentroPorMes } from "../types/centros";
 
 const CentrosPage: React.FC = () => {
@@ -8,7 +9,7 @@ const CentrosPage: React.FC = () => {
   const [mesSeleccionado, setMesSeleccionado] = useState<number | null>(null);
   const [centrosDelMes, setCentrosDelMes] = useState<CentroPorMes[]>([]);
   const [centroSeleccionado, setCentroSeleccionado] = useState<CentroPorMes | null>(null);
-  const [vistaActual, setVistaActual] = useState<'info' | 'participantes' | 'crear' | null>(null);
+  const [vistaActual, setVistaActual] = useState<'info' | 'participantes' | 'crear' | 'ejecucion' | null>(null);
   const [loading, setLoading] = useState(false);
 
   const meses = [
@@ -65,6 +66,17 @@ const CentrosPage: React.FC = () => {
     const m = Math.round((hours - h) * 60);
     return `${h}:${m.toString().padStart(2, "0")}`;
   };
+
+  // Si estamos en la vista de información de ejecución
+  if (vistaActual === 'ejecucion' && centroSeleccionado) {
+    return (
+      <InformacionEjecucionPage
+        centroId={centroSeleccionado.centroId}
+        centroNombre={centroSeleccionado.centroNombre}
+        onVolver={() => setVistaActual(null)}
+      />
+    );
+  }
 
   return (
     <div style={{
@@ -409,7 +421,8 @@ const CentrosPage: React.FC = () => {
                       {/* Botones de acción */}
                       <div style={{
                         display: 'flex',
-                        gap: '10px'
+                        gap: '8px',
+                        flexWrap: 'wrap'
                       }}>
                         <button
                           onClick={() => {
@@ -418,24 +431,19 @@ const CentrosPage: React.FC = () => {
                           }}
                           style={{
                             flex: 1,
+                            minWidth: '120px',
                             background: 'linear-gradient(135deg, #22c55e, #15803d)',
                             color: 'white',
                             border: 'none',
-                            padding: '12px 16px',
+                            padding: '10px 12px',
                             borderRadius: '8px',
                             cursor: 'pointer',
                             fontWeight: '600',
-                            fontSize: '0.9rem',
+                            fontSize: '0.85rem',
                             transition: 'all 0.3s ease'
                           }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.transform = 'scale(1.05)';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
-                          }}
                         >
-                          📊 Ver Información
+                          📊 Ver Info
                         </button>
                         <button
                           onClick={() => {
@@ -444,24 +452,40 @@ const CentrosPage: React.FC = () => {
                           }}
                           style={{
                             flex: 1,
+                            minWidth: '120px',
                             background: 'linear-gradient(135deg, #f59e0b, #d97706)',
                             color: 'white',
                             border: 'none',
-                            padding: '12px 16px',
+                            padding: '10px 12px',
                             borderRadius: '8px',
                             cursor: 'pointer',
                             fontWeight: '600',
-                            fontSize: '0.9rem',
+                            fontSize: '0.85rem',
                             transition: 'all 0.3s ease'
-                          }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.transform = 'scale(1.05)';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.transform = 'scale(1)';
                           }}
                         >
                           👥 Participantes
+                        </button>
+                        <button
+                          onClick={() => {
+                            setCentroSeleccionado(centro);
+                            setVistaActual('ejecucion');
+                          }}
+                          style={{
+                            flex: 1,
+                            minWidth: '140px',
+                            background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '10px 12px',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontWeight: '600',
+                            fontSize: '0.85rem',
+                            transition: 'all 0.3s ease'
+                          }}
+                        >
+                          📈 Info Ejecución
                         </button>
                       </div>
                     </div>
@@ -487,7 +511,7 @@ const CentrosPage: React.FC = () => {
         )}
 
         {/* Modal de información del centro */}
-        {centroSeleccionado && vistaActual && vistaActual !== 'crear' && (
+        {centroSeleccionado && vistaActual && vistaActual !== 'crear' && vistaActual !== 'ejecucion' && (
           <div style={{
             position: 'fixed',
             top: 0,
