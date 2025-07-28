@@ -4,8 +4,13 @@ export interface Centro {
   fechaInicio: string;
   fechaFinal?: string | null;
   clienteId: string;
+  estado?: string;
+  interventor?: string | null;
+  vendedor?: string | null;
+  valorOrden?: number;
+  fechaFactura?: string | null;
+  tipo?: string;
 }
-
 
 export interface EstadisticaTrabajador {
   trabajadorId: number;
@@ -27,6 +32,7 @@ export interface CentroEstadisticas {
   manoDeObraTotal: number;
   trabajadores: EstadisticaTrabajador[];
 }
+
 // Nuevos tipos para el endpoint por-mes
 export interface TrabajadorCentro {
   trabajadorId: number;

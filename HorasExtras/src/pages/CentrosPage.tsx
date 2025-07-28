@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { centrosService } from "../api/centrosService";
+import CentroForm from "../components/centros/CentroForm";
 import type { CentroPorMes } from "../types/centros";
 
 const CentrosPage: React.FC = () => {
@@ -7,7 +8,7 @@ const CentrosPage: React.FC = () => {
   const [mesSeleccionado, setMesSeleccionado] = useState<number | null>(null);
   const [centrosDelMes, setCentrosDelMes] = useState<CentroPorMes[]>([]);
   const [centroSeleccionado, setCentroSeleccionado] = useState<CentroPorMes | null>(null);
-  const [vistaActual, setVistaActual] = useState<'info' | 'participantes' | null>(null);
+  const [vistaActual, setVistaActual] = useState<'info' | 'participantes' | 'crear' | null>(null);
   const [loading, setLoading] = useState(false);
 
   const meses = [
@@ -40,6 +41,14 @@ const CentrosPage: React.FC = () => {
   const cerrarModal = () => {
     setCentroSeleccionado(null);
     setVistaActual(null);
+  };
+
+  const handleCentroCreado = () => {
+    // Recargar los centros del mes actual si hay uno seleccionado
+    if (mesSeleccionado !== null) {
+      cargarCentrosDelMes();
+    }
+    cerrarModal();
   };
 
   const formatearFecha = (fecha: string) => {
@@ -81,6 +90,46 @@ const CentrosPage: React.FC = () => {
           <p style={{ fontSize: '1.2rem', opacity: 0.9 }}>
             Visualiza todos los centros activos por mes con sus trabajadores
           </p>
+        </div>
+
+        {/* Header con botón crear centro */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '30px',
+          flexWrap: 'wrap',
+          gap: '15px'
+        }}>
+          <div></div> {/* Espaciador */}
+          <button
+            onClick={() => setVistaActual('crear')}
+            style={{
+              background: 'linear-gradient(135deg, #10b981, #059669)',
+              color: 'white',
+              border: 'none',
+              padding: '15px 25px',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              fontWeight: '700',
+              fontSize: '1.1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              boxShadow: '0 4px 15px rgba(16, 185, 129, 0.3)',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.transform = 'translateY(-2px)';
+              e.currentTarget.style.boxShadow = '0 6px 20px rgba(16, 185, 129, 0.4)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = '0 4px 15px rgba(16, 185, 129, 0.3)';
+            }}
+          >
+            ➕ Crear Nuevo Centro
+          </button>
         </div>
 
         {/* Selector de año */}
@@ -438,7 +487,7 @@ const CentrosPage: React.FC = () => {
         )}
 
         {/* Modal de información del centro */}
-        {centroSeleccionado && vistaActual && (
+        {centroSeleccionado && vistaActual && vistaActual !== 'crear' && (
           <div style={{
             position: 'fixed',
             top: 0,
@@ -774,6 +823,72 @@ const CentrosPage: React.FC = () => {
                   </div>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal de crear centro */}
+        {vistaActual === 'crear' && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.7)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}>
+            <div style={{
+              background: 'white',
+              borderRadius: '20px',
+              padding: '0',
+              maxWidth: '800px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 50px rgba(0,0,0,0.3)',
+              position: 'relative'
+            }}>
+              <div style={{
+                position: 'sticky',
+                top: 0,
+                background: 'white',
+                borderRadius: '20px 20px 0 0',
+                padding: '20px 30px 15px 30px',
+                borderBottom: '2px solid #f0f0f0',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                zIndex: 1001
+              }}>
+                <h3 style={{
+                  margin: 0,
+                  fontSize: '1.5rem',
+                  fontWeight: '600',
+                  color: '#333'
+                }}>
+                  ➕ Crear Nuevo Centro
+                </h3>
+                <button
+                  onClick={cerrarModal}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '1.5rem',
+                    cursor: 'pointer',
+                    color: '#666'
+                  }}
+                >
+                  ❌
+                </button>
+              </div>
+              <div style={{ padding: '0 30px 30px 30px' }}>
+                <CentroForm onSuccess={handleCentroCreado} />
+              </div>
             </div>
           </div>
         )}
