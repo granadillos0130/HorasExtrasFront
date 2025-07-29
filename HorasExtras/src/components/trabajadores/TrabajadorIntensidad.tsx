@@ -123,16 +123,27 @@ const TrabajadorIntensidad: React.FC = () => {
   const getResumenHoras = () => {
     const totales = registros.reduce(
       (acc, registro) => ({
-        normales: acc.normales + registro.horasNormales,
-        extrasDiurnas: acc.extrasDiurnas + registro.horasExtrasDiurnas,
-        extrasNocturnas: acc.extrasNocturnas + registro.horasExtrasNocturnas,
-        domDiurnas: acc.domDiurnas + registro.extrasDominicalesDiurnas,
-        domNocturnas: acc.domNocturnas + registro.extrasDominicalesNocturnas,
-        total: acc.total + registro.totalHoras,
+        normales: acc.normales + (registro.horasNormales || 0),
+        extrasDiurnas: acc.extrasDiurnas + (registro.horasExtrasDiurnas || 0),
+        extrasNocturnas: acc.extrasNocturnas + (registro.horasExtrasNocturnas || 0),
+        domDiurnas: acc.domDiurnas + (registro.extrasDominicalesDiurnas || 0),
+        domNocturnas: acc.domNocturnas + (registro.extrasDominicalesNocturnas || 0),
+        total: acc.total + (registro.totalHoras || 0),
       }),
       { normales: 0, extrasDiurnas: 0, extrasNocturnas: 0, domDiurnas: 0, domNocturnas: 0, total: 0 }
     );
     return totales;
+  };
+
+  // Funciones helper para manejar valores null de forma segura
+  const safeSubstring = (str: string | null | undefined, start: number, end?: number): string => {
+    if (!str) return '';
+    return str.substring(start, end);
+  };
+
+  const formatCentroName = (nombreCentro: string | null | undefined): string => {
+    const nombre = nombreCentro || 'Sin centro';
+    return nombre.length > 15 ? `${nombre.substring(0, 15)}...` : nombre;
   };
 
   const resumen = getResumenHoras();
@@ -222,11 +233,11 @@ const TrabajadorIntensidad: React.FC = () => {
           <div className="worker-info-card">
             <div className="worker-avatar-large">
               {trabajadorActual.nombre
-                .split(' ')
-                .map(word => word[0])
+                ?.split(' ')
+                .map(word => word?.[0] || '')
                 .join('')
                 .toUpperCase()
-                .substring(0, 2)}
+                .substring(0, 2) || 'N/A'}
             </div>
             <div className="worker-details">
               <h3>{trabajadorActual.nombre}</h3>
@@ -342,48 +353,54 @@ const TrabajadorIntensidad: React.FC = () => {
                           {registros.map((registro, index) => (
                             <tr key={registro.id} style={{ animationDelay: `${index * 0.05}s` }}>
                               <td className="col-fecha">
-                                {new Date(registro.fecha).toLocaleDateString('es-CO', {
+                                {registro.fecha ? new Date(registro.fecha).toLocaleDateString('es-CO', {
                                   day: '2-digit',
                                   month: '2-digit'
-                                })}
+                                }) : 'N/A'}
                               </td>
-                              <td className="col-dia">{registro.diaSemana.substring(0, 3)}</td>
-                              <td className="col-centro" title={registro.nombreCentro}>
-                                {registro.nombreCentro?.length > 15 
-                                  ? `${registro.nombreCentro.substring(0, 15)}...` 
-                                  : registro.nombreCentro || 'Sin centro'}
+                              <td className="col-dia">
+                                {safeSubstring(registro.diaSemana, 0, 3) || 'N/A'}
                               </td>
-                              <td className="col-hora">{registro.horaIngreso.substring(0, 5)}</td>
-                              <td className="col-hora">{registro.horaSalida.substring(0, 5)}</td>
-                              <td className="col-hora">{registro.tiempoAlmuerzo.substring(0, 5)}</td>
+                              <td className="col-centro" title={registro.nombreCentro || 'Sin centro'}>
+                                {formatCentroName(registro.nombreCentro)}
+                              </td>
+                              <td className="col-hora">
+                                {safeSubstring(registro.horaIngreso, 0, 5) || 'N/A'}
+                              </td>
+                              <td className="col-hora">
+                                {safeSubstring(registro.horaSalida, 0, 5) || 'N/A'}
+                              </td>
+                              <td className="col-hora">
+                                {safeSubstring(registro.tiempoAlmuerzo, 0, 5) || 'N/A'}
+                              </td>
                               <td className="col-horas normal">
                                 <span className="hours-badge normal">
-                                  {formatHours(registro.horasNormales)}
+                                  {formatHours(registro.horasNormales || 0)}
                                 </span>
                               </td>
                               <td className="col-horas extra-diurna">
                                 <span className="hours-badge extra-diurna">
-                                  {formatHours(registro.horasExtrasDiurnas)}
+                                  {formatHours(registro.horasExtrasDiurnas || 0)}
                                 </span>
                               </td>
                               <td className="col-horas extra-nocturna">
                                 <span className="hours-badge extra-nocturna">
-                                  {formatHours(registro.horasExtrasNocturnas)}
+                                  {formatHours(registro.horasExtrasNocturnas || 0)}
                                 </span>
                               </td>
                               <td className="col-horas dom-diurna">
                                 <span className="hours-badge dom-diurna">
-                                  {formatHours(registro.extrasDominicalesDiurnas)}
+                                  {formatHours(registro.extrasDominicalesDiurnas || 0)}
                                 </span>
                               </td>
                               <td className="col-horas dom-nocturna">
                                 <span className="hours-badge dom-nocturna">
-                                  {formatHours(registro.extrasDominicalesNocturnas)}
+                                  {formatHours(registro.extrasDominicalesNocturnas || 0)}
                                 </span>
                               </td>
                               <td className="col-horas total">
                                 <span className="hours-badge total">
-                                  {formatHours(registro.totalHoras)}
+                                  {formatHours(registro.totalHoras || 0)}
                                 </span>
                               </td>
                             </tr>

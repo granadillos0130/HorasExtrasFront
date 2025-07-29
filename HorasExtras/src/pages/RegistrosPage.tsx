@@ -107,26 +107,28 @@ const RegistrosPage: React.FC = () => {
 
   // Función para agrupar registros por centro
   const agruparRegistrosPorCentro = (registros: Registro[]) => {
-    const centrosMap = new Map<string, { 
-      nombreCentro: string; 
-      centroId: string; 
-      trabajadores: Registro[] 
-    }>();
+  const centrosMap = new Map<string, { 
+    nombreCentro: string; 
+    centroId: string; 
+    trabajadores: Registro[] 
+  }>();
 
-    registros.forEach(registro => {
-      const centroKey = registro.centroId.toString();
-      if (!centrosMap.has(centroKey)) {
-        centrosMap.set(centroKey, {
-          nombreCentro: registro.nombreCentro || `Centro ${registro.centroId}`,
-          centroId: registro.centroId.toString(),
-          trabajadores: []
-        });
-      }
-      centrosMap.get(centroKey)?.trabajadores.push(registro);
-    });
+  registros.forEach(registro => {
+    // Manejar centroId null o undefined
+    const centroKey = registro.centroId?.toString() || 'sin-centro';
+    
+    if (!centrosMap.has(centroKey)) {
+      centrosMap.set(centroKey, {
+        nombreCentro: registro.nombreCentro || (registro.centroId ? `Centro ${registro.centroId}` : 'Sin Centro Asignado'),
+        centroId: registro.centroId?.toString() || 'sin-centro',
+        trabajadores: []
+      });
+    }
+    centrosMap.get(centroKey)?.trabajadores.push(registro);
+  });
 
-    return Array.from(centrosMap.values());
-  };
+  return Array.from(centrosMap.values());
+};
 
   const obtenerColorDia = (dia: number): { background: string, color: string, border: string } => {
     if (mesSeleccionado === null) {
