@@ -23,6 +23,14 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
 
   const { loading, error, crearLote, reset } = useRegistrosLote();
 
+  // 🆕 Estados para el rango de fechas
+  const [modoRangoFechas, setModoRangoFechas] = useState(false);
+  const [fechaInicio, setFechaInicio] = useState(fechaInicial || new Date().toISOString().split("T")[0]);
+  const [fechaFin, setFechaFin] = useState(fechaInicial || new Date().toISOString().split("T")[0]);
+  const [excluirDomingos, setExcluirDomingos] = useState(false);
+  const [excluirSabados, setExcluirSabados] = useState(false);
+  const [excluirViernes, setExcluirViernes] = useState(false);
+
   const [registros, setRegistros] = useState<RegistroInputDto[]>([
     {
       Trabajador_ID: 0,
@@ -50,8 +58,50 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
     return "";
   };
 
+  // 🆕 Función para generar fechas del rango
+  const generarFechasDelRango = (): string[] => {
+    const fechas: string[] = [];
+    const inicio = new Date(fechaInicio);
+    const fin = new Date(fechaFin);
+
+    for (let fecha = new Date(inicio); fecha <= fin; fecha.setDate(fecha.getDate() + 1)) {
+      const diaSemana = fecha.getDay(); // 0 = Domingo, 1 = Lunes, ..., 5 = Viernes, 6 = Sábado
+      
+      // Verificar exclusiones
+      if (excluirDomingos && diaSemana === 0) continue;
+      if (excluirSabados && diaSemana === 6) continue;
+      if (excluirViernes && diaSemana === 5) continue;
+      
+      fechas.push(fecha.toISOString().split("T")[0]);
+    }
+    
+    return fechas;
+  };
+
+  // 🆕 Función para generar registros automáticamente por rango de fechas
+  const generarRegistrosPorRango = () => {
+    if (!modoRangoFechas) return;
+
+    const fechas = generarFechasDelRango();
+    const registroBase = registros[0]; // Usar el primer registro como plantilla
+
+    if (fechas.length === 0) {
+      alert("No hay fechas válidas en el rango seleccionado con las exclusiones configuradas.");
+      return;
+    }
+
+    const nuevosRegistros = fechas.map(fecha => ({
+      ...registroBase,
+      Fecha: fecha,
+    }));
+
+    setRegistros(nuevosRegistros);
+  };
+
   useEffect(() => {
     if (fechaInicial) {
+      setFechaInicio(fechaInicial);
+      setFechaFin(fechaInicial);
       setRegistros(prev => prev.map(registro => ({
         ...registro,
         Fecha: fechaInicial
@@ -146,6 +196,30 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
       Nombr_Centro: "",
     });
     setRegistros(nuevosRegistros);
+  };
+
+  // 🆕 Aplicar configuración a todos los registros
+  const aplicarConfiguracionATodos = () => {
+    if (registros.length === 0) return;
+
+    const registroBase = registros[0];
+    const configuracionComun = {
+      Hora_Ingreso: registroBase.Hora_Ingreso,
+      Hora_Salida: registroBase.Hora_Salida,
+      Tiempo_Almuerzo: registroBase.Tiempo_Almuerzo,
+      desplazamientoIda: registroBase.desplazamientoIda,
+      desplazamientoRegreso: registroBase.desplazamientoRegreso,
+      AnalistaId: registroBase.AnalistaId,
+      Centro_ID: registroBase.Centro_ID,
+      Nombr_Centro: registroBase.Nombr_Centro,
+    };
+
+    const registrosActualizados = registros.map(registro => ({
+      ...registro,
+      ...configuracionComun,
+    }));
+
+    setRegistros(registrosActualizados);
   };
 
   const validarRegistros = (): string[] => {
@@ -251,12 +325,166 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
         </div>
       )}
 
+      {/* 🆕 Sección de Rango de Fechas */}
+      <div className="rango-fechas-section" style={{
+        background: 'linear-gradient(135deg, #667eea, #764ba2)',
+        color: 'white',
+        padding: '20px',
+        borderRadius: '12px',
+        marginBottom: '25px',
+        border: '2px solid #667eea'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginBottom: '15px' }}>
+          <h4 style={{ margin: 0, fontSize: '1.2rem' }}>
+            📅 Generación Automática por Rango de Fechas
+          </h4>
+          <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <input
+              type="checkbox"
+              checked={modoRangoFechas}
+              onChange={(e) => setModoRangoFechas(e.target.checked)}
+              style={{ transform: 'scale(1.2)' }}
+            />
+            <span>Activar modo rango</span>
+          </label>
+        </div>
+
+        {modoRangoFechas && (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '15px' }}>
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>
+                  📅 Fecha Inicio:
+                </label>
+                <input
+                  type="date"
+                  value={fechaInicio}
+                  onChange={(e) => setFechaInicio(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    border: '2px solid #fff',
+                    fontSize: '0.9rem'
+                  }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', marginBottom: '5px', fontWeight: '600' }}>
+                  📅 Fecha Fin:
+                </label>
+                <input
+                  type="date"
+                  value={fechaFin}
+                  onChange={(e) => setFechaFin(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    borderRadius: '6px',
+                    border: '2px solid #fff',
+                    fontSize: '0.9rem'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '20px', marginBottom: '15px', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={excluirSabados}
+                  onChange={(e) => setExcluirSabados(e.target.checked)}
+                  style={{ transform: 'scale(1.1)' }}
+                />
+                <span>🚫 Excluir Sábados</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={excluirDomingos}
+                  onChange={(e) => setExcluirDomingos(e.target.checked)}
+                  style={{ transform: 'scale(1.1)' }}
+                />
+                <span>🚫 Excluir Domingos</span>
+              </label>
+
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={excluirViernes}
+                  onChange={(e) => setExcluirViernes(e.target.checked)}
+                  style={{ transform: 'scale(1.1)' }}
+                />
+                <span>🚫 Excluir Viernes <small>(horario diferente)</small></span>
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={generarRegistrosPorRango}
+                style={{
+                  background: 'linear-gradient(135deg, #43e97b, #38f9d7)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                🚀 Generar {generarFechasDelRango().length} Registros
+              </button>
+
+              <button
+                type="button"
+                onClick={aplicarConfiguracionATodos}
+                style={{
+                  background: 'linear-gradient(135deg, #ff9500, #ff6b35)',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+              >
+                🔄 Aplicar Config. a Todos
+              </button>
+            </div>
+
+            <div style={{ 
+              marginTop: '10px', 
+              padding: '10px', 
+              background: 'rgba(255,255,255,0.2)', 
+              borderRadius: '6px',
+              fontSize: '0.85rem'
+            }}>
+              <strong>Fechas que se generarán:</strong> {generarFechasDelRango().join(', ') || 'Ninguna'}
+            </div>
+          </>
+        )}
+      </div>
+
       <form onSubmit={handleSubmit} className="registros-lote-form">
         <div className="registros-list">
           {registros.map((registro, index) => (
             <div key={index} className="registro-item">
               <div className="registro-header">
                 <h4>Registro #{index + 1}</h4>
+                <div style={{ fontSize: '0.8rem', color: '#666', marginLeft: '10px' }}>
+                  📅 {new Date(registro.Fecha).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
+                </div>
                 <div className="registro-actions">
                   <button type="button" className="btn-duplicate" onClick={() => duplicarRegistro(index)} title="Duplicar registro">
                     📋
@@ -302,12 +530,12 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                       onChange={(e) => actualizarRegistro(index, "Fecha", e.target.value)}
                       className="form-input"
                       required
-                      disabled={!!fechaInicial}
-                      style={fechaInicial ? { opacity: 0.7 } : {}}
+                      disabled={modoRangoFechas}
+                      style={modoRangoFechas ? { opacity: 0.7, background: '#f0f0f0' } : {}}
                     />
-                    {fechaInicial && (
-                      <small style={{ color: '#43e97b', fontSize: '0.7rem' }}>
-                        📅 Fecha preseleccionada del calendario
+                    {modoRangoFechas && (
+                      <small style={{ color: '#667eea', fontSize: '0.7rem' }}>
+                        🔒 Fecha controlada por rango automático
                       </small>
                     )}
                   </div>
@@ -351,7 +579,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                   </div>
                 </div>
 
-                {/* Campo de Analista - Nuevo */}
+                {/* Campo de Analista */}
                 <div className="form-row">
                   <div className="form-group">
                     <label className="form-label">Analista encargado</label>
@@ -370,7 +598,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                   </div>
                 </div>
 
-                {/* Sección de Desplazamientos - Actualizada para ser idéntica a RegistrosForm */}
+                {/* Sección de Desplazamientos */}
                 <div
                   className="form-section-header"
                   style={{
@@ -426,9 +654,11 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
         </div>
 
         <div className="form-actions">
-          <button type="button" className="btn-add-registro" onClick={agregarRegistro}>
-            ➕ Agregar Otro Registro
-          </button>
+          {!modoRangoFechas && (
+            <button type="button" className="btn-add-registro" onClick={agregarRegistro}>
+              ➕ Agregar Otro Registro
+            </button>
+          )}
 
           <div className="submit-actions">
             <button type="button" className="btn-secondary" onClick={onCancel} disabled={loading}>
@@ -462,14 +692,25 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
             {new Set(registros.map((r) => r.Centro_ID).filter((id) => id !== "")).size}
           </span>
         </div>
-        {fechaInicial && (
-          <div className="summary-item">
-            <span className="summary-icon">📅</span>
-            <span className="summary-text">
-              <strong>Fecha común:</strong>{" "}
-              {new Date(fechaInicial).toLocaleDateString('es-ES')}
-            </span>
-          </div>
+        {modoRangoFechas && (
+          <>
+            <div className="summary-item">
+              <span className="summary-icon">📅</span>
+              <span className="summary-text">
+                <strong>Rango:</strong>{" "}
+                {fechaInicio} → {fechaFin}
+              </span>
+            </div>
+            <div className="summary-item">
+              <span className="summary-icon">🚫</span>
+              <span className="summary-text">
+                <strong>Exclusiones:</strong>{" "}
+                {excluirSabados && excluirDomingos ? "Sáb. y Dom." :
+                 excluirSabados ? "Sábados" :
+                 excluirDomingos ? "Domingos" : "Ninguna"}
+              </span>
+            </div>
+          </>
         )}
       </div>
     </div>
