@@ -11,6 +11,9 @@ import ClientesPage from "./pages/ClientesPage";
 import EstadisticasPage from "./pages/EstadisticasPage";
 import TrabajadorEditPage from './components/trabajadores/TrabajadorEditPage';
 import TrabajadorIntensidad from "./components/trabajadores/TrabajadorIntensidad";
+import EditarRegistroPage from "./components/registros/EditarRegistroPage";
+import RegistroNuevoPage from "./pages/RegistroNuevoPage";
+import RegistroLotePage from "./pages/RegistroLotePage";
 export default function App() {
   return (
     <BrowserRouter>
@@ -21,6 +24,9 @@ export default function App() {
         <Route path="/trabajadores/:id/intensidad" element={<TrabajadorIntensidad />} />
         <Route path="clientes" element={<ClientesPage/>} />
         <Route path="/registros" element={<RegistrosPage />} />
+            <Route path="/registros/editar/:id" element={<EditarRegistroPage />} />
+ <Route path="/registros/nuevo" element={<RegistroNuevoPage />} />
+          <Route path="/registros/lote" element={<RegistroLotePage />} />
         <Route path="/horarios" element={<HorariosPage />} />
         <Route path="/horarios/crear" element={<HorariosForm />} />
         <Route path="/centros" element={<CentrosPage />} />

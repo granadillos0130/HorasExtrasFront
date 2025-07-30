@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { registrosService } from "../api/registrosService";
 import { trabajadoresService } from "../api/trabajadoresService";
-import RegistrosForm from "../components/registros/RegistrosForm";
-import RegistrosLoteForm from "../components/registros/RegistrosLoteForm";
 import type { Registro } from "../types/registros";
 import { Trabajador } from "../types/trabajadores";
 
@@ -17,17 +16,23 @@ interface EstadisticaDia {
 }
 
 const RegistrosPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  
   const [añoSeleccionado, setAñoSeleccionado] = useState<number>(new Date().getFullYear());
   const [mesSeleccionado, setMesSeleccionado] = useState<number | null>(null);
   const [diaSeleccionado, setDiaSeleccionado] = useState<string | null>(null);
   const [registrosDelDia, setRegistrosDelDia] = useState<Registro[]>([]);
-  const [mostrarFormulario, setMostrarFormulario] = useState<'individual' | 'lote' | null>(null);
   const [loading, setLoading] = useState(false);
   const [exportandoExcel, setExportandoExcel] = useState(false);
   const [trabajadoresActivos, setTrabajadoresActivos] = useState<Trabajador[]>([]);
   const [estadisticasMes, setEstadisticasMes] = useState<Map<string, EstadisticaDia>>(new Map());
   const [cargandoEstadisticas, setCargandoEstadisticas] = useState(false);
   const [centroSeleccionado, setCentroSeleccionado] = useState<string | null>(null);
+  
+  // Estados para mensajes de éxito
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [successType, setSuccessType] = useState<string>('');
 
   const meses = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -35,6 +40,31 @@ const RegistrosPage: React.FC = () => {
   ];
 
   const diasSemana = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+
+  // Manejar mensajes de éxito al regresar de crear registros
+  useEffect(() => {
+    const success = searchParams.get('success');
+    if (success) {
+      setSuccessType(success);
+      setShowSuccessMessage(true);
+      
+      // Limpiar el parámetro de la URL
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('success');
+      setSearchParams(newSearchParams, { replace: true });
+      
+      // Ocultar mensaje después de 4 segundos
+      setTimeout(() => setShowSuccessMessage(false), 4000);
+
+      // Recargar estadísticas y datos
+      if (mesSeleccionado !== null) {
+        cargarEstadisticasDelMes();
+      }
+      if (diaSeleccionado) {
+        obtenerRegistrosDelDia(diaSeleccionado);
+      }
+    }
+  }, [searchParams, mesSeleccionado, diaSeleccionado]);
 
   // Cargar trabajadores activos al iniciar
   useEffect(() => {
@@ -105,30 +135,46 @@ const RegistrosPage: React.FC = () => {
     }
   };
 
+  // Función para navegar a los formularios
+  const navigateToForm = (tipo: 'individual' | 'lote') => {
+    const searchParams = new URLSearchParams();
+    
+    if (diaSeleccionado) {
+      searchParams.set('fecha', diaSeleccionado);
+    }
+    searchParams.set('return', '/registros');
+    
+    const targetPath = tipo === 'individual' 
+      ? `/registros/nuevo?${searchParams.toString()}`
+      : `/registros/lote?${searchParams.toString()}`;
+      
+    navigate(targetPath);
+  };
+
   // Función para agrupar registros por centro
   const agruparRegistrosPorCentro = (registros: Registro[]) => {
-  const centrosMap = new Map<string, { 
-    nombreCentro: string; 
-    centroId: string; 
-    trabajadores: Registro[] 
-  }>();
+    const centrosMap = new Map<string, { 
+      nombreCentro: string; 
+      centroId: string; 
+      trabajadores: Registro[] 
+    }>();
 
-  registros.forEach(registro => {
-    // Manejar centroId null o undefined
-    const centroKey = registro.centroId?.toString() || 'sin-centro';
-    
-    if (!centrosMap.has(centroKey)) {
-      centrosMap.set(centroKey, {
-        nombreCentro: registro.nombreCentro || (registro.centroId ? `Centro ${registro.centroId}` : 'Sin Centro Asignado'),
-        centroId: registro.centroId?.toString() || 'sin-centro',
-        trabajadores: []
-      });
-    }
-    centrosMap.get(centroKey)?.trabajadores.push(registro);
-  });
+    registros.forEach(registro => {
+      // Manejar centroId null o undefined
+      const centroKey = registro.centroId?.toString() || 'sin-centro';
+      
+      if (!centrosMap.has(centroKey)) {
+        centrosMap.set(centroKey, {
+          nombreCentro: registro.nombreCentro || (registro.centroId ? `Centro ${registro.centroId}` : 'Sin Centro Asignado'),
+          centroId: registro.centroId?.toString() || 'sin-centro',
+          trabajadores: []
+        });
+      }
+      centrosMap.get(centroKey)?.trabajadores.push(registro);
+    });
 
-  return Array.from(centrosMap.values());
-};
+    return Array.from(centrosMap.values());
+  };
 
   const obtenerColorDia = (dia: number): { background: string, color: string, border: string } => {
     if (mesSeleccionado === null) {
@@ -574,19 +620,7 @@ const RegistrosPage: React.FC = () => {
   const cerrarModal = () => {
     setDiaSeleccionado(null);
     setRegistrosDelDia([]);
-    setMostrarFormulario(null);
     setCentroSeleccionado(null);
-  };
-
-  const handleFormSuccess = () => {
-    setMostrarFormulario(null);
-    if (diaSeleccionado) {
-      obtenerRegistrosDelDia(diaSeleccionado);
-    }
-    // Recargar estadísticas
-    if (mesSeleccionado !== null) {
-      cargarEstadisticasDelMes();
-    }
   };
 
   const formatearHora = (timeString: string) => {
@@ -642,6 +676,17 @@ const RegistrosPage: React.FC = () => {
     return `${trabajadoresConRegistro}/${totalTrabajadores} trabajadores (${porcentaje.toFixed(1)}%)`;
   };
 
+  const getSuccessMessage = (type: string) => {
+    switch(type) {
+      case 'registro-creado':
+        return '✅ Registro individual creado exitosamente';
+      case 'lote-creado':
+        return '✅ Registros en lote creados exitosamente';
+      default:
+        return '✅ Operación completada exitosamente';
+    }
+  };
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -649,6 +694,28 @@ const RegistrosPage: React.FC = () => {
       padding: '20px'
     }}>
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        {/* Mensaje de éxito flotante */}
+        {showSuccessMessage && (
+          <div style={{
+            position: 'fixed',
+            top: '20px',
+            right: '20px',
+            background: 'linear-gradient(135deg, #22c55e, #15803d)',
+            color: 'white',
+            padding: '15px 25px',
+            borderRadius: '12px',
+            boxShadow: '0 10px 30px rgba(34, 197, 94, 0.4)',
+            zIndex: 2000,
+            fontSize: '1rem',
+            fontWeight: '600',
+            animation: 'slideInRight 0.5s ease-out',
+            border: '2px solid rgba(255,255,255,0.2)',
+            backdropFilter: 'blur(10px)'
+          }}>
+            {getSuccessMessage(successType)}
+          </div>
+        )}
+
         {/* Header */}
         <div style={{
           textAlign: 'center',
@@ -1110,7 +1177,7 @@ const RegistrosPage: React.FC = () => {
                     </h4>
                     <div style={{ display: 'flex', gap: '10px' }}>
                       <button
-                        onClick={() => setMostrarFormulario('individual')}
+                        onClick={() => navigateToForm('individual')}
                         style={{
                           background: 'rgba(255,255,255,0.2)',
                           color: 'white',
@@ -1119,13 +1186,14 @@ const RegistrosPage: React.FC = () => {
                           borderRadius: '8px',
                           cursor: 'pointer',
                           fontWeight: '600',
-                          fontSize: '0.9rem'
+                          fontSize: '0.9rem',
+                          transition: 'all 0.3s ease'
                         }}
                       >
                         ➕ Nuevo Registro
                       </button>
                       <button
-                        onClick={() => setMostrarFormulario('lote')}
+                        onClick={() => navigateToForm('lote')}
                         style={{
                           background: 'rgba(255,255,255,0.2)',
                           color: 'white',
@@ -1134,7 +1202,8 @@ const RegistrosPage: React.FC = () => {
                           borderRadius: '8px',
                           cursor: 'pointer',
                           fontWeight: '600',
-                          fontSize: '0.9rem'
+                          fontSize: '0.9rem',
+                          transition: 'all 0.3s ease'
                         }}
                       >
                         📊 Lote
@@ -1427,7 +1496,7 @@ const RegistrosPage: React.FC = () => {
                     flexWrap: 'wrap'
                   }}>
                     <button
-                      onClick={() => setMostrarFormulario('individual')}
+                      onClick={() => navigateToForm('individual')}
                       style={{
                         background: 'linear-gradient(135deg, #22c55e, #15803d)',
                         color: 'white',
@@ -1436,13 +1505,14 @@ const RegistrosPage: React.FC = () => {
                         borderRadius: '10px',
                         cursor: 'pointer',
                         fontWeight: '600',
-                        fontSize: '1rem'
+                        fontSize: '1rem',
+                        transition: 'all 0.3s ease'
                       }}
                     >
                       ➕ Crear Registro
                     </button>
                     <button
-                      onClick={() => setMostrarFormulario('lote')}
+                      onClick={() => navigateToForm('lote')}
                       style={{
                         background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
                         color: 'white',
@@ -1451,7 +1521,8 @@ const RegistrosPage: React.FC = () => {
                         borderRadius: '10px',
                         cursor: 'pointer',
                         fontWeight: '600',
-                        fontSize: '1rem'
+                        fontSize: '1rem',
+                        transition: 'all 0.3s ease'
                       }}
                     >
                       📊 Registros en Lote
@@ -1459,42 +1530,26 @@ const RegistrosPage: React.FC = () => {
                   </div>
                 </div>
               )}
-
-              {/* Formularios con fecha preseleccionada */}
-              {mostrarFormulario === 'individual' && (
-                <div style={{
-                  marginTop: '30px',
-                  padding: '25px',
-                  background: '#f8fafb',
-                  borderRadius: '15px',
-                  border: '2px solid #e1e8ed'
-                }}>
-                  <RegistrosForm 
-                    onSuccess={handleFormSuccess} 
-                    fechaInicial={diaSeleccionado}
-                  />
-                </div>
-              )}
-
-              {mostrarFormulario === 'lote' && (
-                <div style={{
-                  marginTop: '30px',
-                  padding: '25px',
-                  background: '#f8fafb',
-                  borderRadius: '15px',
-                  border: '2px solid #e1e8ed'
-                }}>
-                  <RegistrosLoteForm 
-                    onSuccess={handleFormSuccess} 
-                    onCancel={() => setMostrarFormulario(null)}
-                    fechaInicial={diaSeleccionado}
-                  />
-                </div>
-              )}
             </div>
           </div>
         )}
       </div>
+
+      {/* CSS para animaciones */}
+      <style>
+        {`
+          @keyframes slideInRight {
+            from {
+              transform: translateX(100%);
+              opacity: 0;
+            }
+            to {
+              transform: translateX(0);
+              opacity: 1;
+            }
+          }
+        `}
+      </style>
     </div>
   );
 };
