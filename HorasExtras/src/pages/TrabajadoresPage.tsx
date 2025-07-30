@@ -13,6 +13,7 @@ const TrabajadoresPage: React.FC = () => {
   const [showForm, setShowForm] = useState(false);
   const [detalleId, setDetalleId] = useState<number | null>(null);
   const [mostrarSoloNoVigentes, setMostrarSoloNoVigentes] = useState(false);
+  const [selectedTrabajadorId, setSelectedTrabajadorId] = useState<number | null>(null);
   
   // Estados para el buscador
   const [trabajadorSeleccionadoId, setTrabajadorSeleccionadoId] = useState<number>(0);
@@ -20,7 +21,6 @@ const TrabajadoresPage: React.FC = () => {
   const [terminoBusqueda, setTerminoBusqueda] = useState<string>("");
 
   const handleCreated = (id: number) => {
-    // Ya no necesitamos setNuevoTrabajadorId porque todo se crea de una vez
     setShowForm(false);
     refetch();
   };
@@ -29,11 +29,20 @@ const TrabajadoresPage: React.FC = () => {
     if (confirm(`¿Estás seguro de eliminar a ${nombre}?`)) {
       try {
         await trabajadoresService.delete(id);
+        // Si el trabajador eliminado estaba seleccionado, deseleccionar
+        if (selectedTrabajadorId === id) {
+          setSelectedTrabajadorId(null);
+        }
         refetch();
       } catch (error) {
         alert("Error al eliminar el trabajador");
       }
     }
+  };
+
+  const handleSelectTrabajador = (id: number) => {
+    // Si ya está seleccionado, deseleccionar; si no, seleccionar
+    setSelectedTrabajadorId(selectedTrabajadorId === id ? null : id);
   };
 
   // Función para filtrar trabajadores
@@ -78,8 +87,11 @@ const TrabajadoresPage: React.FC = () => {
     setTrabajadorSeleccionadoId(id);
     if (trabajador) {
       setTerminoBusqueda(trabajador.nombre);
+      // Seleccionar automáticamente el trabajador buscado
+      setSelectedTrabajadorId(trabajador.id);
     } else {
       setTerminoBusqueda("");
+      setSelectedTrabajadorId(null);
     }
   };
 
@@ -88,6 +100,7 @@ const TrabajadoresPage: React.FC = () => {
     setTerminoBusqueda("");
     setFiltroEstado("todos");
     setMostrarSoloNoVigentes(false);
+    setSelectedTrabajadorId(null);
   };
 
   const hayFiltrosActivos = trabajadorSeleccionadoId > 0 || terminoBusqueda.trim() || 
@@ -116,6 +129,19 @@ const TrabajadoresPage: React.FC = () => {
                 >
                   {mostrarSoloNoVigentes ? "👀 Ver Todos" : "🚫 Ver No Vigentes"}
                 </button>
+                {selectedTrabajadorId && (
+                  <div className="selection-info">
+                    <span className="selection-text">
+                      ✨ Trabajador seleccionado - Haz clic en las acciones que aparecieron
+                    </span>
+                    <button 
+                      className="btn-deselect"
+                      onClick={() => setSelectedTrabajadorId(null)}
+                    >
+                      ✕ Deseleccionar
+                    </button>
+                  </div>
+                )}
               </>
             )}
           </div>
@@ -153,7 +179,7 @@ const TrabajadoresPage: React.FC = () => {
                 <div className="search-icon-header">🔍</div>
                 <div className="search-title-section">
                   <h3>Buscar Trabajadores</h3>
-                  <p>Encuentra rápidamente cualquier trabajador por nombre o cédula</p>
+                  <p>Encuentra rápidamente cualquier trabajador por nombre o cédula. Haz clic en una card para ver las acciones.</p>
                 </div>
                 {hayFiltrosActivos && (
                   <button className="btn-clear-search" onClick={limpiarBusqueda}>
@@ -279,6 +305,9 @@ const TrabajadoresPage: React.FC = () => {
                       trabajador={trabajador}
                       onDelete={(id) => handleDelete(id, trabajador.nombre)}
                       onView={(id) => setDetalleId(id)}
+                      onEstadoChange={refetch}
+                      isSelected={selectedTrabajadorId === trabajador.id}
+                      onSelect={handleSelectTrabajador}
                     />
                   </div>
                 ))}

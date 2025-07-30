@@ -39,3 +39,15 @@ export interface Registro {
    desplazamientoIda?: string;
   desplazamientoRegreso?: string;
 }
+// Nuevo tipo para la respuesta del API con rango de fechas
+export interface RespuestaRangoFechas {
+  success: boolean;
+  data: Registro[];
+  total: number;
+  filtros: {
+    trabajadorId: number;
+    fechaInicio: string;
+    fechaFin: string;
+    diasEnRango: number;
+  }
+}

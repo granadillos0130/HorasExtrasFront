@@ -26,7 +26,36 @@ export const registrosService = {
     await api.delete(`/registros/${id}`);
   },
 
-  // Obtener registros por trabajador, mes y semana
+  // 🆕 NUEVO: Obtener registros por trabajador y rango de fechas
+  async buscarPorTrabajadorRangoFechas(
+    trabajadorId: number,
+    fechaInicio: string,
+    fechaFin: string
+  ): Promise<Registro[]> {
+    try {
+      const res = await api.get<{
+        success: boolean;
+        data: Registro[];
+        total: number;
+        filtros: any;
+      }>("/registros/porTrabajadorRangoFechas", {
+        params: { trabajadorId, fechaInicio, fechaFin },
+      });
+      
+      // Si el backend devuelve un objeto con 'data', extraerlo
+      if (res.data && typeof res.data === 'object' && 'data' in res.data) {
+        return res.data.data;
+      }
+      
+      // Si devuelve directamente el array
+      return Array.isArray(res.data) ? res.data : [];
+    } catch (error) {
+      console.error('Error al buscar registros por rango de fechas:', error);
+      throw error;
+    }
+  },
+
+  // Mantener compatibilidad: Obtener registros por trabajador, mes y semana
   async buscarPorTrabajadorMesSemana(
     trabajadorId: number,
     mes: number,
@@ -49,7 +78,9 @@ export const registrosService = {
     });
     return res.data;
   },
-   async obtenerTodosPorFecha(fecha: string): Promise<Registro[]> {
+
+  // Obtener todos los registros por fecha
+  async obtenerTodosPorFecha(fecha: string): Promise<Registro[]> {
     const res = await api.get<Registro[]>("/registros/porFechaTodos", {
       params: { fecha },
     });

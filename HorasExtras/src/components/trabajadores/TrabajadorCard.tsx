@@ -8,10 +8,19 @@ interface Props {
   trabajador: Trabajador;
   onDelete: (id: number) => void;
   onView: (id: number) => void;
-  onEstadoChange?: () => void; // Opcional, para refrescar lista
+  onEstadoChange?: () => void;
+  isSelected?: boolean;
+  onSelect?: (id: number) => void;
 }
 
-const TrabajadorCard: React.FC<Props> = ({ trabajador, onDelete, onView, onEstadoChange }) => {
+const TrabajadorCard: React.FC<Props> = ({ 
+  trabajador, 
+  onDelete, 
+  onView, 
+  onEstadoChange,
+  isSelected = false,
+  onSelect
+}) => {
   const navigate = useNavigate();
 
   const getInitials = (name: string) => {
@@ -27,7 +36,8 @@ const TrabajadorCard: React.FC<Props> = ({ trabajador, onDelete, onView, onEstad
     navigate(`/trabajadores/editar/${trabajador.id}`);
   };
 
-  const cambiarEstado = async () => {
+  const cambiarEstado = async (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevenir que se active la selección
     const nuevoEstado = trabajador.estado === "Vigente" ? "No Vigente" : "Vigente";
     try {
       await trabajadoresService.cambiarEstado(trabajador.id, nuevoEstado);
@@ -37,8 +47,22 @@ const TrabajadorCard: React.FC<Props> = ({ trabajador, onDelete, onView, onEstad
     }
   };
 
+  const handleCardClick = () => {
+    if (onSelect) {
+      onSelect(trabajador.id);
+    }
+  };
+
+  const handleActionClick = (e: React.MouseEvent, action: () => void) => {
+    e.stopPropagation();
+    action();
+  };
+
   return (
-    <div className="trabajador-card">
+    <div 
+      className={`trabajador-card ${isSelected ? 'selected' : ''}`}
+      onClick={handleCardClick}
+    >
       <div className="card-content">
         {/* Avatar e info básica */}
         <div className="worker-main-info">
@@ -57,39 +81,61 @@ const TrabajadorCard: React.FC<Props> = ({ trabajador, onDelete, onView, onEstad
           </div>
         </div>
 
-        {/* Acciones */}
-        <div className="card-actions">
-          <button className="btn-view-details" onClick={() => onView(trabajador.id)}>
-            <span className="btn-icon">👁️</span>
-            Ver Detalles
-          </button>
+        {/* Indicador de selección */}
+        <div className={`selection-indicator ${isSelected ? 'active' : ''}`}>
+          <div className="selection-dot"></div>
+        </div>
 
-          <button className="btn-edit" onClick={handleEdit} title="Editar trabajador">
-            <span className="btn-icon">✏️</span>
-            Editar
-          </button>
+        {/* Acciones - Solo se muestran cuando está seleccionado */}
+        <div className={`card-actions ${isSelected ? 'visible' : ''}`}>
+          <div className="actions-grid">
+            <button 
+              className="btn-action btn-view-details" 
+              onClick={(e) => handleActionClick(e, () => onView(trabajador.id))}
+              title="Ver detalles del trabajador"
+            >
+              <span className="btn-icon">👁️</span>
+              <span className="btn-text">Ver Detalles</span>
+            </button>
 
-          <button className="btn-delete" onClick={() => onDelete(trabajador.id)} title="Eliminar trabajador">
-            🗑️
-          </button>
+            <button 
+              className="btn-action btn-intensidad" 
+              onClick={(e) => handleActionClick(e, () => navigate(`/trabajadores/${trabajador.id}/intensidad`))}
+              title="Ver intensidad horaria"
+            >
+              <span className="btn-icon">📊</span>
+              <span className="btn-text">Intensidad</span>
+            </button>
 
-          <button
-            className="btn-intensidad"
-            onClick={() => navigate(`/trabajadores/${trabajador.id}/intensidad`)}
-            title="Ver intensidad horaria"
-          >
-            <span className="btn-icon">📊</span>
-            Intensidad Horaria
-          </button>
+            <button 
+              className="btn-action btn-edit" 
+              onClick={(e) => handleActionClick(e, handleEdit)}
+              title="Editar trabajador"
+            >
+              <span className="btn-icon">✏️</span>
+              <span className="btn-text">Editar</span>
+            </button>
 
-         <button
-  className="btn-estado"
-  onClick={cambiarEstado}
-  title={trabajador.estado === "Vigente" ? "Pasar a No Vigente" : "Pasar a Vigente"}
->
-  {trabajador.estado === "Vigente" ? "Marcar como No Vigente" : "Marcar como Vigente"}
-</button>
+            <button 
+              className="btn-action btn-delete" 
+              onClick={(e) => handleActionClick(e, () => onDelete(trabajador.id))}
+              title="Eliminar trabajador"
+            >
+              <span className="btn-icon">🗑️</span>
+              <span className="btn-text">Eliminar</span>
+            </button>
 
+            <button
+              className="btn-action btn-estado"
+              onClick={(e) => handleActionClick(e, () => cambiarEstado(e))}
+              title={trabajador.estado === "Vigente" ? "Pasar a No Vigente" : "Pasar a Vigente"}
+            >
+              <span className="btn-icon">{trabajador.estado === "Vigente" ? "🔴" : "🟢"}</span>
+              <span className="btn-text">
+                {trabajador.estado === "Vigente" ? "Desactivar" : "Activar"}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

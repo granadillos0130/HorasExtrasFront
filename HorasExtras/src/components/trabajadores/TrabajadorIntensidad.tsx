@@ -7,13 +7,31 @@ import type { Registro } from "../../types/registros";
 import type { Trabajador } from "../../types/trabajadores";
 import "../../styles/components/trabajador/TrabajadorIntensidad.css";
 
-const getCurrentMonth = () => new Date().getMonth() + 1;
-const getCurrentWeek = () => {
+// Funciones helper para fechas
+const formatDateForInput = (date: Date) => {
+  return date.toISOString().split('T')[0];
+};
+
+const getStartOfWeek = (date: Date) => {
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+  return new Date(d.setDate(diff));
+};
+
+const getEndOfWeek = (date: Date) => {
+  const startOfWeek = getStartOfWeek(date);
+  const endOfWeek = new Date(startOfWeek);
+  endOfWeek.setDate(startOfWeek.getDate() + 6);
+  return endOfWeek;
+};
+
+const getCurrentWeekRange = () => {
   const today = new Date();
-  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-  const dayOfMonth = today.getDate();
-  const week = Math.ceil((dayOfMonth + firstDay.getDay()) / 7);
-  return week;
+  return {
+    inicio: getStartOfWeek(today),
+    fin: getEndOfWeek(today)
+  };
 };
 
 const TrabajadorIntensidad: React.FC = () => {
@@ -29,9 +47,11 @@ const TrabajadorIntensidad: React.FC = () => {
   const [loadingRegistros, setLoadingRegistros] = useState(false);
   const [error, setError] = useState("");
 
-  // Filtros
-  const [mes, setMes] = useState<number>(getCurrentMonth());
-  const [semana, setSemana] = useState<number>(getCurrentWeek());
+  // Filtros de fecha
+  const currentWeek = getCurrentWeekRange();
+  const [fechaInicio, setFechaInicio] = useState<string>(formatDateForInput(currentWeek.inicio));
+  const [fechaFin, setFechaFin] = useState<string>(formatDateForInput(currentWeek.fin));
+  const [rangoPreseleccionado, setRangoPreseleccionado] = useState<string>("semana_actual");
 
   // Cargar trabajadores al inicio
   useEffect(() => {
@@ -48,7 +68,7 @@ const TrabajadorIntensidad: React.FC = () => {
           const trabajador = data.find(t => t.id === trabajadorId);
           if (trabajador) {
             setTrabajadorActual(trabajador);
-            await cargarRegistros(trabajadorId, mes, semana);
+            await cargarRegistros(trabajadorId, fechaInicio, fechaFin);
           }
         }
       } catch (err) {
@@ -60,16 +80,24 @@ const TrabajadorIntensidad: React.FC = () => {
     };
 
     cargarTrabajadores();
-  }, [id, mes, semana]);
+  }, [id]);
 
-  const cargarRegistros = async (trabajadorId: number, mesParam: number, semanaParam: number) => {
+  // Cargar registros cuando cambien las fechas
+  useEffect(() => {
+    if (trabajadorSeleccionado > 0) {
+      cargarRegistros(trabajadorSeleccionado, fechaInicio, fechaFin);
+    }
+  }, [fechaInicio, fechaFin, trabajadorSeleccionado]);
+
+  const cargarRegistros = async (trabajadorId: number, inicio: string, fin: string) => {
     try {
       setLoadingRegistros(true);
       setError("");
-      const data = await registrosService.buscarPorTrabajadorMesSemana(
+      // Asumiendo que el servicio acepta fechas en formato YYYY-MM-DD
+      const data = await registrosService.buscarPorTrabajadorRangoFechas(
         trabajadorId,
-        mesParam,
-        semanaParam
+        inicio,
+        fin
       );
       setRegistros(data);
     } catch (err) {
@@ -87,30 +115,54 @@ const TrabajadorIntensidad: React.FC = () => {
     if (trabajadorId > 0) {
       // Actualizar URL
       navigate(`/trabajadores/${trabajadorId}/intensidad`, { replace: true });
-      cargarRegistros(trabajadorId, mes, semana);
     } else {
       setRegistros([]);
     }
   };
 
-  const handleFiltroChange = (newMes?: number, newSemana?: number) => {
-    const mesActual = newMes ?? mes;
-    const semanaActual = newSemana ?? semana;
+  const handleRangoPreseleccionado = (rango: string) => {
+    setRangoPreseleccionado(rango);
+    const today = new Date();
     
-    if (newMes !== undefined) setMes(newMes);
-    if (newSemana !== undefined) setSemana(newSemana);
-
-    if (trabajadorSeleccionado > 0) {
-      cargarRegistros(trabajadorSeleccionado, mesActual, semanaActual);
+    switch (rango) {
+      case "hoy":
+        setFechaInicio(formatDateForInput(today));
+        setFechaFin(formatDateForInput(today));
+        break;
+      case "ayer":
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        setFechaInicio(formatDateForInput(yesterday));
+        setFechaFin(formatDateForInput(yesterday));
+        break;
+      case "semana_actual":
+        const thisWeek = getCurrentWeekRange();
+        setFechaInicio(formatDateForInput(thisWeek.inicio));
+        setFechaFin(formatDateForInput(thisWeek.fin));
+        break;
+      case "semana_pasada":
+        const lastWeekEnd = new Date(getStartOfWeek(today));
+        lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
+        const lastWeekStart = getStartOfWeek(lastWeekEnd);
+        setFechaInicio(formatDateForInput(lastWeekStart));
+        setFechaFin(formatDateForInput(lastWeekEnd));
+        break;
+      case "mes_actual":
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        setFechaInicio(formatDateForInput(firstDayOfMonth));
+        setFechaFin(formatDateForInput(lastDayOfMonth));
+        break;
+      case "mes_pasado":
+        const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+        setFechaInicio(formatDateForInput(firstDayLastMonth));
+        setFechaFin(formatDateForInput(lastDayLastMonth));
+        break;
+      case "personalizado":
+        // No hacer nada, dejar que el usuario seleccione manualmente
+        break;
     }
-  };
-
-  const getMesesOptions = () => {
-    const meses = [
-      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-    ];
-    return meses.map((mes, index) => ({ value: index + 1, label: mes }));
   };
 
   const formatHours = (hours: number) => {
@@ -135,6 +187,23 @@ const TrabajadorIntensidad: React.FC = () => {
     return totales;
   };
 
+  const formatFechaLegible = (fechaStr: string) => {
+    const fecha = new Date(fechaStr + 'T00:00:00');
+    return fecha.toLocaleDateString('es-CO', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getRangoFechasTexto = () => {
+    if (fechaInicio === fechaFin) {
+      return formatFechaLegible(fechaInicio);
+    }
+    return `${formatFechaLegible(fechaInicio)} - ${formatFechaLegible(fechaFin)}`;
+  };
+
   // Funciones helper para manejar valores null de forma segura
   const safeSubstring = (str: string | null | undefined, start: number, end?: number): string => {
     if (!str) return '';
@@ -144,6 +213,14 @@ const TrabajadorIntensidad: React.FC = () => {
   const formatCentroName = (nombreCentro: string | null | undefined): string => {
     const nombre = nombreCentro || 'Sin centro';
     return nombre.length > 15 ? `${nombre.substring(0, 15)}...` : nombre;
+  };
+
+  const getDiasEnRango = () => {
+    const inicio = new Date(fechaInicio);
+    const fin = new Date(fechaFin);
+    const diffTime = Math.abs(fin.getTime() - inicio.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
+    return diffDays;
   };
 
   const resumen = getResumenHoras();
@@ -174,7 +251,7 @@ const TrabajadorIntensidad: React.FC = () => {
           </button>
           <h1>Intensidad Horaria por Trabajador</h1>
           <p className="page-subtitle">
-            Consulta detallada de las horas trabajadas por semana
+            Consulta detallada de las horas trabajadas por período
           </p>
         </div>
 
@@ -195,35 +272,100 @@ const TrabajadorIntensidad: React.FC = () => {
               showSelectedInfo={true}
             />
 
+            {/* Selector de rango rápido */}
+            <div className="form-group">
+              <label className="form-label">Período de Consulta</label>
+              <div className="range-selector">
+                <div className="range-buttons">
+                  <button
+                    className={`range-btn ${rangoPreseleccionado === 'hoy' ? 'active' : ''}`}
+                    onClick={() => handleRangoPreseleccionado('hoy')}
+                  >
+                    📅 Hoy
+                  </button>
+                  <button
+                    className={`range-btn ${rangoPreseleccionado === 'ayer' ? 'active' : ''}`}
+                    onClick={() => handleRangoPreseleccionado('ayer')}
+                  >
+                    ⏮️ Ayer
+                  </button>
+                  <button
+                    className={`range-btn ${rangoPreseleccionado === 'semana_actual' ? 'active' : ''}`}
+                    onClick={() => handleRangoPreseleccionado('semana_actual')}
+                  >
+                    📝 Esta Semana
+                  </button>
+                  <button
+                    className={`range-btn ${rangoPreseleccionado === 'semana_pasada' ? 'active' : ''}`}
+                    onClick={() => handleRangoPreseleccionado('semana_pasada')}
+                  >
+                    📄 Semana Pasada
+                  </button>
+                  <button
+                    className={`range-btn ${rangoPreseleccionado === 'mes_actual' ? 'active' : ''}`}
+                    onClick={() => handleRangoPreseleccionado('mes_actual')}
+                  >
+                    📊 Este Mes
+                  </button>
+                  <button
+                    className={`range-btn ${rangoPreseleccionado === 'mes_pasado' ? 'active' : ''}`}
+                    onClick={() => handleRangoPreseleccionado('mes_pasado')}
+                  >
+                    📈 Mes Pasado
+                  </button>
+                  <button
+                    className={`range-btn ${rangoPreseleccionado === 'personalizado' ? 'active' : ''}`}
+                    onClick={() => handleRangoPreseleccionado('personalizado')}
+                  >
+                    🎯 Personalizado
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Selectores de fecha personalizados */}
             <div className="form-row">
               <div className="form-group">
-                <label className="form-label">Mes</label>
-                <select 
-                  value={mes} 
-                  onChange={(e) => handleFiltroChange(Number(e.target.value), undefined)}
-                  className="form-select"
-                >
-                  {getMesesOptions().map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <label className="form-label">Fecha de Inicio</label>
+                <input
+                  type="date"
+                  value={fechaInicio}
+                  onChange={(e) => {
+                    setFechaInicio(e.target.value);
+                    setRangoPreseleccionado('personalizado');
+                  }}
+                  className="form-input"
+                />
               </div>
 
               <div className="form-group">
-                <label className="form-label">Semana</label>
-                <select 
-                  value={semana} 
-                  onChange={(e) => handleFiltroChange(undefined, Number(e.target.value))}
-                  className="form-select"
-                >
-                  {[1, 2, 3, 4, 5].map((s) => (
-                    <option key={s} value={s}>
-                      Semana {s}
-                    </option>
-                  ))}
-                </select>
+                <label className="form-label">Fecha de Fin</label>
+                <input
+                  type="date"
+                  value={fechaFin}
+                  onChange={(e) => {
+                    setFechaFin(e.target.value);
+                    setRangoPreseleccionado('personalizado');
+                  }}
+                  className="form-input"
+                  min={fechaInicio}
+                />
+              </div>
+            </div>
+
+            {/* Información del rango seleccionado */}
+            <div className="range-info">
+              <div className="range-info-item">
+                <span className="range-info-icon">📅</span>
+                <span className="range-info-text">
+                  <strong>Período:</strong> {getRangoFechasTexto()}
+                </span>
+              </div>
+              <div className="range-info-item">
+                <span className="range-info-icon">📊</span>
+                <span className="range-info-text">
+                  <strong>Días en rango:</strong> {getDiasEnRango()} día{getDiasEnRango() !== 1 ? 's' : ''}
+                </span>
               </div>
             </div>
           </div>
@@ -244,7 +386,7 @@ const TrabajadorIntensidad: React.FC = () => {
               <div className="worker-meta">
                 <span>CC: {trabajadorActual.cedula}</span>
                 <span>ID: {trabajadorActual.id}</span>
-                <span>{getMesesOptions()[mes - 1]?.label} • Semana {semana}</span>
+                <span>{getRangoFechasTexto()}</span>
               </div>
             </div>
           </div>
@@ -316,6 +458,18 @@ const TrabajadorIntensidad: React.FC = () => {
                       </div>
                     </div>
                   </div>
+
+                  {/* Información adicional del período */}
+                  <div className="period-summary">
+                    <div className="period-item">
+                      <span className="period-icon">📊</span>
+                      <span>Promedio diario: {formatHours(resumen.total / getDiasEnRango())}</span>
+                    </div>
+                    <div className="period-item">
+                      <span className="period-icon">📈</span>
+                      <span>{registros.length} día{registros.length !== 1 ? 's' : ''} con registro</span>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Tabla de registros detallados */}
@@ -355,7 +509,8 @@ const TrabajadorIntensidad: React.FC = () => {
                               <td className="col-fecha">
                                 {registro.fecha ? new Date(registro.fecha).toLocaleDateString('es-CO', {
                                   day: '2-digit',
-                                  month: '2-digit'
+                                  month: '2-digit',
+                                  year: '2-digit'
                                 }) : 'N/A'}
                               </td>
                               <td className="col-dia">
@@ -420,14 +575,14 @@ const TrabajadorIntensidad: React.FC = () => {
                 <h3>No hay registros</h3>
                 <p>
                   No se encontraron registros para {trabajadorActual?.nombre || 'este trabajador'} 
-                  en {getMesesOptions()[mes - 1]?.label}, Semana {semana}.
+                  en el período seleccionado.
                 </p>
                 <div className="empty-state-suggestions">
                   <p>Prueba con:</p>
                   <ul>
-                    <li>Una semana diferente del mismo mes</li>
-                    <li>Un mes anterior o posterior</li>
-                    <li>Verificar que existan registros para este trabajador</li>
+                    <li>Un rango de fechas diferente</li>
+                    <li>Verificar períodos anteriores</li>
+                    <li>Asegurarte de que existan registros para este trabajador</li>
                   </ul>
                 </div>
               </div>
@@ -441,7 +596,7 @@ const TrabajadorIntensidad: React.FC = () => {
             <h3>Selecciona un trabajador</h3>
             <p>
               Utiliza el buscador de arriba para seleccionar un trabajador y ver 
-              su intensidad horaria semanal.
+              su intensidad horaria en el período deseado.
             </p>
             <div className="empty-state-features">
               <div className="feature-item">
@@ -450,11 +605,15 @@ const TrabajadorIntensidad: React.FC = () => {
               </div>
               <div className="feature-item">
                 <span className="feature-icon">📅</span>
-                <span>Filtra por mes y semana</span>
+                <span>Selecciona período personalizado</span>
               </div>
               <div className="feature-item">
                 <span className="feature-icon">📊</span>
                 <span>Ve resumen y detalle de horas</span>
+              </div>
+              <div className="feature-item">
+                <span className="feature-icon">⚡</span>
+                <span>Rangos rápidos disponibles</span>
               </div>
             </div>
           </div>
