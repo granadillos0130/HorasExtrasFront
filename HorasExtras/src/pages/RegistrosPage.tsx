@@ -722,7 +722,7 @@ const RegistrosPage: React.FC = () => {
                 fontWeight: '600'
               }}
             >
-              {[2023, 2024, 2025, 2026].map(año => (
+              {[2023, 2024, 2025, 2026,2027,2028].map(año => (
                 <option key={año} value={año}>{año}</option>
               ))}
             </select>

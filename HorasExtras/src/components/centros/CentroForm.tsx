@@ -30,7 +30,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
     fechaInicio: "",
     fechaFinal: "",
     clienteId: "",
-    estado: "Activo", // Mantenemos string en el formulario
+    estado: "Abierto", // Mantenemos string en el formulario
     interventor: "",
     vendedor: "",
     valorOrden: 0,
@@ -43,7 +43,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
   const [error, setError] = useState<string | null>(null);
   const [valorOrdenDisplay, setValorOrdenDisplay] = useState<string>("0");
 
-  const estadosDisponibles = ["Activo", "Inactivo", "Suspendido", "Finalizado"];
+  const estadosDisponibles = ["Abierto", "Cerrado",];
   const tiposDisponibles = ["Obra", "Mantenimiento", "Proyecto", "Servicio"];
 
   // Función para formatear número con puntos como separadores de miles
@@ -153,7 +153,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
         fechaInicio: formData.fechaInicio, // Ya está en formato "YYYY-MM-DD"
         fechaFinal: formData.fechaFinal?.trim() === "" ? null : formData.fechaFinal,
         clienteId: formData.clienteId,
-        estado: formData.estado === "Activo", // Convertir string a boolean
+        estado: formData.estado === "Abierto", // Convertir string a boolean
         interventor: formData.interventor?.trim() === "" ? null : formData.interventor?.trim(),
         vendedor: formData.vendedor?.trim() === "" ? null : formData.vendedor?.trim(),
         valorOrden: formData.valorOrden || 0,
@@ -174,7 +174,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
         fechaInicio: "",
         fechaFinal: "",
         clienteId: "",
-        estado: "Activo",
+        estado: "Abierto",
         interventor: "",
         vendedor: "",
         valorOrden: 0,
