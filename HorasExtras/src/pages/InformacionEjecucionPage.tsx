@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import { centrosService } from "../api/centrosService";
 
 interface Props {
@@ -71,14 +73,12 @@ const InformacionEjecucionPage: React.FC<Props> = ({ centroId, centroNombre, onV
   const cargarTrabajadoresDelMes = async (mes: number, año: number) => {
     setLoading(true);
     try {
-      // Usar el endpoint por-mes para obtener trabajadores de ese mes
       const centrosData = await centrosService.obtenerPorMes(año, mes);
       const centroDelMes = centrosData.find(c => c.centroId === centroId);
       
       if (centroDelMes) {
         setTrabajadoresDelMes(centroDelMes.trabajadores);
         
-        // Cargar mano de obra para cada trabajador
         const manoObraPromises = centroDelMes.trabajadores.map(trabajador =>
           centrosService.obtenerManoObraPorTrabajador(centroId, trabajador.trabajadorId)
         );
@@ -109,6 +109,543 @@ const InformacionEjecucionPage: React.FC<Props> = ({ centroId, centroNombre, onV
     } finally {
       setLoading(false);
     }
+  };
+
+  // Exportar Excel para vista de trabajadores del mes
+  const exportarExcelTrabajadores = async () => {
+    if (!mesSeleccionado || trabajadoresDelMes.length === 0) return;
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Información Ejecución");
+
+    // Configurar propiedades del documento
+    workbook.creator = "Sistema de Horas Extras";
+    workbook.lastModifiedBy = "Sistema de Horas Extras";
+    workbook.created = new Date();
+    workbook.modified = new Date();
+
+    // Configurar ancho de columnas
+    worksheet.columns = [
+      { width: 8 }, // ID
+      { width: 30 }, // Nombre
+      { width: 20 }, // Cargo
+      { width: 20 }, // Mano de Obra
+    ];
+
+    // Agregar título principal
+    worksheet.mergeCells('A1:D1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = '📈 INFORMACIÓN DE EJECUCIÓN';
+    titleCell.font = { 
+      size: 18, 
+      bold: true, 
+      color: { argb: 'FFFFFFFF' } 
+    };
+    titleCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF228B22' },
+    };
+    titleCell.alignment = { 
+      horizontal: 'center', 
+      vertical: 'middle' 
+    };
+    titleCell.border = {
+      top: { style: 'thick', color: { argb: 'FF32CD32' } },
+      bottom: { style: 'thick', color: { argb: 'FF32CD32' } },
+      left: { style: 'thick', color: { argb: 'FF32CD32' } },
+      right: { style: 'thick', color: { argb: 'FF32CD32' } },
+    };
+
+    // Información del centro y período
+    worksheet.mergeCells('A3:D3');
+    const centroCell = worksheet.getCell('A3');
+    centroCell.value = `Centro: ${centroNombre} | ID: ${centroId}`;
+    centroCell.font = { 
+      size: 14, 
+      bold: true, 
+      color: { argb: 'FF228B22' } 
+    };
+    centroCell.alignment = { horizontal: 'center' };
+
+    worksheet.mergeCells('A4:D4');
+    const periodoCell = worksheet.getCell('A4');
+    periodoCell.value = `Período: ${meses[mesSeleccionado - 1]} ${añoSeleccionado} | Total trabajadores: ${trabajadoresDelMes.length}`;
+    periodoCell.font = { 
+      size: 12, 
+      italic: true, 
+      color: { argb: 'FF666666' } 
+    };
+    periodoCell.alignment = { horizontal: 'center' };
+
+    // Mano de obra total del centro
+    if (manoObraData) {
+      worksheet.mergeCells('A5:D5');
+      const manoObraCell = worksheet.getCell('A5');
+      manoObraCell.value = `Mano de Obra Total del Centro: ${formatearMoneda(manoObraData.manoObraTotal)}`;
+      manoObraCell.font = { 
+        size: 12, 
+        bold: true, 
+        color: { argb: 'FF10b981' } 
+      };
+      manoObraCell.alignment = { horizontal: 'center' };
+    }
+
+    // Fecha de generación
+    worksheet.mergeCells('A6:D6');
+    const fechaCell = worksheet.getCell('A6');
+    fechaCell.value = `Generado el: ${new Date().toLocaleDateString('es-ES', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`;
+    fechaCell.font = { 
+      size: 10, 
+      color: { argb: 'FF666666' } 
+    };
+    fechaCell.alignment = { horizontal: 'center' };
+
+    const startRow = 8;
+
+    // Encabezados
+    const headers = [
+      "ID Trabajador",
+      "Nombre del Trabajador",
+      "Cargo",
+      "Mano de Obra",
+    ];
+
+    worksheet.insertRow(startRow, headers);
+
+    // Estilos de encabezado
+    const headerRow = worksheet.getRow(startRow);
+    headerRow.height = 25;
+    headerRow.eachCell((cell) => {
+      cell.font = { 
+        bold: true, 
+        color: { argb: 'FFFFFFFF' },
+        size: 12
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF32CD32' },
+      };
+      cell.alignment = { 
+        horizontal: 'center', 
+        vertical: 'middle' 
+      };
+      cell.border = {
+        top: { style: 'medium', color: { argb: 'FF228B22' } },
+        bottom: { style: 'medium', color: { argb: 'FF228B22' } },
+        left: { style: 'thin', color: { argb: 'FF228B22' } },
+        right: { style: 'thin', color: { argb: 'FF228B22' } },
+      };
+    });
+
+    // Agregar datos de trabajadores
+    trabajadoresDelMes.forEach((trabajador, index) => {
+      const manoObra = trabajadoresManoObra.find(mo => mo.trabajadorId === trabajador.trabajadorId);
+      
+      const rowData = [
+        trabajador.trabajadorId,
+        trabajador.nombre,
+        trabajador.cargo || 'N/A',
+        manoObra ? manoObra.manoObraTotal : 0,
+      ];
+      
+      const currentRow = startRow + 1 + index;
+      worksheet.insertRow(currentRow, rowData);
+      
+      const dataRow = worksheet.getRow(currentRow);
+      dataRow.height = 20;
+      
+      dataRow.eachCell((cell, colNumber) => {
+        cell.alignment = { 
+          horizontal: colNumber === 2 ? 'left' : 'center', 
+          vertical: 'middle' 
+        };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+          bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+          left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+          right: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+        };
+        
+        if (index % 2 === 0) {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF8FFF8' },
+          };
+        }
+        
+        cell.font = { 
+          size: 11,
+          color: { argb: 'FF333333' }
+        };
+
+        // Formato para mano de obra
+        if (colNumber === 4 && typeof cell.value === 'number') {
+          cell.numFmt = '"$"#,##0';
+        }
+      });
+    });
+
+    // Agregar fila de totales
+    const totalRow = startRow + 1 + trabajadoresDelMes.length;
+    const totalManoObra = trabajadoresManoObra.reduce((sum, mo) => sum + mo.manoObraTotal, 0);
+    
+    const totales = [
+      '',
+      'TOTAL',
+      '',
+      totalManoObra,
+    ];
+    
+    worksheet.insertRow(totalRow, totales);
+    const totalRowObj = worksheet.getRow(totalRow);
+    totalRowObj.height = 25;
+    totalRowObj.eachCell((cell, colNumber) => {
+      cell.font = { 
+        bold: true, 
+        color: { argb: 'FFFFFFFF' },
+        size: 12
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF228B22' },
+      };
+      cell.alignment = { 
+        horizontal: 'center', 
+        vertical: 'middle' 
+      };
+      cell.border = {
+        top: { style: 'medium', color: { argb: 'FF006400' } },
+        bottom: { style: 'medium', color: { argb: 'FF006400' } },
+        left: { style: 'thin', color: { argb: 'FF006400' } },
+        right: { style: 'thin', color: { argb: 'FF006400' } },
+      };
+      
+      if (colNumber === 4 && typeof cell.value === 'number') {
+        cell.numFmt = '"$"#,##0';
+      }
+    });
+
+    // Pie de página
+    const footerRow = totalRow + 2;
+    worksheet.mergeCells(`A${footerRow}:D${footerRow}`);
+    const footerCell = worksheet.getCell(`A${footerRow}`);
+    footerCell.value = '© Sistema de Gestión de Horas Extras - Información de Ejecución';
+    footerCell.font = { 
+      size: 9, 
+      italic: true, 
+      color: { argb: 'FF888888' } 
+    };
+    footerCell.alignment = { horizontal: 'center' };
+
+    // Configurar vista de impresión
+    worksheet.pageSetup = {
+      orientation: 'portrait',
+      paperSize: 9,
+      fitToPage: true,
+      fitToHeight: 1,
+      fitToWidth: 1,
+      margins: {
+        left: 0.7,
+        right: 0.7,
+        top: 0.75,
+        bottom: 0.75,
+        header: 0.3,
+        footer: 0.3,
+      },
+    };
+
+    worksheet.headerFooter.oddHeader = '&C&16&B📈 INFORMACIÓN DE EJECUCIÓN';
+    worksheet.headerFooter.oddFooter = '&L&D &T&C&P de &N&R© Sistema de Gestión';
+
+    // Generar y descargar el archivo
+    const buffer = await workbook.xlsx.writeBuffer();
+    const fecha = new Date().toISOString().split('T')[0];
+    const nombreArchivo = `Ejecucion_${centroNombre.replace(/\s+/g, '_')}_${meses[mesSeleccionado - 1]}_${añoSeleccionado}_${fecha}.xlsx`;
+    saveAs(new Blob([buffer]), nombreArchivo);
+  };
+
+  // Exportar Excel para detalle de trabajador
+  const exportarExcelDetalle = async () => {
+    if (!detalleActual || detalleActual.detalleDias.length === 0) return;
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Detalle Días Trabajados");
+
+    workbook.creator = "Sistema de Horas Extras";
+    workbook.lastModifiedBy = "Sistema de Horas Extras";
+    workbook.created = new Date();
+    workbook.modified = new Date();
+
+    // Configurar ancho de columnas
+    worksheet.columns = [
+      { width: 12 }, // Fecha
+      { width: 12 }, // H. Normales
+      { width: 12 }, // Extras Diurnas
+      { width: 12 }, // Extras Nocturnas
+      { width: 12 }, // Dom. Diurnas
+      { width: 12 }, // Dom. Nocturnas
+      { width: 12 }, // Total Horas
+    ];
+
+    // Título principal
+    worksheet.mergeCells('A1:G1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = '📅 DETALLE DE DÍAS TRABAJADOS';
+    titleCell.font = { 
+      size: 18, 
+      bold: true, 
+      color: { argb: 'FFFFFFFF' } 
+    };
+    titleCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF228B22' },
+    };
+    titleCell.alignment = { 
+      horizontal: 'center', 
+      vertical: 'middle' 
+    };
+    titleCell.border = {
+      top: { style: 'thick', color: { argb: 'FF32CD32' } },
+      bottom: { style: 'thick', color: { argb: 'FF32CD32' } },
+      left: { style: 'thick', color: { argb: 'FF32CD32' } },
+      right: { style: 'thick', color: { argb: 'FF32CD32' } },
+    };
+
+    // Información del trabajador
+    worksheet.mergeCells('A3:G3');
+    const trabajadorCell = worksheet.getCell('A3');
+    trabajadorCell.value = `Trabajador: ${detalleActual.nombreTrabajador} | ID: ${detalleActual.trabajadorId}`;
+    trabajadorCell.font = { 
+      size: 14, 
+      bold: true, 
+      color: { argb: 'FF228B22' } 
+    };
+    trabajadorCell.alignment = { horizontal: 'center' };
+
+    worksheet.mergeCells('A4:G4');
+    const centroDetalleCell = worksheet.getCell('A4');
+    centroDetalleCell.value = `Centro: ${centroNombre} | Mes: ${mesSeleccionado ? meses[mesSeleccionado - 1] : ''} ${añoSeleccionado}`;
+    centroDetalleCell.font = { 
+      size: 12, 
+      italic: true, 
+      color: { argb: 'FF666666' } 
+    };
+    centroDetalleCell.alignment = { horizontal: 'center' };
+
+    // Fecha de generación
+    worksheet.mergeCells('A5:G5');
+    const fechaDetalleCell = worksheet.getCell('A5');
+    fechaDetalleCell.value = `Generado el: ${new Date().toLocaleDateString('es-ES', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`;
+    fechaDetalleCell.font = { 
+      size: 10, 
+      color: { argb: 'FF666666' } 
+    };
+    fechaDetalleCell.alignment = { horizontal: 'center' };
+
+    const startRow = 7;
+
+    // Encabezados
+    const headers = [
+      "Fecha",
+      "H. Normales",
+      "Extras Diurnas",
+      "Extras Nocturnas",
+      "Dom. Diurnas",
+      "Dom. Nocturnas",
+      "Total Horas",
+    ];
+
+    worksheet.insertRow(startRow, headers);
+
+    // Estilos de encabezado
+    const headerRow = worksheet.getRow(startRow);
+    headerRow.height = 25;
+    headerRow.eachCell((cell) => {
+      cell.font = { 
+        bold: true, 
+        color: { argb: 'FFFFFFFF' },
+        size: 12
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF32CD32' },
+      };
+      cell.alignment = { 
+        horizontal: 'center', 
+        vertical: 'middle' 
+      };
+      cell.border = {
+        top: { style: 'medium', color: { argb: 'FF228B22' } },
+        bottom: { style: 'medium', color: { argb: 'FF228B22' } },
+        left: { style: 'thin', color: { argb: 'FF228B22' } },
+        right: { style: 'thin', color: { argb: 'FF228B22' } },
+      };
+    });
+
+    // Agregar datos de días trabajados
+    detalleActual.detalleDias.forEach((dia, index) => {
+      const rowData = [
+        new Date(dia.fecha).toLocaleDateString('es-CO'),
+        dia.horasNormales,
+        dia.extrasDiurnas,
+        dia.extrasNocturnas,
+        dia.dominicalesDiurnas,
+        dia.dominicalesNocturnas,
+        dia.totalHoras,
+      ];
+      
+      const currentRow = startRow + 1 + index;
+      worksheet.insertRow(currentRow, rowData);
+      
+      const dataRow = worksheet.getRow(currentRow);
+      dataRow.height = 20;
+      
+      dataRow.eachCell((cell, colNumber) => {
+        cell.alignment = { 
+          horizontal: colNumber === 1 ? 'left' : 'center', 
+          vertical: 'middle' 
+        };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+          bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+          left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+          right: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+        };
+        
+        if (index % 2 === 0) {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF8FFF8' },
+          };
+        }
+        
+        cell.font = { 
+          size: 11,
+          color: { argb: 'FF333333' }
+        };
+
+        // Formato para horas
+        if (colNumber > 1 && typeof cell.value === 'number') {
+          cell.numFmt = '#,##0.00';
+        }
+      });
+    });
+
+    // Calcular totales
+    const totales = detalleActual.detalleDias.reduce((acc, dia) => ({
+      horasNormales: acc.horasNormales + dia.horasNormales,
+      extrasDiurnas: acc.extrasDiurnas + dia.extrasDiurnas,
+      extrasNocturnas: acc.extrasNocturnas + dia.extrasNocturnas,
+      dominicalesDiurnas: acc.dominicalesDiurnas + dia.dominicalesDiurnas,
+      dominicalesNocturnas: acc.dominicalesNocturnas + dia.dominicalesNocturnas,
+      totalHoras: acc.totalHoras + dia.totalHoras,
+    }), {
+      horasNormales: 0,
+      extrasDiurnas: 0,
+      extrasNocturnas: 0,
+      dominicalesDiurnas: 0,
+      dominicalesNocturnas: 0,
+      totalHoras: 0,
+    });
+
+    // Agregar fila de totales
+    const totalRow = startRow + 1 + detalleActual.detalleDias.length;
+    const totalesArray = [
+      'TOTALES',
+      totales.horasNormales,
+      totales.extrasDiurnas,
+      totales.extrasNocturnas,
+      totales.dominicalesDiurnas,
+      totales.dominicalesNocturnas,
+      totales.totalHoras,
+    ];
+    
+    worksheet.insertRow(totalRow, totalesArray);
+    const totalRowObj = worksheet.getRow(totalRow);
+    totalRowObj.height = 25;
+    totalRowObj.eachCell((cell, colNumber) => {
+      cell.font = { 
+        bold: true, 
+        color: { argb: 'FFFFFFFF' },
+        size: 12
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF228B22' },
+      };
+      cell.alignment = { 
+        horizontal: 'center', 
+        vertical: 'middle' 
+      };
+      cell.border = {
+        top: { style: 'medium', color: { argb: 'FF006400' } },
+        bottom: { style: 'medium', color: { argb: 'FF006400' } },
+        left: { style: 'thin', color: { argb: 'FF006400' } },
+        right: { style: 'thin', color: { argb: 'FF006400' } },
+      };
+      
+      if (colNumber > 1 && typeof cell.value === 'number') {
+        cell.numFmt = '#,##0.00';
+      }
+    });
+
+    // Pie de página
+    const footerRow = totalRow + 2;
+    worksheet.mergeCells(`A${footerRow}:G${footerRow}`);
+    const footerCell = worksheet.getCell(`A${footerRow}`);
+    footerCell.value = '© Sistema de Gestión de Horas Extras - Detalle de Días Trabajados';
+    footerCell.font = { 
+      size: 9, 
+      italic: true, 
+      color: { argb: 'FF888888' } 
+    };
+    footerCell.alignment = { horizontal: 'center' };
+
+    // Configurar vista de impresión
+    worksheet.pageSetup = {
+      orientation: 'landscape',
+      paperSize: 9,
+      fitToPage: true,
+      fitToHeight: 1,
+      fitToWidth: 1,
+      margins: {
+        left: 0.7,
+        right: 0.7,
+        top: 0.75,
+        bottom: 0.75,
+        header: 0.3,
+        footer: 0.3,
+      },
+    };
+
+    worksheet.headerFooter.oddHeader = '&C&16&B📅 DETALLE DE DÍAS TRABAJADOS';
+    worksheet.headerFooter.oddFooter = '&L&D &T&C&P de &N&R© Sistema de Gestión';
+
+    // Generar y descargar el archivo
+    const buffer = await workbook.xlsx.writeBuffer();
+    const fecha = new Date().toISOString().split('T')[0];
+    const nombreArchivo = `Detalle_${detalleActual.nombreTrabajador.replace(/\s+/g, '_')}_${fecha}.xlsx`;
+    saveAs(new Blob([buffer]), nombreArchivo);
   };
 
   const handleSeleccionarMes = (mes: number) => {
@@ -218,9 +755,33 @@ const InformacionEjecucionPage: React.FC<Props> = ({ centroId, centroNombre, onV
             >
               ← Volver a Meses
             </button>
-            <h1 style={{ fontSize: '2rem', color: '#333', marginBottom: '10px' }}>
-              📊 {centroNombre} - {meses[mesSeleccionado! - 1]} {añoSeleccionado}
-            </h1>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h1 style={{ fontSize: '2rem', color: '#333', marginBottom: '10px' }}>
+                  📊 {centroNombre} - {meses[mesSeleccionado! - 1]} {añoSeleccionado}
+                </h1>
+              </div>
+              {trabajadoresDelMes.length > 0 && (
+                <button 
+                  onClick={exportarExcelTrabajadores}
+                  style={{
+                    background: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  📤 Exportar Excel
+                </button>
+              )}
+            </div>
           </div>
 
           {loading ? (
@@ -314,12 +875,36 @@ const InformacionEjecucionPage: React.FC<Props> = ({ centroId, centroNombre, onV
             >
               ← Volver a Trabajadores
             </button>
-            <h1 style={{ fontSize: '2rem', color: '#333', marginBottom: '10px' }}>
-              📅 Detalle de Días Trabajados
-            </h1>
-            <h2 style={{ fontSize: '1.5rem', color: '#666', margin: 0 }}>
-              Trabajador: {detalleActual.nombreTrabajador}
-            </h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+              <div>
+                <h1 style={{ fontSize: '2rem', color: '#333', marginBottom: '10px' }}>
+                  📅 Detalle de Días Trabajados
+                </h1>
+                <h2 style={{ fontSize: '1.5rem', color: '#666', margin: 0 }}>
+                  Trabajador: {detalleActual.nombreTrabajador}
+                </h2>
+              </div>
+              {detalleActual.detalleDias.length > 0 && (
+                <button 
+                  onClick={exportarExcelDetalle}
+                  style={{
+                    background: '#10b981',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '1rem',
+                    fontWeight: 'bold',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  📤 Exportar Excel
+                </button>
+              )}
+            </div>
           </div>
 
           {loading ? (

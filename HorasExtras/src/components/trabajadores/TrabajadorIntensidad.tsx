@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 import { registrosService } from "../../api/registrosService";
 import { trabajadoresService } from "../../api/trabajadoresService";
 import TrabajadorBuscador from "../shared/TrabajadorBuscador";
@@ -15,7 +17,7 @@ const formatDateForInput = (date: Date) => {
 const getStartOfWeek = (date: Date) => {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   return new Date(d.setDate(diff));
 };
 
@@ -61,7 +63,6 @@ const TrabajadorIntensidad: React.FC = () => {
         const data = await trabajadoresService.getAll();
         setTrabajadores(data);
         
-        // Si hay ID en la URL, seleccionar ese trabajador
         if (id) {
           const trabajadorId = Number(id);
           setTrabajadorSeleccionado(trabajadorId);
@@ -93,7 +94,6 @@ const TrabajadorIntensidad: React.FC = () => {
     try {
       setLoadingRegistros(true);
       setError("");
-      // Asumiendo que el servicio acepta fechas en formato YYYY-MM-DD
       const data = await registrosService.buscarPorTrabajadorRangoFechas(
         trabajadorId,
         inicio,
@@ -108,12 +108,302 @@ const TrabajadorIntensidad: React.FC = () => {
     }
   };
 
+  const exportarExcel = async () => {
+    if (!trabajadorActual || registros.length === 0) return;
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Intensidad Horaria");
+
+    // Configurar propiedades del documento
+    workbook.creator = "Sistema de Horas Extras";
+    workbook.lastModifiedBy = "Sistema de Horas Extras";
+    workbook.created = new Date();
+    workbook.modified = new Date();
+
+    // Configurar ancho de columnas
+    worksheet.columns = [
+      { width: 12 }, // Fecha
+      { width: 10 }, // Día
+      { width: 20 }, // Centro
+      { width: 10 }, // Ingreso
+      { width: 10 }, // Salida
+      { width: 10 }, // Almuerzo
+      { width: 12 }, // H. Normales
+      { width: 12 }, // Ex. Diurnas
+      { width: 12 }, // Ex. Nocturnas
+      { width: 12 }, // Dom. Diurnas
+      { width: 12 }, // Dom. Nocturnas
+      { width: 12 }, // Total
+    ];
+
+    // Agregar título principal
+    worksheet.mergeCells('A1:L1');
+    const titleCell = worksheet.getCell('A1');
+    titleCell.value = '⏰ INTENSIDAD HORARIA DEL TRABAJADOR';
+    titleCell.font = { 
+      size: 18, 
+      bold: true, 
+      color: { argb: 'FFFFFFFF' } 
+    };
+    titleCell.fill = {
+      type: 'pattern',
+      pattern: 'solid',
+      fgColor: { argb: 'FF228B22' },
+    };
+    titleCell.alignment = { 
+      horizontal: 'center', 
+      vertical: 'middle' 
+    };
+    titleCell.border = {
+      top: { style: 'thick', color: { argb: 'FF32CD32' } },
+      bottom: { style: 'thick', color: { argb: 'FF32CD32' } },
+      left: { style: 'thick', color: { argb: 'FF32CD32' } },
+      right: { style: 'thick', color: { argb: 'FF32CD32' } },
+    };
+
+    // Información del trabajador
+    worksheet.mergeCells('A3:L3');
+    const trabajadorCell = worksheet.getCell('A3');
+    trabajadorCell.value = `Trabajador: ${trabajadorActual.nombre} | CC: ${trabajadorActual.cedula} | ID: ${trabajadorActual.id}`;
+    trabajadorCell.font = { 
+      size: 14, 
+      bold: true, 
+      color: { argb: 'FF228B22' } 
+    };
+    trabajadorCell.alignment = { horizontal: 'center' };
+
+    worksheet.mergeCells('A4:L4');
+    const periodoCell = worksheet.getCell('A4');
+    periodoCell.value = `Período: ${formatFechaLegible(fechaInicio)} - ${formatFechaLegible(fechaFin)} | Total registros: ${registros.length}`;
+    periodoCell.font = { 
+      size: 12, 
+      italic: true, 
+      color: { argb: 'FF666666' } 
+    };
+    periodoCell.alignment = { horizontal: 'center' };
+
+    // Agregar fecha de generación
+    worksheet.mergeCells('A5:L5');
+    const fechaCell = worksheet.getCell('A5');
+    fechaCell.value = `Generado el: ${new Date().toLocaleDateString('es-ES', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}`;
+    fechaCell.font = { 
+      size: 10, 
+      color: { argb: 'FF666666' } 
+    };
+    fechaCell.alignment = { horizontal: 'center' };
+
+    // Espacio antes de la tabla
+    const startRow = 7;
+
+    // Encabezados de la tabla
+    const headers = [
+      "Fecha",
+      "Día",
+      "Centro",
+      "Ingreso",
+      "Salida",
+      "Almuerzo",
+      "H. Normales",
+      "Ex. Diurnas",
+      "Ex. Nocturnas",
+      "Dom. Diurnas",
+      "Dom. Nocturnas",
+      "Total Horas",
+    ];
+
+    // Agregar encabezados
+    worksheet.insertRow(startRow, headers);
+
+    // Estilos de encabezado
+    const headerRow = worksheet.getRow(startRow);
+    headerRow.height = 25;
+    headerRow.eachCell((cell) => {
+      cell.font = { 
+        bold: true, 
+        color: { argb: 'FFFFFFFF' },
+        size: 12
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF32CD32' },
+      };
+      cell.alignment = { 
+        horizontal: 'center', 
+        vertical: 'middle' 
+      };
+      cell.border = {
+        top: { style: 'medium', color: { argb: 'FF228B22' } },
+        bottom: { style: 'medium', color: { argb: 'FF228B22' } },
+        left: { style: 'thin', color: { argb: 'FF228B22' } },
+        right: { style: 'thin', color: { argb: 'FF228B22' } },
+      };
+    });
+
+    // Agregar datos de registros
+    registros.forEach((registro, index) => {
+      const rowData = [
+        registro.fecha ? new Date(registro.fecha).toLocaleDateString('es-CO') : 'N/A',
+        registro.diaSemana?.substring(0, 3) || 'N/A',
+        registro.nombreCentro || 'Sin centro',
+        registro.horaIngreso || 'N/A',
+        registro.horaSalida || 'N/A',
+        registro.tiempoAlmuerzo || 'N/A',
+        registro.horasNormales || 0,
+        registro.horasExtrasDiurnas || 0,
+        registro.horasExtrasNocturnas || 0,
+        registro.extrasDominicalesDiurnas || 0,
+        registro.extrasDominicalesNocturnas || 0,
+        registro.totalHoras || 0,
+      ];
+      
+      const currentRow = startRow + 1 + index;
+      worksheet.insertRow(currentRow, rowData);
+      
+      // Estilo para filas de datos
+      const dataRow = worksheet.getRow(currentRow);
+      dataRow.height = 20;
+      
+      dataRow.eachCell((cell, colNumber) => {
+        cell.alignment = { 
+          horizontal: colNumber <= 3 ? 'left' : 'center', 
+          vertical: 'middle' 
+        };
+        cell.border = {
+          top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+          bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+          left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+          right: { style: 'thin', color: { argb: 'FFCCCCCC' } },
+        };
+        
+        // Colores alternos para las filas
+        if (index % 2 === 0) {
+          cell.fill = {
+            type: 'pattern',
+            pattern: 'solid',
+            fgColor: { argb: 'FFF8FFF8' },
+          };
+        }
+        
+        // Formato para números (horas)
+        if (colNumber > 6) {
+          cell.font = { 
+            size: 11,
+            color: { argb: 'FF333333' }
+          };
+          if (typeof cell.value === 'number' && cell.value > 0) {
+            cell.numFmt = '#,##0.00';
+          }
+        } else {
+          cell.font = { 
+            size: 11,
+            color: { argb: 'FF333333' }
+          };
+        }
+      });
+    });
+
+    // Calcular totales
+    const resumen = getResumenHoras();
+
+    // Agregar fila de totales
+    const totalRow = startRow + 1 + registros.length;
+    const totales = [
+      'TOTALES',
+      '',
+      '',
+      '',
+      '',
+      '',
+      resumen.normales,
+      resumen.extrasDiurnas,
+      resumen.extrasNocturnas,
+      resumen.domDiurnas,
+      resumen.domNocturnas,
+      resumen.total,
+    ];
+    
+    worksheet.insertRow(totalRow, totales);
+    const totalRowObj = worksheet.getRow(totalRow);
+    totalRowObj.height = 25;
+    totalRowObj.eachCell((cell, colNumber) => {
+      cell.font = { 
+        bold: true, 
+        color: { argb: 'FFFFFFFF' },
+        size: 12
+      };
+      cell.fill = {
+        type: 'pattern',
+        pattern: 'solid',
+        fgColor: { argb: 'FF228B22' },
+      };
+      cell.alignment = { 
+        horizontal: 'center', 
+        vertical: 'middle' 
+      };
+      cell.border = {
+        top: { style: 'medium', color: { argb: 'FF006400' } },
+        bottom: { style: 'medium', color: { argb: 'FF006400' } },
+        left: { style: 'thin', color: { argb: 'FF006400' } },
+        right: { style: 'thin', color: { argb: 'FF006400' } },
+      };
+      
+      if (colNumber > 6 && typeof cell.value === 'number') {
+        cell.numFmt = '#,##0.00';
+      }
+    });
+
+    // Agregar pie de página
+    const footerRow = totalRow + 2;
+    worksheet.mergeCells(`A${footerRow}:L${footerRow}`);
+    const footerCell = worksheet.getCell(`A${footerRow}`);
+    footerCell.value = '© Sistema de Gestión de Horas Extras - Reporte de Intensidad Horaria';
+    footerCell.font = { 
+      size: 9, 
+      italic: true, 
+      color: { argb: 'FF888888' } 
+    };
+    footerCell.alignment = { horizontal: 'center' };
+
+    // Configurar vista de impresión
+    worksheet.pageSetup = {
+      orientation: 'landscape',
+      paperSize: 9,
+      fitToPage: true,
+      fitToHeight: 1,
+      fitToWidth: 1,
+      margins: {
+        left: 0.7,
+        right: 0.7,
+        top: 0.75,
+        bottom: 0.75,
+        header: 0.3,
+        footer: 0.3,
+      },
+    };
+
+    // Configurar encabezado y pie de página de impresión
+    worksheet.headerFooter.oddHeader = '&C&16&B⏰ INTENSIDAD HORARIA';
+    worksheet.headerFooter.oddFooter = '&L&D &T&C&P de &N&R© Sistema de Gestión';
+
+    // Generar y descargar el archivo
+    const buffer = await workbook.xlsx.writeBuffer();
+    const fecha = new Date().toISOString().split('T')[0];
+    const nombreArchivo = `Intensidad_${trabajadorActual.nombre.replace(/\s+/g, '_')}_${fecha}.xlsx`;
+    saveAs(new Blob([buffer]), nombreArchivo);
+  };
+
   const handleTrabajadorChange = (trabajadorId: number, trabajador?: Trabajador) => {
     setTrabajadorSeleccionado(trabajadorId);
     setTrabajadorActual(trabajador || null);
     
     if (trabajadorId > 0) {
-      // Actualizar URL
       navigate(`/trabajadores/${trabajadorId}/intensidad`, { replace: true });
     } else {
       setRegistros([]);
@@ -160,7 +450,6 @@ const TrabajadorIntensidad: React.FC = () => {
         setFechaFin(formatDateForInput(lastDayLastMonth));
         break;
       case "personalizado":
-        // No hacer nada, dejar que el usuario seleccione manualmente
         break;
     }
   };
@@ -204,7 +493,6 @@ const TrabajadorIntensidad: React.FC = () => {
     return `${formatFechaLegible(fechaInicio)} - ${formatFechaLegible(fechaFin)}`;
   };
 
-  // Funciones helper para manejar valores null de forma segura
   const safeSubstring = (str: string | null | undefined, start: number, end?: number): string => {
     if (!str) return '';
     return str.substring(start, end);
@@ -412,8 +700,17 @@ const TrabajadorIntensidad: React.FC = () => {
                 <div className="resumen-card">
                   <div className="resumen-header">
                     <h3>Resumen de Horas</h3>
-                    <div className="total-badge">
-                      Total: {formatHours(resumen.total)}
+                    <div className="resumen-actions">
+                      <div className="total-badge">
+                        Total: {formatHours(resumen.total)}
+                      </div>
+                      <button 
+                        className="btn-exportar" 
+                        onClick={exportarExcel}
+                        title="Exportar a Excel"
+                      >
+                        📤 Exportar Excel
+                      </button>
                     </div>
                   </div>
                   
