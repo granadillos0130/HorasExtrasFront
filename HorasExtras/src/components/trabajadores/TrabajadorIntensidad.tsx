@@ -72,16 +72,16 @@ const TrabajadorIntensidad: React.FC = () => {
             await cargarRegistros(trabajadorId, fechaInicio, fechaFin);
           }
         }
-      } catch (err) {
+      } catch (error) {
         setError("Error cargando trabajadores.");
-        console.error("Error:", err);
+        console.error("Error:", error);
       } finally {
         setLoading(false);
       }
     };
 
     cargarTrabajadores();
-  }, [id]);
+  }, [id, fechaInicio, fechaFin]); // Added missing dependencies
 
   // Cargar registros cuando cambien las fechas
   useEffect(() => {
@@ -100,7 +100,7 @@ const TrabajadorIntensidad: React.FC = () => {
         fin
       );
       setRegistros(data);
-    } catch (err) {
+    } catch (error) {
       setError("Error cargando la intensidad horaria.");
       setRegistros([]);
     } finally {
@@ -415,41 +415,49 @@ const TrabajadorIntensidad: React.FC = () => {
     const today = new Date();
     
     switch (rango) {
-      case "hoy":
+      case "hoy": {
         setFechaInicio(formatDateForInput(today));
         setFechaFin(formatDateForInput(today));
         break;
-      case "ayer":
+      }
+      case "ayer": {
         const yesterday = new Date(today);
         yesterday.setDate(today.getDate() - 1);
         setFechaInicio(formatDateForInput(yesterday));
         setFechaFin(formatDateForInput(yesterday));
         break;
-      case "semana_actual":
+      }
+      case "semana_actual": {
         const thisWeek = getCurrentWeekRange();
         setFechaInicio(formatDateForInput(thisWeek.inicio));
         setFechaFin(formatDateForInput(thisWeek.fin));
         break;
-      case "semana_pasada":
+      }
+      case "semana_pasada": {
         const lastWeekEnd = new Date(getStartOfWeek(today));
         lastWeekEnd.setDate(lastWeekEnd.getDate() - 1);
         const lastWeekStart = getStartOfWeek(lastWeekEnd);
         setFechaInicio(formatDateForInput(lastWeekStart));
         setFechaFin(formatDateForInput(lastWeekEnd));
         break;
-      case "mes_actual":
+      }
+      case "mes_actual": {
         const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
         const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
         setFechaInicio(formatDateForInput(firstDayOfMonth));
         setFechaFin(formatDateForInput(lastDayOfMonth));
         break;
-      case "mes_pasado":
+      }
+      case "mes_pasado": {
         const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
         setFechaInicio(formatDateForInput(firstDayLastMonth));
         setFechaFin(formatDateForInput(lastDayLastMonth));
         break;
+      }
       case "personalizado":
+        break;
+      default:
         break;
     }
   };
