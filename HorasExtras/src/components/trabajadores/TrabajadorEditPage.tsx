@@ -30,6 +30,8 @@ const TrabajadorEditPage: React.FC = () => {
     
     // Información Laboral
     salario: 0,
+    auxilioTransporte: 0, // 🆕 NUEVO CAMPO
+    valorHora: 0,         // 🆕 NUEVO CAMPO (calculado automáticamente)
     fechaContratacion: "",
     tipoContratacion: "",
     correo: "",
@@ -78,6 +80,15 @@ const TrabajadorEditPage: React.FC = () => {
     clinica: false
   });
 
+  // 🆕 FUNCIÓN PARA CALCULAR VALOR HORA
+  const calcularValorHora = (salario: number, auxilioTransporte: number = 0): number => {
+    if (salario <= 0) return 0;
+    
+    const parafiscales = (salario * 0.6544) + salario + auxilioTransporte;
+    const valorHora = parafiscales / 184;
+    return Math.round(valorHora * 100) / 100; // Redondear a 2 decimales
+  };
+
   useEffect(() => {
     if (id) {
       cargarTrabajador(Number(id));
@@ -102,6 +113,8 @@ const TrabajadorEditPage: React.FC = () => {
         cantidadHijos: trabajadorData.cantidadHijos || 0,
         nivelEscolaridad: trabajadorData.nivelEscolaridad || "",
         salario: trabajadorData.salario || 0,
+        auxilioTransporte: trabajadorData.auxilioTransporte || 0, // 🆕 CARGAR AUXILIO
+        valorHora: trabajadorData.valorHora || 0,                 // 🆕 CARGAR VALOR HORA
         fechaContratacion: trabajadorData.fechaContratacion ? trabajadorData.fechaContratacion.split('T')[0] : "",
         tipoContratacion: trabajadorData.tipoContratacion || "",
         correo: trabajadorData.correo || "",
@@ -163,10 +176,23 @@ const TrabajadorEditPage: React.FC = () => {
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: ["edad", "cantidadHijos", "salario"].includes(name) ? Number(value) : value
-    }));
+    const numericValue = ["edad", "cantidadHijos", "salario", "auxilioTransporte"].includes(name) ? Number(value) : value;
+    
+    setFormData(prev => {
+      const newFormData = {
+        ...prev,
+        [name]: numericValue
+      };
+
+      // 🆕 RECALCULAR VALOR HORA cuando cambie salario o auxilio de transporte
+      if (name === "salario" || name === "auxilioTransporte") {
+        const salario = name === "salario" ? Number(value) : prev.salario;
+        const auxilio = name === "auxilioTransporte" ? Number(value) : prev.auxilioTransporte;
+        newFormData.valorHora = calcularValorHora(salario, auxilio);
+      }
+
+      return newFormData;
+    });
     
     // Auto-calcular edad
     if (name === "fechaNacimiento" && value) {
@@ -235,6 +261,8 @@ const TrabajadorEditPage: React.FC = () => {
         cantidadHijos: formData.cantidadHijos,
         nivelEscolaridad: formData.nivelEscolaridad,
         salario: formData.salario,
+        auxilioTransporte: formData.auxilioTransporte, // 🆕 ENVIAR AUXILIO
+        valorHora: formData.valorHora,                 // 🆕 ENVIAR VALOR HORA
         fechaContratacion: formData.fechaContratacion,
         correo: formData.correo,
         personaContacto: formData.personaContacto,
@@ -616,6 +644,40 @@ const TrabajadorEditPage: React.FC = () => {
                     {errors.salario && <span className="error-text">{errors.salario}</span>}
                   </div>
 
+                  {/* 🆕 NUEVO CAMPO: AUXILIO DE TRANSPORTE */}
+                  <div className="form-group">
+                    <label className="form-label">Auxilio de Transporte</label>
+                    <input
+                      type="number"
+                      name="auxilioTransporte"
+                      placeholder="140606"
+                      value={formData.auxilioTransporte || ''}
+                      onChange={handleFormChange}
+                      className="form-input"
+                      min="0"
+                      disabled={saving}
+                    />
+                    <small className="form-help">
+                      Auxilio de transporte mensual (opcional)
+                    </small>
+                  </div>
+
+                  {/* 🆕 NUEVO CAMPO: VALOR HORA (CALCULADO) */}
+                  <div className="form-group">
+                    <label className="form-label">Valor Hora</label>
+                    <input
+                      type="number"
+                      name="valorHora"
+                      value={formData.valorHora || ''}
+                      className="form-input"
+                      disabled={true}
+                      placeholder="Se calcula automáticamente"
+                    />
+                    <small className="form-help">
+                      Se calcula automáticamente: (Salario × 1.6544 + Salario + Auxilio) ÷ 184
+                    </small>
+                  </div>
+
                   <div className="form-group">
                     <label className="form-label">Fecha de Contratación</label>
                     <input
@@ -632,6 +694,7 @@ const TrabajadorEditPage: React.FC = () => {
             )}
           </div>
 
+          {/* Las demás secciones permanecen igual... */}
           {/* Sección 3: Contacto de Emergencia */}
           <div className="form-section">
             <div 
