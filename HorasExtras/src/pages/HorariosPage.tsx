@@ -6,7 +6,7 @@ import HorariosTable from "../components/horarios/HorariosTable";
 import TrabajadorBuscador from "../components/shared/TrabajadorBuscador";
 import type { Horario } from "../types/horarios";
 import type { Trabajador } from "../types/trabajadores";
-import "../styles/pages/HorariosPage.css";
+import "../styles/pages/horariosPage.css";
 
 const HorariosPage: React.FC = () => {
   const [horarios, setHorarios] = useState<Horario[]>([]);
