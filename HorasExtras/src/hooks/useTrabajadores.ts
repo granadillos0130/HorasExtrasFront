@@ -11,10 +11,31 @@ export const useTrabajadores = () => {
     try {
       setLoading(true);
       setError(null);
+      
+      // 🐛 Debug: Ver qué URL se está usando
+      console.log('🌍 API Base URL:', import.meta.env.VITE_API_URL);
+      console.log('🌍 Todas las variables:', import.meta.env);
+      
       const data = await trabajadoresService.getAll();
-      setTrabajadores(data);
+      
+      // 🐛 Debug: Ver qué datos llegan
+      console.log('📦 Datos recibidos:', data);
+      console.log('📦 Es array?:', Array.isArray(data));
+      console.log('📦 Tipo:', typeof data);
+      console.log('📦 Longitud:', data?.length);
+      
+      // ✅ Verificación extra de seguridad  
+      if (Array.isArray(data)) {
+        setTrabajadores(data);
+      } else {
+        console.error('⚠️ Los datos no son un array:', data);
+        setTrabajadores([]);
+        setError("Los datos recibidos no tienen el formato esperado");
+      }
     } catch (err) {
-      setError("Error al cargar trabajadores.");
+      console.error('❌ Error completo:', err);
+      setError(`Error al cargar trabajadores: ${err instanceof Error ? err.message : 'Error desconocido'}`);
+      setTrabajadores([]); // ✅ Asegurar que siempre sea array
     } finally {
       setLoading(false);
     }
