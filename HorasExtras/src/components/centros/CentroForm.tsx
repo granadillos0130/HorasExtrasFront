@@ -45,7 +45,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
     vendedor: "",
     valorOrden: 0,
     fechaFactura: "",
-    tipo: "Obra"
+    tipo: "Suministros"
   });
 
   const [clientes, setClientes] = useState<Cliente[]>([]);
@@ -54,7 +54,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
   const [valorOrdenDisplay, setValorOrdenDisplay] = useState<string>("0");
 
   const estadosDisponibles = ["Abierto", "Cerrado",];
-  const tiposDisponibles = ["Obra", "Mantenimiento", "Proyecto", "Servicio"];
+  const tiposDisponibles = ["Suministros", "Proyecto", "Servicio"];
 
   // Función para formatear número con puntos como separadores de miles
   const formatearNumero = (valor: number): string => {
@@ -190,7 +190,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
         vendedor: "",
         valorOrden: 0,
         fechaFactura: "",
-        tipo: "Obra"
+        tipo: "Suministros"
       });
       setValorOrdenDisplay("0");
     } catch (err: unknown) {
