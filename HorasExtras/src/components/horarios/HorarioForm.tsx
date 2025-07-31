@@ -44,9 +44,9 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
         const res = await trabajadoresService.getAll();
         setTrabajadores(res);
         setError(null);
-      } catch (err) {
+      } catch (error) {
         setError("Error al cargar trabajadores");
-        console.error("Error:", err);
+        console.error("Error:", error);
       } finally {
         setLoadingTrabajadores(false);
       }
@@ -117,7 +117,8 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
       if (horariosDto.length === 1) {
         await horariosService.crear(horariosDto[0]);
       } else {
-        await horariosService.crearLote(horariosDto);
+        // Cast the array to the expected type for the batch creation
+        await horariosService.crearLote(horariosDto as Parameters<typeof horariosService.crearLote>[0]);
       }
 
       const mensaje = horariosDto.length === 1 
@@ -141,9 +142,9 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
         intensidadHoraria: 8
       });
       setTrabajadorSeleccionado(null);
-    } catch (err) {
+    } catch (error) {
       setError("Error al crear los horarios. Verifique que no existan horarios duplicados para este trabajador en los días seleccionados.");
-      console.error("Error:", err);
+      console.error("Error:", error);
     } finally {
       setLoading(false);
     }
@@ -234,6 +235,19 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
                 required={true}
                 showSelectedInfo={true}
               />
+
+              {/* Display selected worker info */}
+              {trabajadorSeleccionado && (
+                <div className="selected-worker-info">
+                  <div className="worker-info-card">
+                    <span className="worker-icon">👤</span>
+                    <div className="worker-details">
+                      <strong>{trabajadorSeleccionado.nombre}</strong>
+                      <small>Cédula: {trabajadorSeleccionado.cedula}</small>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="form-section">
@@ -311,7 +325,7 @@ const HorariosForm: React.FC<Props> = ({ onSuccess }) => {
                     <span className="intensity-unit">horas</span>
                   </div>
                   <small className="form-help">
-                    Se calcula automáticamente según las horas ingresadas
+                    Se calcula automáticamente según las horas ingresadas (descontando 2h de almuerzo)
                   </small>
                 </div>
               </div>

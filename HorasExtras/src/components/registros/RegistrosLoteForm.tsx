@@ -177,7 +177,9 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
     setRegistros(nuevosRegistros);
   };
 
-  const handleTrabajadorChange = (index: number, trabajadorId: number, trabajador?: Trabajador) => {
+  // Fixed: Remove unused parameter or use underscore prefix to indicate intentional non-use
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleTrabajadorChange = (index: number, trabajadorId: number, _trabajador?: Trabajador) => {
     const nuevosRegistros = [...registros];
     nuevosRegistros[index] = {
       ...nuevosRegistros[index],
@@ -275,6 +277,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
     }
   };
 
+  // Utility function to get worker name by ID - now used in the component
   const getTrabajadorNombre = (id: number) => {
     const trabajador = trabajadores.find(t => t.id === id);
     return trabajador ? trabajador.nombre : "Sin seleccionar";
@@ -485,6 +488,12 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                 <div style={{ fontSize: '0.8rem', color: '#666', marginLeft: '10px' }}>
                   📅 {new Date(registro.Fecha).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
                 </div>
+                {/* Show worker name if selected */}
+                {registro.Trabajador_ID > 0 && (
+                  <div style={{ fontSize: '0.8rem', color: '#007bff', marginLeft: '10px' }}>
+                    👤 {getTrabajadorNombre(registro.Trabajador_ID)}
+                  </div>
+                )}
                 <div className="registro-actions">
                   <button type="button" className="btn-duplicate" onClick={() => duplicarRegistro(index)} title="Duplicar registro">
                     📋

@@ -15,7 +15,7 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend,
 
 import { estadisticasService } from "../api/estadisticasService";
 import type { Centro, TrabajadorEstadistica } from "../types/estadisticas";
-import CentroBuscador from "../components/shared/CentroBuscador"; // 🚀 Importar el componente
+import CentroBuscador from "../components/shared/CentroBuscador";
 import "../styles/pages/EstadisticasPage.css";
 
 const EstadisticasPage: React.FC = () => {
@@ -24,10 +24,6 @@ const EstadisticasPage: React.FC = () => {
   const [estadisticas, setEstadisticas] = useState<TrabajadorEstadistica[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingCentros, setLoadingCentros] = useState(true);
-
-  // 🗑️ ELIMINAR: estados del buscador manual ya no son necesarios
-  // const [busqueda, setBusqueda] = useState<string>("");
-  // const [mostrarResultados, setMostrarResultados] = useState<boolean>(false);
 
   useEffect(() => {
     const cargarCentros = async () => {
@@ -51,7 +47,8 @@ const EstadisticasPage: React.FC = () => {
     }
     setLoading(true);
     try {
-      const data = await estadisticasService.getEstadisticasPorCentro(centroId);
+      // ✅ FIX 1: Convert string to number since API expects number
+      const data = await estadisticasService.getEstadisticasPorCentro(parseInt(centroId));
       setEstadisticas(data);
     } catch (error) {
       console.error("Error al cargar estadísticas:", error);
@@ -61,7 +58,6 @@ const EstadisticasPage: React.FC = () => {
     }
   };
 
-  // 🚀 NUEVO: Handler para el CentroBuscador
   const handleCentroChange = (selectedCentroId: string) => {
     setCentroId(selectedCentroId);
   };
@@ -102,6 +98,7 @@ const EstadisticasPage: React.FC = () => {
     ],
   };
 
+  // ✅ FIX 2: Fix Chart.js options type issues
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
@@ -113,7 +110,7 @@ const EstadisticasPage: React.FC = () => {
           padding: 20,
           font: {
             size: 12,
-            weight: 600,
+            weight: 600 as const,
           },
         },
       },
@@ -122,17 +119,17 @@ const EstadisticasPage: React.FC = () => {
         text: "Distribución de Horas por Trabajador",
         font: {
           size: 16,
-          weight: 600,
+          weight: 600 as const,
         },
         padding: 20,
       },
       datalabels: {
         color: "#000",
-        anchor: "end",
-        align: "end",
+        anchor: "end" as const,
+        align: "end" as const, // ✅ Fixed: Use proper const assertion
         font: {
           size: 11,
-          weight: "bold",
+          weight: "bold" as const,
         },
         formatter: (value: number) => {
           return value.toFixed(1);
@@ -142,11 +139,11 @@ const EstadisticasPage: React.FC = () => {
     scales: {
       x: {
         grid: { display: false },
-        ticks: { font: { size: 11, weight: 500 } },
+        ticks: { font: { size: 11, weight: 500 as const } },
       },
       y: {
         grid: { color: "rgba(0,0,0,0.1)" },
-        ticks: { font: { size: 11, weight: 500 } },
+        ticks: { font: { size: 11, weight: 500 as const } },
       },
     },
   };
@@ -188,6 +185,13 @@ const EstadisticasPage: React.FC = () => {
 
   const totalStats = getTotalStats();
 
+  // ✅ FIX 3: Transform centros data to match CentroBuscador expected format
+  const transformedCentros = centros.map(centro => ({
+    ...centro,
+    fechaInicio: new Date().toISOString(), // Add missing property with default value
+    clienteId: "", // Add missing property with default value
+  }));
+
   return (
     <div className="estadisticas-page">
       <div className="page-container">
@@ -205,7 +209,6 @@ const EstadisticasPage: React.FC = () => {
           </div>
 
           <div className="estadisticas-toolbar">
-            {/* 🚀 REEMPLAZAR: Usar CentroBuscador en lugar del buscador manual */}
             {loadingCentros ? (
               <div className="form-group">
                 <label className="form-label">Centro de Trabajo</label>
@@ -213,7 +216,7 @@ const EstadisticasPage: React.FC = () => {
               </div>
             ) : (
               <CentroBuscador
-                centros={centros}
+                centros={transformedCentros} // ✅ Fixed: Use transformed centros
                 value={centroId}
                 onChange={handleCentroChange}
                 placeholder="Buscar por nombre o ID..."
@@ -233,7 +236,6 @@ const EstadisticasPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Resto del componente permanece igual... */}
         {loading && (
           <div className="results-card">
             <div className="loading-message">

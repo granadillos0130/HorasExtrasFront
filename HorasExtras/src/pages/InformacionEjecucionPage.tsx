@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { centrosService } from "../api/centrosService";
@@ -42,6 +42,12 @@ interface TrabajadorInfo {
   cargo?: string;
 }
 
+// ✅ ADD: Interface for the API response structure
+interface CentroDelMes {
+  centroId: string;
+  trabajadores: TrabajadorInfo[];
+}
+
 const InformacionEjecucionPage: React.FC<Props> = ({ centroId, centroNombre, onVolver }) => {
   const [mesSeleccionado, setMesSeleccionado] = useState<number | null>(null);
   const [añoSeleccionado, setAñoSeleccionado] = useState<number>(new Date().getFullYear());
@@ -73,13 +79,15 @@ const InformacionEjecucionPage: React.FC<Props> = ({ centroId, centroNombre, onV
   const cargarTrabajadoresDelMes = async (mes: number, año: number) => {
     setLoading(true);
     try {
-      const centrosData = await centrosService.obtenerPorMes(año, mes);
+      // ✅ FIX: Type the API response properly
+      const centrosData: CentroDelMes[] = await centrosService.obtenerPorMes(año, mes);
       const centroDelMes = centrosData.find(c => c.centroId === centroId);
       
       if (centroDelMes) {
         setTrabajadoresDelMes(centroDelMes.trabajadores);
         
-        const manoObraPromises = centroDelMes.trabajadores.map(trabajador =>
+        // ✅ FIX: Now trabajador has proper type TrabajadorInfo
+        const manoObraPromises = centroDelMes.trabajadores.map((trabajador: TrabajadorInfo) =>
           centrosService.obtenerManoObraPorTrabajador(centroId, trabajador.trabajadorId)
         );
         

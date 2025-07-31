@@ -20,7 +20,8 @@ const TrabajadoresPage: React.FC = () => {
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [terminoBusqueda, setTerminoBusqueda] = useState<string>("");
 
-  const handleCreated = (id: number) => {
+  // ✅ FIX: Remove unused parameter or prefix with underscore
+  const handleCreated = () => {
     setShowForm(false);
     refetch();
   };
@@ -35,6 +36,8 @@ const TrabajadoresPage: React.FC = () => {
         }
         refetch();
       } catch (error) {
+        // ✅ FIX: Use the error properly or remove parameter
+        console.error("Error al eliminar el trabajador:", error);
         alert("Error al eliminar el trabajador");
       }
     }

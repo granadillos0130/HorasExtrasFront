@@ -36,7 +36,7 @@ const RegistrosTable: React.FC<Props> = ({ registros, onEdit, onDelete }) => {
   };
 
   const formatDate = (dateString: string) => {
-    const [year, month, day] = dateString.split("T")[0].split("-");
+    const [, month, day] = dateString.split("T")[0].split("-");
     return `${day}/${month}`;
   };
 

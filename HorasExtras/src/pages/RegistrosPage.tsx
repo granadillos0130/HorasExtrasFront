@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { registrosService } from "../api/registrosService";
 import { trabajadoresService } from "../api/trabajadoresService";
 import type { Registro } from "../types/registros";
-import { Trabajador } from "../types/trabajadores";
+import type  { Trabajador } from "../types/trabajadores";
 
 interface EstadisticaDia {
   fecha: string;
@@ -41,54 +41,8 @@ const RegistrosPage: React.FC = () => {
 
   const diasSemana = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-  // Manejar mensajes de éxito al regresar de crear registros
-  useEffect(() => {
-    const success = searchParams.get('success');
-    if (success) {
-      setSuccessType(success);
-      setShowSuccessMessage(true);
-      
-      // Limpiar el parámetro de la URL
-      const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.delete('success');
-      setSearchParams(newSearchParams, { replace: true });
-      
-      // Ocultar mensaje después de 4 segundos
-      setTimeout(() => setShowSuccessMessage(false), 4000);
-
-      // Recargar estadísticas y datos
-      if (mesSeleccionado !== null) {
-        cargarEstadisticasDelMes();
-      }
-      if (diaSeleccionado) {
-        obtenerRegistrosDelDia(diaSeleccionado);
-      }
-    }
-  }, [searchParams, mesSeleccionado, diaSeleccionado]);
-
-  // Cargar trabajadores activos al iniciar
-  useEffect(() => {
-    cargarTrabajadoresActivos();
-  }, []);
-
-  // Cargar estadísticas cuando se selecciona un mes
-  useEffect(() => {
-    if (mesSeleccionado !== null && trabajadoresActivos.length > 0) {
-      cargarEstadisticasDelMes();
-    }
-  }, [mesSeleccionado, añoSeleccionado, trabajadoresActivos]);
-
-  const cargarTrabajadoresActivos = async () => {
-    try {
-      const todos = await trabajadoresService.getAll();
-      const activos = todos.filter(t => t.estado === "Vigente");
-      setTrabajadoresActivos(activos);
-    } catch (error) {
-      console.error("Error al cargar trabajadores activos:", error);
-    }
-  };
-
-  const cargarEstadisticasDelMes = async () => {
+  // ✅ FIX: Wrap in useCallback to avoid dependency issues
+  const cargarEstadisticasDelMes = useCallback(async () => {
     if (mesSeleccionado === null) return;
 
     setCargandoEstadisticas(true);
@@ -115,7 +69,8 @@ const RegistrosPage: React.FC = () => {
             porcentaje,
             registros: registrosDia
           });
-        } catch (error) {
+        } catch {
+          // ✅ FIX: Use underscore prefix to indicate intentionally unused
           // Si no hay registros para ese día, porcentaje = 0
           estadisticas.set(fechaString, {
             fecha: fechaString,
@@ -133,7 +88,68 @@ const RegistrosPage: React.FC = () => {
     } finally {
       setCargandoEstadisticas(false);
     }
-  };
+  }, [mesSeleccionado, añoSeleccionado, trabajadoresActivos]);
+
+  // ✅ FIX: Wrap in useCallback for consistent reference
+  const obtenerRegistrosDelDia = useCallback(async (fecha: string) => {
+    try {
+      setLoading(true);
+      const registros = await registrosService.obtenerTodosPorFecha(fecha);
+      setRegistrosDelDia(registros);
+    } catch (error) {
+      console.error("Error al obtener registros:", error);
+      setRegistrosDelDia([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // Manejar mensajes de éxito al regresar de crear registros
+  useEffect(() => {
+    const success = searchParams.get('success');
+    if (success) {
+      setSuccessType(success);
+      setShowSuccessMessage(true);
+      
+      // Limpiar el parámetro de la URL
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('success');
+      setSearchParams(newSearchParams, { replace: true });
+      
+      // Ocultar mensaje después de 4 segundos
+      setTimeout(() => setShowSuccessMessage(false), 4000);
+
+      // Recargar estadísticas y datos
+      if (mesSeleccionado !== null) {
+        cargarEstadisticasDelMes();
+      }
+      if (diaSeleccionado) {
+        obtenerRegistrosDelDia(diaSeleccionado);
+      }
+    }
+  }, [searchParams, mesSeleccionado, diaSeleccionado, setSearchParams, cargarEstadisticasDelMes, obtenerRegistrosDelDia]); // ✅ FIX: Added missing dependencies
+
+  // Cargar trabajadores activos al iniciar
+  useEffect(() => {
+    const cargarTrabajadoresActivos = async () => {
+      try {
+        const todos = await trabajadoresService.getAll();
+        const activos = todos.filter(t => t.estado === "Vigente");
+        setTrabajadoresActivos(activos);
+      } catch (error) {
+        console.error("Error al cargar trabajadores activos:", error);
+      }
+    };
+
+    cargarTrabajadoresActivos();
+  }, []);
+
+  // Cargar estadísticas cuando se selecciona un mes
+  useEffect(() => {
+    if (mesSeleccionado !== null && trabajadoresActivos.length > 0) {
+      cargarEstadisticasDelMes();
+    }
+  }, [mesSeleccionado, añoSeleccionado, trabajadoresActivos, cargarEstadisticasDelMes]); // ✅ FIX: Added missing dependency
 
   // Función para navegar a los formularios
   const navigateToForm = (tipo: 'individual' | 'lote') => {
@@ -239,20 +255,6 @@ const RegistrosPage: React.FC = () => {
     }
     
     return dias;
-  };
-
-  // Función para obtener todos los registros de un día específico
-  const obtenerRegistrosDelDia = async (fecha: string) => {
-    try {
-      setLoading(true);
-      const registros = await registrosService.obtenerTodosPorFecha(fecha);
-      setRegistrosDelDia(registros);
-    } catch (error) {
-      console.error("Error al obtener registros:", error);
-      setRegistrosDelDia([]);
-    } finally {
-      setLoading(false);
-    }
   };
 
   // Función para obtener todos los registros del mes
@@ -789,7 +791,7 @@ const RegistrosPage: React.FC = () => {
                 fontWeight: '600'
               }}
             >
-              {[2023, 2024, 2025, 2026,2027,2028].map(año => (
+              {[2023, 2024, 2025, 2026, 2027, 2028].map(año => (
                 <option key={año} value={año}>{año}</option>
               ))}
             </select>

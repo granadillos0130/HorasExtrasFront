@@ -23,6 +23,16 @@ interface CentroPayload {
   tipo?: string;
 }
 
+// Interfaz para respuestas de error del backend
+interface ErrorResponse {
+  response?: {
+    status?: number;
+    data?: {
+      message?: string;
+    } | string;
+  };
+}
+
 const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
   const [formData, setFormData] = useState({
     id: "",
@@ -163,7 +173,8 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
 
       console.log("Enviando payload:", payload); // Log para debug
 
-      await centrosService.crear(payload);
+      // Cast del payload al tipo esperado por el servicio
+      await centrosService.crear(payload as unknown as Parameters<typeof centrosService.crear>[0]);
       alert("Centro creado con éxito ✅");
       onSuccess();
       
@@ -185,19 +196,33 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
     } catch (err: unknown) {
       console.error("Error completo:", err); // Log para debug
       
-      if (
-        typeof err === "object" &&
-        err !== null &&
-        "response" in err
-      ) {
-        const response = (err as { response?: { status?: number; data?: any } }).response;
+      // Type guard para verificar si el error tiene la estructura esperada
+      const isErrorResponse = (error: unknown): error is ErrorResponse => {
+        return (
+          typeof error === "object" &&
+          error !== null &&
+          "response" in error
+        );
+      };
+
+      if (isErrorResponse(err)) {
+        const response = err.response;
         
         if (response?.status === 409) {
           setError("Ya existe un centro con ese ID.");
         } else if (response?.status === 400) {
           // Extraer mensaje de error del backend
-          const errorMessage = response?.data?.message || response?.data || "Datos inválidos.";
-          setError(typeof errorMessage === 'string' ? errorMessage : "Error en los datos enviados.");
+          let errorMessage = "Datos inválidos.";
+          
+          if (response.data) {
+            if (typeof response.data === 'string') {
+              errorMessage = response.data;
+            } else if (typeof response.data === 'object' && response.data.message) {
+              errorMessage = response.data.message;
+            }
+          }
+          
+          setError(errorMessage);
         } else if (response?.status === 404) {
           setError("El cliente seleccionado no existe.");
         } else {
