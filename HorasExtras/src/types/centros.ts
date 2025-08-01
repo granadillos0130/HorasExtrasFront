@@ -81,3 +81,14 @@ export interface DetalleDiasTrabajador {
   nombreTrabajador: string;
   detalleDias: DetalleDiaTrabajo[];
 }
+export interface MesConActividad {
+  mes: number;
+  nombreMes: string;
+  totalTrabajadores: number;
+  totalHoras: number;
+  manoObraTotal: number;
+  horasNormales: number;
+  horasExtras: number;
+  fechaPrimerRegistro: string;
+  fechaUltimoRegistro: string;
+}

@@ -70,6 +70,22 @@ export const centrosService = {
     }>;
   }> {
     return api.get(`/centros/${centroId}/trabajadores/${trabajadorId}/detalle-dias`).then(res => res.data);
-  }
+  },
+  
+  obtenerMesesConActividad(centroId: string, anio: number): Promise<{
+    mes: number;
+    nombreMes: string;
+    totalTrabajadores: number;
+    totalHoras: number;
+    manoObraTotal: number;
+    horasNormales: number;
+    horasExtras: number;
+    fechaPrimerRegistro: string;
+    fechaUltimoRegistro: string;
+  }[]> {
+    return api.get(`/centros/${centroId}/meses-actividad`, { 
+      params: { anio } 
+    }).then(res => res.data);
+  },
 
 };
