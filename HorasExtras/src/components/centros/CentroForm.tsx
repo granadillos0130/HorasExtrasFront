@@ -257,7 +257,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
           
           <div className="form-row">
             <div className="form-group">
-              <label>ID Centro *</label>
+              <label>Orden de compra</label>
               <input
                 type="text"
                 name="id"

@@ -392,7 +392,7 @@ const CentrosPage: React.FC = () => {
                             color: '#666',
                             fontSize: '0.9rem'
                           }}>
-                            ID: {centroSeleccionado.centroId}
+                            Orden de compra: {centroSeleccionado.centroId}
                           </p>
                         </div>
                       </div>
@@ -772,7 +772,7 @@ const CentrosPage: React.FC = () => {
                                 color: '#666',
                                 fontSize: '0.9rem'
                               }}>
-                                ID: {centro.centroId}
+                                Orden de compra: {centro.centroId}
                               </p>
                             </div>
                           </div>
