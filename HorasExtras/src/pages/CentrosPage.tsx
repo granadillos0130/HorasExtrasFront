@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { centrosService } from "../api/centrosService";
 import { clientesService } from "../api/clientesService";
 import CentroForm from "../components/centros/CentroForm";
@@ -37,28 +37,16 @@ const CentrosPage: React.FC = () => {
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
   ];
 
-  // Cargar todos los centros al montar el componente para la búsqueda
-  useEffect(() => {
-    cargarTodosCentros();
-  }, []);
-
-  // Cargar centros cuando se selecciona un mes
-  useEffect(() => {
-    if (mesSeleccionado !== null) {
-      cargarCentrosDelMes();
-    }
-  }, [mesSeleccionado, añoSeleccionado]);
-
-  const cargarTodosCentros = async () => {
+  const cargarTodosCentros = useCallback(async () => {
     try {
       const centros = await centrosService.getAll();
       setTodosCentros(centros);
     } catch (error) {
       console.error("Error al cargar todos los centros:", error);
     }
-  };
+  }, []);
 
-  const cargarCentrosDelMes = async () => {
+  const cargarCentrosDelMes = useCallback(async () => {
     if (mesSeleccionado === null) return;
 
     setLoading(true);
@@ -71,9 +59,21 @@ const CentrosPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [añoSeleccionado, mesSeleccionado]);
 
-  const cargarDatosCompletosCentro = async (centro: Centro, estadisticas: any) => {
+  // Cargar todos los centros al montar el componente para la búsqueda
+  useEffect(() => {
+    cargarTodosCentros();
+  }, [cargarTodosCentros]);
+
+  // Cargar centros cuando se selecciona un mes
+  useEffect(() => {
+    if (mesSeleccionado !== null) {
+      cargarCentrosDelMes();
+    }
+  }, [mesSeleccionado, cargarCentrosDelMes]);
+
+  const cargarDatosCompletosCentro = async (centro: Centro, estadisticas: { trabajadores?: EstadisticaTrabajador[] } | null) => {
     try {
       // Obtener datos del cliente
       let cliente = null;
@@ -104,8 +104,8 @@ const CentrosPage: React.FC = () => {
           try {
             const centrosPorMes = await centrosService.obtenerPorMes(añoSeleccionado, mesSeleccionado);
             const centroMes = centrosPorMes.find(c => c.centroId === centro.id);
-            if (centroMes?.trabajadores) {
-              centroMes.trabajadores.forEach(t => {
+            if (centroMes?.trabajadores && Array.isArray(centroMes.trabajadores)) {
+              centroMes.trabajadores.forEach((t: { cargo?: string }) => {
                 if (t.cargo && t.cargo !== 'No especificado') {
                   cargosSet.add(t.cargo);
                 }
