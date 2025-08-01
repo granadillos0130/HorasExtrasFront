@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { Centro } from "../types/centros";
+import type { Centro, EstadisticasMes, TipoHora, TrabajadoresPorTipoHora } from "../types/centros";
 
 export const centrosService = {
   async getAll(): Promise<Centro[]> {
@@ -87,5 +87,24 @@ export const centrosService = {
       params: { anio } 
     }).then(res => res.data);
   },
+  
+// Obtener estadísticas detalladas del mes
+obtenerEstadisticasMes(centroId: string, mes: number, anio: number): Promise<EstadisticasMes> {
+  return api.get(`/centros/${centroId}/estadisticas-mes`, { 
+    params: { mes, anio } 
+  }).then(res => res.data);
+},
+
+// Obtener trabajadores por tipo de hora específico
+obtenerTrabajadoresPorTipoHora(
+  centroId: string, 
+  mes: number, 
+  anio: number, 
+  tipoHora: TipoHora
+): Promise<TrabajadoresPorTipoHora> {
+  return api.get(`/centros/${centroId}/trabajadores-por-tipo-hora`, { 
+    params: { mes, anio, tipoHora } 
+  }).then(res => res.data);
+},
 
 };
