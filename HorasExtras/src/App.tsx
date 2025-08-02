@@ -1,5 +1,5 @@
-
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Navbar from "./components/shared/Navbar";
 import DashboardPage from "./pages/DashboardPage";
 import TrabajadoresPage from "./pages/TrabajadoresPage";
 import HorariosPage from "./pages/HorariosPage";
@@ -14,28 +14,32 @@ import TrabajadorIntensidad from "./components/trabajadores/TrabajadorIntensidad
 import EditarRegistroPage from "./components/registros/EditarRegistroPage";
 import RegistroNuevoPage from "./pages/RegistroNuevoPage";
 import RegistroLotePage from "./pages/RegistroLotePage";
+
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<DashboardPage />} />
-        <Route path="/trabajadores" element={<TrabajadoresPage />} />
-        <Route path="/trabajadores/editar/:id" element={<TrabajadorEditPage />} />
-        <Route path="/trabajadores/:id/intensidad" element={<TrabajadorIntensidad />} />
-        <Route path="clientes" element={<ClientesPage/>} />
-        <Route path="/registros" element={<RegistrosPage />} />
+      <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+        <Navbar />
+        <div style={{ minHeight: 'calc(100vh - 70px)' }}>
+          <Routes>
+            <Route path="/" element={<DashboardPage />} />
+            <Route path="/trabajadores" element={<TrabajadoresPage />} />
+            <Route path="/trabajadores/editar/:id" element={<TrabajadorEditPage />} />
+            <Route path="/trabajadores/:id/intensidad" element={<TrabajadorIntensidad />} />
+            <Route path="clientes" element={<ClientesPage/>} />
+            <Route path="/registros" element={<RegistrosPage />} />
             <Route path="/registros/editar/:id" element={<EditarRegistroPage />} />
- <Route path="/registros/nuevo" element={<RegistroNuevoPage />} />
-          <Route path="/registros/lote" element={<RegistroLotePage />} />
-        <Route path="/horarios" element={<HorariosPage />} />
-        <Route path="/horarios/crear" element={<HorariosForm />} />
-        <Route path="/centros" element={<CentrosPage />} />
-        <Route path="/centros/crear" element={<CentroForm />} />
-        <Route path="/centros/editar/:id" element={<CentroForm />} />
-        <Route path="/estadisticas" element={<EstadisticasPage />} />
-
-
-      </Routes>
+            <Route path="/registros/nuevo" element={<RegistroNuevoPage />} />
+            <Route path="/registros/lote" element={<RegistroLotePage />} />
+            <Route path="/horarios" element={<HorariosPage />} />
+            <Route path="/horarios/crear" element={<HorariosForm />} />
+            <Route path="/centros" element={<CentrosPage />} />
+            <Route path="/centros/crear" element={<CentroForm />} />
+            <Route path="/centros/editar/:id" element={<CentroForm />} />
+            <Route path="/estadisticas" element={<EstadisticasPage />} />
+          </Routes>
+        </div>
+      </div>
     </BrowserRouter>
   );
 }
