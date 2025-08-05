@@ -16,6 +16,7 @@ import RegistroNuevoPage from "./pages/RegistroNuevoPage";
 import RegistroLotePage from "./pages/RegistroLotePage";
 import { AusenciasPage } from "./pages/AusenciasPage";
 import { AusenciasFormPage } from "./pages/AusenciasFormPage";
+import { EstadisticaAusenciaPage } from "./pages/EstadisticaAusenciaPage";
 
 export default function App() {
   return (
@@ -41,6 +42,7 @@ export default function App() {
             <Route path="/estadisticas" element={<EstadisticasPage />} />
             <Route path="/ausencias" element={<AusenciasPage />} />
             <Route path="/ausencias/nueva" element={<AusenciasFormPage />} />
+            <Route path="/ausencias/estadisticas" element={<EstadisticaAusenciaPage />} />
           </Routes>
         </div>
       </div>

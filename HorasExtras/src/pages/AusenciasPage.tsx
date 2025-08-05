@@ -35,9 +35,20 @@ export function AusenciasPage() {
     <div className="ausencias-container">
       <div className="ausencias-header">
         <h1 className="ausencias-title">Ausencias por Mes - {anio}</h1>
-        <button className="crear-ausencia-btn" onClick={() => navigate("/ausencias/nueva")}>
-          + Crear Ausencia
-        </button>
+        <div className="header-buttons">
+          <button 
+            className="estadisticas-btn" 
+            onClick={() => navigate("/ausencias/estadisticas")}
+          >
+            📊 Ver Estadísticas
+          </button>
+          <button 
+            className="crear-ausencia-btn" 
+            onClick={() => navigate("/ausencias/nueva")}
+          >
+            + Crear Ausencia
+          </button>
+        </div>
       </div>
 
       <div className="meses-grid">

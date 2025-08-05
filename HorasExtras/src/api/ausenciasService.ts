@@ -1,6 +1,12 @@
 import { api } from "./api";
 import type { Ausencia, AusenciaDto } from "../types/ausencia";
 
+// Interfaz para las estadísticas
+interface EstadisticaHoras {
+  tipoAusencia: string;
+  totalHoras: number;
+}
+
 export async function getPorMes(anio: number, mes: number) {
   const response = await api.get<Ausencia[]>(`/ausencias/mes/${anio}/${mes}`);
   return response.data;
@@ -58,6 +64,12 @@ export async function eliminarAusencia(id: number) {
   return response.data;
 }
 
+// Nueva función para obtener estadísticas
+export async function getEstadisticasHoras() {
+  const response = await api.get<EstadisticaHoras[]>("/ausencias/estadisticas/horas-por-tipo");
+  return response.data;
+}
+
 export const ausenciasService = {
   getPorMes,
   crearAusencia,
@@ -65,4 +77,5 @@ export const ausenciasService = {
   getById,
   actualizarAusencia,
   eliminarAusencia,
+  getEstadisticasHoras, // Agregamos la nueva función
 };
