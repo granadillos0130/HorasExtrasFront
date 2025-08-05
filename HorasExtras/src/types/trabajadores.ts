@@ -2,6 +2,7 @@ export interface Trabajador {
   id: number;
   nombre: string;
   cedula: string;
+  cargo?: string;
   rh: string;
   fechaNacimiento: string; // formato ISO
   edad: number;

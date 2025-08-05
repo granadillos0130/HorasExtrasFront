@@ -1,7 +1,47 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { crearAusencia } from "../../api/ausenciasService";
+import { trabajadoresService } from "../../api/trabajadoresService";
+import TrabajadorBuscador from "../shared/TrabajadorBuscador";
 import type { AusenciaDto } from "../../types/ausencia";
+import type { Trabajador } from "../../types/trabajadores";
 import "../../styles/components/ausencias/AusenciaForm.css";
+
+// Estilos adicionales para el loading
+const loadingStyles = `
+.loading-container {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 10px;
+  border: 2px dashed #dee2e6;
+  justify-content: center;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+.loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #dee2e6;
+  border-top: 2px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+`;
+
+// Inyectar estilos
+if (typeof document !== 'undefined') {
+  const styleElement = document.createElement('style');
+  styleElement.textContent = loadingStyles;
+  document.head.appendChild(styleElement);
+}
 
 const initialState: AusenciaDto = {
   id: 0,
@@ -21,6 +61,27 @@ const AusenciaForm = () => {
   const [formData, setFormData] = useState<AusenciaDto>(initialState);
   const [mensaje, setMensaje] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
+  const [trabajadorSeleccionadoId, setTrabajadorSeleccionadoId] = useState<number>(0);
+  const [loadingTrabajadores, setLoadingTrabajadores] = useState(true);
+
+  // Cargar trabajadores al montar el componente
+  useEffect(() => {
+    const cargarTrabajadores = async () => {
+      try {
+        setLoadingTrabajadores(true);
+        const data = await trabajadoresService.getAll();
+        setTrabajadores(data);
+      } catch (error) {
+        console.error("Error al cargar trabajadores:", error);
+        setMensaje("error:Error al cargar la lista de trabajadores.");
+      } finally {
+        setLoadingTrabajadores(false);
+      }
+    };
+
+    cargarTrabajadores();
+  }, []);
 
   const handleChange = (
     e: React.ChangeEvent<
@@ -46,6 +107,26 @@ const AusenciaForm = () => {
     }));
   };
 
+  // Manejar selección de trabajador
+  const handleTrabajadorSelect = (trabajadorId: number, trabajador?: Trabajador) => {
+    setTrabajadorSeleccionadoId(trabajadorId);
+    
+    if (trabajador) {
+      setFormData(prev => ({
+        ...prev,
+        trabajadorNombre: trabajador.nombre,
+        cargo: trabajador.cargo || "" // Usar el campo cargo del trabajador
+      }));
+    } else {
+      // Si no hay trabajador seleccionado, limpiar los campos
+      setFormData(prev => ({
+        ...prev,
+        trabajadorNombre: "",
+        cargo: ""
+      }));
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -59,13 +140,22 @@ const AusenciaForm = () => {
 
       await crearAusencia(nuevaAusencia);
       setMensaje("success:Ausencia registrada correctamente.");
-      setFormData(initialState); // Reinicia el formulario
+      
+      // Reiniciar el formulario
+      setFormData(initialState);
+      setTrabajadorSeleccionadoId(0);
     } catch (error) {
       console.error("Error al registrar la ausencia:", error);
       setMensaje("error:Hubo un error al guardar la ausencia.");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleLimpiar = () => {
+    setFormData(initialState);
+    setTrabajadorSeleccionadoId(0);
+    setMensaje("");
   };
 
   return (
@@ -86,6 +176,25 @@ const AusenciaForm = () => {
             Información del Trabajador
           </h3>
           <div className="form-grid">
+            <div className="form-group full-width">
+              {loadingTrabajadores ? (
+                <div className="loading-container">
+                  <span className="loading-spinner"></span>
+                  Cargando trabajadores...
+                </div>
+              ) : (
+                <TrabajadorBuscador
+                  trabajadores={trabajadores}
+                  value={trabajadorSeleccionadoId}
+                  onChange={handleTrabajadorSelect}
+                  placeholder="Buscar trabajador por nombre o cédula..."
+                  label="Seleccionar Trabajador"
+                  required={true}
+                  showSelectedInfo={true}
+                />
+              )}
+            </div>
+
             <div className="form-group">
               <label className="form-label">
                 Nombre del trabajador <span className="required">*</span>
@@ -96,8 +205,10 @@ const AusenciaForm = () => {
                 value={formData.trabajadorNombre}
                 onChange={handleChange}
                 className="form-input"
-                placeholder="Ingrese el nombre completo"
+                placeholder="Se llenará automáticamente"
                 required
+                readOnly
+                disabled
               />
             </div>
 
@@ -111,8 +222,10 @@ const AusenciaForm = () => {
                 value={formData.cargo}
                 onChange={handleChange}
                 className="form-input"
-                placeholder="Ingrese el cargo"
+                placeholder="Se llenará automáticamente"
                 required
+                readOnly
+                disabled
               />
             </div>
           </div>
@@ -137,9 +250,12 @@ const AusenciaForm = () => {
                 required
               >
                 <option value="">Seleccionar tipo</option>
-                <option value="Cita médica">Cita médica</option>
+                <option value="Cita médica">Cita médica general</option>
                 <option value="Accidente laboral">Accidente laboral</option>
                 <option value="Enfermedad común">Enfermedad común</option>
+                <option value="Cita Seguimiento EO">Cita Seguimiento EO</option>
+                <option value="Enfermedad Laboral">Enfermedad Laboral</option>
+                <option value="Accidente Origen Comun">Accidente Origen Comun</option>
                 <option value="Diligencias personales">Diligencias personales</option>
               </select>
             </div>
@@ -244,10 +360,7 @@ const AusenciaForm = () => {
           <button
             type="button"
             className="btn btn-secondary"
-            onClick={() => {
-              setFormData(initialState);
-              setMensaje("");
-            }}
+            onClick={handleLimpiar}
             disabled={isLoading}
           >
             <span className="btn-icon">🔄</span>
@@ -257,7 +370,7 @@ const AusenciaForm = () => {
           <button
             type="submit"
             className="btn btn-primary"
-            disabled={isLoading}
+            disabled={isLoading || !trabajadorSeleccionadoId}
           >
             {isLoading ? (
               <>
