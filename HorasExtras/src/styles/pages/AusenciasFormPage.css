@@ -1,14 +1,12 @@
+/* AusenciasFormPage.css */
 .ausencias-form-page {
-  max-width: 800px;
-  margin: 0 auto;
-  padding: 2rem;
-  background-color: #fdfdfd;
-  border-radius: 8px;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 0;
+  margin: 0;
 }
 
-.ausencias-form-page h1 {
-  text-align: center;
-  margin-bottom: 2rem;
-  color: #333;
+/* Override any global styles that might interfere */
+.ausencias-form-page * {
+  box-sizing: border-box;
 }
