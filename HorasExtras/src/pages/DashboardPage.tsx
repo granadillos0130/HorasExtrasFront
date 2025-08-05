@@ -53,6 +53,15 @@ const DashboardPage: React.FC = () => {
   icon: "👔",
   path: "/clientes",
   className: "clientes"
+},
+
+{
+  id:"ausencias",
+  title:"Ausencias",
+  description:"Administra las ausencias y permisos de los trabajadores",
+  icon: "🚫",
+  path:"/ausencias",
+  className: "ausencias"  
 }
 
   ];

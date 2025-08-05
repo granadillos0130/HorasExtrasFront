@@ -1,0 +1,14 @@
+.ausencias-form-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: #fdfdfd;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.ausencias-form-page h1 {
+  text-align: center;
+  margin-bottom: 2rem;
+  color: #333;
+}
