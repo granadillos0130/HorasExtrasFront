@@ -68,6 +68,12 @@ const PageIndicator: React.FC<PageIndicatorProps> = ({
       subtitle: 'Administra la información de todos los clientes',
       icon: '👔',
       color: '#6366f1'
+    },
+    '/ausencias': {
+      title: 'Gestión de Ausencias',
+      subtitle: 'Consulta y administra las ausencias de los trabajadores',
+      icon: '🏥',
+      color: '#dc2626'
     }
   };
 
@@ -95,6 +101,7 @@ const PageIndicator: React.FC<PageIndicatorProps> = ({
         switch (action) {
           case 'crear':
           case 'nuevo':
+          case 'nueva':
             title = `${baseInfo.title} - Crear Nuevo`;
             subtitle = 'Completa el formulario para crear un nuevo registro';
             break;
@@ -105,6 +112,15 @@ const PageIndicator: React.FC<PageIndicatorProps> = ({
           case 'lote':
             title = `${baseInfo.title} - Modo Lote`;
             subtitle = 'Crea múltiples registros de una vez';
+            break;
+          case 'estadisticas':
+            if (pathSegments[0] === 'ausencias') {
+              title = `${baseInfo.title} - Estadísticas`;
+              subtitle = 'Análisis estadístico de horas por tipo de ausencia';
+            } else {
+              title = `${baseInfo.title} - Estadísticas`;
+              subtitle = 'Análisis estadístico detallado';
+            }
             break;
           default:
             if (pathSegments.includes('intensidad')) {

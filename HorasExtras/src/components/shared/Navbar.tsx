@@ -63,6 +63,13 @@ const Navbar: React.FC = () => {
       path: "/clientes",
       icon: "👔",
       description: "Gestión de clientes"
+    },
+    {
+      id: "ausencias",
+      title: "Ausencias",
+      path: "/ausencias",
+      icon: "🏥",
+      description: "Gestión de ausencias"
     }
   ];
 
@@ -108,8 +115,10 @@ const Navbar: React.FC = () => {
             'crear': '➕ Crear',
             'editar': '✏️ Editar',
             'nuevo': '➕ Nuevo',
+            'nueva': '➕ Nueva',
             'lote': '📊 Lote',
-            'intensidad': '⚡ Intensidad'
+            'intensidad': '⚡ Intensidad',
+            'estadisticas': '📊 Estadísticas'
           };
           const actionName = actionNames[segment] || `📄 ${segment}`;
           crumbs.push({
