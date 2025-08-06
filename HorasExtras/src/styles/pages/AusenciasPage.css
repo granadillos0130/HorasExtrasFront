@@ -491,3 +491,237 @@
     justify-content: center;
   }
 }
+/* 🆕 Estilos para la tabla mejorada de ausencias */
+
+.table-container {
+  overflow-x: auto;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  background: white;
+  border: 1px solid #e5e7eb;
+}
+
+.ausencias-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.ausencias-table th {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 16px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #4f46e5;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.ausencias-table td {
+  padding: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: top;
+}
+
+.ausencias-table tbody tr:hover {
+  background-color: #f9fafb;
+  transition: background-color 0.2s ease;
+}
+
+/* 🆕 Estilos específicos para el campo DX */
+.dx-cell {
+  min-width: 120px;
+}
+
+.dx-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: linear-gradient(135deg, #e0f2fe, #bae6fd);
+  color: #0c4a6e;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 2px solid #0ea5e9;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dx-empty {
+  color: #9ca3af;
+  font-style: italic;
+  font-size: 0.8rem;
+}
+
+/* 🆕 Mejorar otros badges de la tabla */
+.trabajador-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.trabajador-nombre {
+  font-weight: 600;
+  color: #1f2937;
+  font-size: 0.9rem;
+}
+
+.cargo-badge {
+  display: inline-block;
+  background: #f3f4f6;
+  color: #374151;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.tipo-ausencia {
+  min-width: 140px;
+}
+
+.tipo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 2px solid;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tipo-badge.medica {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  color: #1d4ed8;
+  border-color: #3b82f6;
+}
+
+.tipo-badge.enfermedad {
+  background: linear-gradient(135deg, #fed7d7, #fc8181);
+  color: #742a2a;
+  border-color: #e53e3e;
+}
+
+.tipo-badge.accidente {
+  background: linear-gradient(135deg, #fef3c7, #fbbf24);
+  color: #92400e;
+  border-color: #f59e0b;
+}
+
+.tipo-badge.personal {
+  background: linear-gradient(135deg, #e0e7ff, #c7d2fe);
+  color: #3730a3;
+  border-color: #6366f1;
+}
+
+.tipo-badge.default {
+  background: linear-gradient(135deg, #f3f4f6, #d1d5db);
+  color: #374151;
+  border-color: #6b7280;
+}
+
+.descripcion-cell {
+  max-width: 200px;
+  word-wrap: break-word;
+  line-height: 1.4;
+  color: #4b5563;
+  font-size: 0.8rem;
+}
+
+.fecha-badge, .hora-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f9fafb;
+  color: #374151;
+  padding: 4px 8px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  border: 1px solid #e5e7eb;
+}
+
+.hora-badge.ingreso {
+  background: #ecfdf5;
+  color: #065f46;
+  border-color: #10b981;
+}
+
+.hora-badge.salida {
+  background: #fef2f2;
+  color: #7f1d1d;
+  border-color: #ef4444;
+}
+
+.remunerado-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: 2px solid;
+}
+
+.remunerado-badge.si {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  color: #065f46;
+  border-color: #10b981;
+}
+
+.remunerado-badge.no {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  color: #7f1d1d;
+  border-color: #ef4444;
+}
+
+/* 🆕 Responsividad para dispositivos móviles */
+@media (max-width: 768px) {
+  .ausencias-table {
+    font-size: 0.75rem;
+  }
+  
+  .ausencias-table th,
+  .ausencias-table td {
+    padding: 8px 6px;
+  }
+  
+  .dx-badge,
+  .tipo-badge {
+    max-width: 100px;
+    font-size: 0.7rem;
+  }
+  
+  .descripcion-cell {
+    max-width: 120px;
+  }
+}
+
+/* 🆕 Tooltip para celdas truncadas */
+.dx-badge[title],
+.tipo-badge[title],
+.descripcion-cell[title] {
+  cursor: help;
+  position: relative;
+}
+
+.dx-badge:hover,
+.tipo-badge:hover,
+.descripcion-cell:hover {
+  transform: scale(1.02);
+  transition: transform 0.2s ease;
+}

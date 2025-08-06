@@ -122,6 +122,51 @@ const loadingStyles = `
 .integration-info li {
   margin: 5px 0;
 }
+
+/* 🆕 Estilos para el campo DX condicional */
+.dx-field-container {
+  background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
+  border: 2px solid #0ea5e9;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.dx-field-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: #0c4a6e;
+  font-size: 0.9rem;
+}
+
+.dx-field-textarea {
+  background: white;
+  border: 2px solid #bae6fd;
+  border-radius: 8px;
+  margin: 0;
+}
+
+.dx-field-help {
+  display: block;
+  margin-top: 8px;
+  color: #0369a1;
+  font-size: 0.8rem;
+  font-style: italic;
+}
 `;
 
 // Inyectar estilos
@@ -143,6 +188,7 @@ const initialState: AusenciaDto = {
   horaInicio: "08:00",
   horaFin: "10:00",
   remunerado: false,
+  dx: "", // 🆕 Campo para diagnóstico
 };
 
 const AusenciaForm = () => {
@@ -153,6 +199,12 @@ const AusenciaForm = () => {
   const [trabajadorSeleccionadoId, setTrabajadorSeleccionadoId] = useState<number>(0);
   const [loadingTrabajadores, setLoadingTrabajadores] = useState(true);
   const [mostrarInfo, setMostrarInfo] = useState(false);
+
+  // 🆕 Función para determinar si mostrar el campo DX
+  const mostrarCampoDx = () => {
+    return formData.tipoAusencia === "Cita médica general" || 
+           formData.tipoAusencia === "Cita Seguimiento EO";
+  };
 
   // Cargar trabajadores al montar el componente
   useEffect(() => {
@@ -172,6 +224,7 @@ const AusenciaForm = () => {
     cargarTrabajadores();
   }, []);
 
+  // 🔧 ARREGLO DEL ERROR TYPESCRIPT - handleChange corregido
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -188,6 +241,16 @@ const AusenciaForm = () => {
 
     if (name === "fechaInicio" || name === "fechaFin") {
       newValue = new Date(value);
+    }
+
+    // 🆕 ARREGLADO: Cast explícito para tipoAusencia
+    if (name === "tipoAusencia") {
+      setFormData((prev) => ({
+        ...prev,
+        tipoAusencia: value as string, // ✅ Cast explícito
+        dx: "" // Limpiar DX cuando cambia el tipo
+      }));
+      return;
     }
 
     setFormData((prev) => ({
@@ -245,6 +308,7 @@ const AusenciaForm = () => {
       const nuevaAusencia = {
         ...formData,
         fecha: new Date(), // fecha de solicitud actual
+        dx: mostrarCampoDx() ? formData.dx : undefined // Solo incluir DX si es necesario
       };
 
       await crearAusencia(nuevaAusencia);
@@ -260,6 +324,7 @@ const AusenciaForm = () => {
 • Fechas afectadas: ${formData.fechaInicio.toLocaleDateString('es-ES')} - ${formData.fechaFin.toLocaleDateString('es-ES')}
 • Horario de ausencia: ${formData.horaInicio} - ${formData.horaFin}
 • Total de horas: ${horasTotales.toFixed(2)} horas
+${formData.dx ? `• Diagnóstico registrado: ${formData.dx}` : ''}
 
 ${formData.remunerado 
   ? `💰 AUSENCIA REMUNERADA:
@@ -455,7 +520,7 @@ ${formData.remunerado
                 required
               >
                 <option value="">Seleccionar tipo</option>
-                <option value="Cita médica">Cita médica general</option>
+                <option value="Cita médica general">Cita médica general</option>
                 <option value="Accidente laboral">Accidente laboral</option>
                 <option value="Enfermedad común">Enfermedad común</option>
                 <option value="Cita Seguimiento EO">Cita Seguimiento EO</option>
@@ -478,6 +543,40 @@ ${formData.remunerado
                 required
               />
             </div>
+
+            {/* 🆕 CAMPO DX CONDICIONAL */}
+            {mostrarCampoDx() && (
+              <div className="form-group full-width">
+                <label className="form-label">
+                  DX - Diagnóstico
+                  <small style={{ 
+                    marginLeft: '10px', 
+                    fontWeight: 'normal', 
+                    color: '#6b7280',
+                    fontSize: '0.8rem'
+                  }}>
+                    (Opcional)
+                  </small>
+                </label>
+                <div className="dx-field-container">
+                  <div className="dx-field-header">
+                    <span style={{ fontSize: '1.2rem' }}>🏥</span>
+                    <strong>Campo específico para citas médicas</strong>
+                  </div>
+                  <textarea
+                    name="dx"
+                    value={formData.dx || ""}
+                    onChange={handleChange}
+                    className="form-textarea dx-field-textarea"
+                    placeholder="Ingrese el diagnóstico médico (opcional)..."
+                    rows={3}
+                  />
+                  <small className="dx-field-help">
+                    💡 Este campo es opcional y solo aparece para citas médicas y de seguimiento
+                  </small>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -602,6 +701,11 @@ ${formData.remunerado
                 <div>
                   <strong>Tipo:</strong> {formData.remunerado ? 'Remunerada' : 'No remunerada'}
                 </div>
+                {mostrarCampoDx() && formData.dx && (
+                  <div style={{ gridColumn: '1 / -1' }}>
+                    <strong>🏥 DX:</strong> {formData.dx}
+                  </div>
+                )}
               </div>
             </div>
           )}

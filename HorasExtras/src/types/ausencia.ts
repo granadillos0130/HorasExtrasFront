@@ -6,11 +6,12 @@ export interface Ausencia {
   fechaFin: string;
   horaInicio: string;
   horaFin: string;
-  tipoAusencia: string; // ✅ Cambiado de "motivo" a "tipoAusencia"
-  descripcion: string;   // ✅ Agregado para que coincida con el backend
+  tipoAusencia: string;
+  descripcion: string;
   trabajadorNombre: string;
   cargo: string;
-  remunerado: boolean;   // ✅ Agregado para que coincida con el backend
+  remunerado: boolean;
+  dx?: string; // 🆕 Nuevo campo opcional para diagnóstico
 }
 
 export interface AusenciaDto {
@@ -25,4 +26,5 @@ export interface AusenciaDto {
   horaInicio: string;
   horaFin: string;
   remunerado: boolean;
+  dx?: string; // 🆕 Nuevo campo opcional para diagnóstico
 }
