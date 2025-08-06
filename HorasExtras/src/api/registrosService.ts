@@ -1,6 +1,6 @@
 // src/api/registrosService.ts
 import { api } from "./api";
-import type { Registro, RegistroConTipo } from "../types/registros";
+import type { Registro} from "../types/registros";
 import type { RegistroInputDto } from "../types/registros";
 import type { ResumenSemana } from "../types/ResumenSemana";
 
