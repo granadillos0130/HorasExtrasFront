@@ -1,9 +1,15 @@
 import { api } from "./api";
 import type { Ausencia, AusenciaDto } from "../types/ausencia";
 
-// Interfaz para las estadísticas
+// Interfaz para las estadísticas de horas por tipo
 interface EstadisticaHoras {
   tipoAusencia: string;
+  totalHoras: number;
+}
+
+// Nueva interfaz para las estadísticas de horas por área
+interface EstadisticaHorasArea {
+  area: string;
   totalHoras: number;
 }
 
@@ -64,9 +70,15 @@ export async function eliminarAusencia(id: number) {
   return response.data;
 }
 
-// Nueva función para obtener estadísticas
+// Función existente para obtener estadísticas por tipo
 export async function getEstadisticasHoras() {
   const response = await api.get<EstadisticaHoras[]>("/ausencias/estadisticas/horas-por-tipo");
+  return response.data;
+}
+
+// Nueva función para obtener estadísticas por área
+export async function getEstadisticasHorasPorArea() {
+  const response = await api.get<EstadisticaHorasArea[]>("/ausencias/estadisticas/horas-ausencia-por-area");
   return response.data;
 }
 
@@ -77,5 +89,6 @@ export const ausenciasService = {
   getById,
   actualizarAusencia,
   eliminarAusencia,
-  getEstadisticasHoras, // Agregamos la nueva función
+  getEstadisticasHoras,
+  getEstadisticasHorasPorArea, // Agregamos la nueva función
 };
