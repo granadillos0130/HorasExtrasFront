@@ -1,8 +1,32 @@
 // src/api/registrosService.ts
 import { api } from "./api";
-import type { Registro } from "../types/registros";
+import type { Registro, RegistroConTipo } from "../types/registros";
 import type { RegistroInputDto } from "../types/registros";
 import type { ResumenSemana } from "../types/ResumenSemana";
+
+// 🆕 NUEVO: Interfaz para el resumen detallado del día
+export interface ResumenDia {
+  fecha: string;
+  jornadaEsperada: number;
+  registrosNormales: number;
+  ausencias: number;
+  totalHorasTrabajadas: number;
+  totalHorasAusencias: number;
+  horasAusenciasRemuneradas: number;
+  horasAusenciasNoRemuneradas: number;
+  totalHorasNormales: number;
+  totalHorasExtras: number;
+  cumplioJornada: boolean;
+}
+
+// 🆕 NUEVO: Interfaz para respuesta del resumen completo
+export interface RespuestaResumenCompleto {
+  fechaInicio: string;
+  fechaFin: string;
+  trabajadorId?: number;
+  totalRegistros: number;
+  datos: Registro[];
+}
 
 export const registrosService = {
   // Obtener todos los registros
@@ -26,7 +50,7 @@ export const registrosService = {
     await api.delete(`/registros/${id}`);
   },
 
-  // 🆕 NUEVO: Obtener registros por trabajador y rango de fechas
+  // Obtener registros por trabajador y rango de fechas
   async buscarPorTrabajadorRangoFechas(
     trabajadorId: number,
     fechaInicio: string,
@@ -42,12 +66,10 @@ export const registrosService = {
         params: { trabajadorId, fechaInicio, fechaFin },
       });
       
-      // Si el backend devuelve un objeto con 'data', extraerlo
       if (res.data && typeof res.data === 'object' && 'data' in res.data) {
         return res.data.data;
       }
       
-      // Si devuelve directamente el array
       return Array.isArray(res.data) ? res.data : [];
     } catch (error) {
       console.error('Error al buscar registros por rango de fechas:', error);
@@ -79,11 +101,61 @@ export const registrosService = {
     return res.data;
   },
 
-  // Obtener todos los registros por fecha
+  // 🆕 MEJORADO: Obtener todos los registros por fecha (incluye ausencias)
   async obtenerTodosPorFecha(fecha: string): Promise<Registro[]> {
-    const res = await api.get<Registro[]>("/registros/porFechaTodos", {
-      params: { fecha },
-    });
-    return res.data;
+    try {
+      const res = await api.get<any>("/registros/porFechaTodos", {
+        params: { fecha },
+      });
+      
+      // El nuevo endpoint devuelve un objeto con estructura mejorada
+      if (res.data && typeof res.data === 'object' && 'registros' in res.data) {
+        return res.data.registros;
+      }
+      
+      // Mantener compatibilidad con la respuesta anterior
+      return Array.isArray(res.data) ? res.data : [];
+    } catch (error) {
+      console.error('Error al obtener registros por fecha:', error);
+      throw error;
+    }
+  },
+
+  // 🆕 NUEVO: Obtener resumen detallado de un día específico
+  async obtenerResumenDia(trabajadorId: number, fecha: string): Promise<{
+    resumen: ResumenDia;
+    detalleRegistros: any[];
+  }> {
+    try {
+      const res = await api.get("/registros/resumenDia", {
+        params: { trabajadorId, fecha },
+      });
+      return res.data;
+    } catch (error) {
+      console.error('Error al obtener resumen del día:', error);
+      throw error;
+    }
+  },
+
+  // 🆕 NUEVO: Obtener resumen completo (registros + ausencias) para un rango
+  async obtenerResumenCompleto(
+    fechaInicio: string,
+    fechaFin: string,
+    trabajadorId?: number
+  ): Promise<RespuestaResumenCompleto> {
+    try {
+      const params: any = { fechaInicio, fechaFin };
+      if (trabajadorId) {
+        params.trabajadorId = trabajadorId;
+      }
+
+      const res = await api.get<RespuestaResumenCompleto>("/registros/resumenCompleto", {
+        params,
+      });
+      return res.data;
+    } catch (error) {
+      console.error('Error al obtener resumen completo:', error);
+      throw error;
+    }
   },
 };

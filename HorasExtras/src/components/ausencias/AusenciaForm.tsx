@@ -34,6 +34,94 @@ const loadingStyles = `
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+/* 🆕 Estilos mejorados para mensajes largos */
+.form-message {
+  white-space: pre-line;
+  line-height: 1.6;
+  text-align: left;
+  max-width: 100%;
+  word-wrap: break-word;
+}
+
+.form-message.success {
+  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+  border: 2px solid #10b981;
+  color: #064e3b;
+  padding: 20px;
+  border-radius: 12px;
+  margin-top: 20px;
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.form-message.error {
+  background: linear-gradient(135deg, #fee2e2, #fecaca);
+  border: 2px solid #ef4444;
+  color: #7f1d1d;
+  padding: 20px;
+  border-radius: 12px;
+  margin-top: 20px;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+}
+
+.message-icon {
+  font-size: 1.2rem;
+  margin-right: 10px;
+  display: inline-block;
+}
+
+/* 🆕 Componente de información sobre integración */
+.integration-info {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  border: 2px solid #3b82f6;
+  border-radius: 15px;
+  padding: 20px;
+  margin: 25px 0;
+  position: relative;
+  overflow: hidden;
+}
+
+.integration-info::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #3b82f6, #1d4ed8, #3b82f6);
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.integration-info h4 {
+  color: #1d4ed8;
+  margin: 0 0 15px 0;
+  font-size: 1.2rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.integration-info p {
+  color: #1e40af;
+  margin: 0 0 10px 0;
+  line-height: 1.6;
+}
+
+.integration-info ul {
+  color: #1e40af;
+  margin: 10px 0;
+  padding-left: 20px;
+}
+
+.integration-info li {
+  margin: 5px 0;
+}
 `;
 
 // Inyectar estilos
@@ -64,6 +152,7 @@ const AusenciaForm = () => {
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
   const [trabajadorSeleccionadoId, setTrabajadorSeleccionadoId] = useState<number>(0);
   const [loadingTrabajadores, setLoadingTrabajadores] = useState(true);
+  const [mostrarInfo, setMostrarInfo] = useState(false);
 
   // Cargar trabajadores al montar el componente
   useEffect(() => {
@@ -127,6 +216,26 @@ const AusenciaForm = () => {
     }
   };
 
+  // 🆕 FUNCIÓN MEJORADA para calcular días de ausencia
+  const calcularDiasAusencia = (fechaInicio: Date, fechaFin: Date): number => {
+    const tiempoTranscurrido = fechaFin.getTime() - fechaInicio.getTime();
+    const diasTranscurridos = Math.ceil(tiempoTranscurrido / (1000 * 60 * 60 * 24));
+    return diasTranscurridos + 1; // +1 porque incluye ambos días
+  };
+
+  // 🆕 FUNCIÓN MEJORADA para calcular horas totales
+  const calcularHorasTotales = (horaInicio: string, horaFin: string, dias: number): number => {
+    const [horaInicioH, horaInicioM] = horaInicio.split(':').map(Number);
+    const [horaFinH, horaFinM] = horaFin.split(':').map(Number);
+    
+    const minutosInicio = horaInicioH * 60 + horaInicioM;
+    const minutosFin = horaFinH * 60 + horaFinM;
+    
+    const horasPorDia = (minutosFin - minutosInicio) / 60;
+    return horasPorDia * dias;
+  };
+
+  // 🆕 HANDLESUBMIT MEJORADO con mensaje explicativo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -139,14 +248,57 @@ const AusenciaForm = () => {
       };
 
       await crearAusencia(nuevaAusencia);
-      setMensaje("success:Ausencia registrada correctamente.");
+      
+      // 🆕 MENSAJE MEJORADO que explica la funcionalidad integrada
+      const diasAusencia = calcularDiasAusencia(formData.fechaInicio, formData.fechaFin);
+      const horasTotales = calcularHorasTotales(formData.horaInicio, formData.horaFin, diasAusencia);
+      
+      const mensajeExito = `success:🎉 ¡Ausencia registrada exitosamente!
+
+📋 INTEGRACIÓN AUTOMÁTICA CON REGISTROS:
+• Se crearon automáticamente ${diasAusencia} registro${diasAusencia > 1 ? 's' : ''} en el sistema de horas
+• Fechas afectadas: ${formData.fechaInicio.toLocaleDateString('es-ES')} - ${formData.fechaFin.toLocaleDateString('es-ES')}
+• Horario de ausencia: ${formData.horaInicio} - ${formData.horaFin}
+• Total de horas: ${horasTotales.toFixed(2)} horas
+
+${formData.remunerado 
+  ? `💰 AUSENCIA REMUNERADA:
+• Las horas contarán como horas normales trabajadas
+• Se incluirán en el cálculo de jornada completa
+• Aparecerán con fondo amarillo en el dashboard de registros` 
+  : `🚫 AUSENCIA NO REMUNERADA:
+• Las horas se marcarán como horas ausentes
+• No contarán para horas normales trabajadas
+• Se identificarán claramente en reportes y estadísticas`
+}
+
+🔍 DÓNDE VER LOS REGISTROS:
+• Ve al Dashboard de Registros → Selecciona las fechas de la ausencia
+• Los registros aparecerán marcados como "AUSENCIA - ${formData.tipoAusencia}"
+• Podrás filtrar entre registros de trabajo y ausencias
+
+💡 PRÓXIMOS PASOS:
+• Si el trabajador también trabajó esos días, registra las horas normales
+• El sistema calculará automáticamente si se cumplió la jornada completa
+• Los reportes incluirán tanto trabajo como ausencias`;
+
+      setMensaje(mensajeExito);
       
       // Reiniciar el formulario
       setFormData(initialState);
       setTrabajadorSeleccionadoId(0);
+      
+      // Scroll hacia el mensaje
+      setTimeout(() => {
+        const messageElement = document.querySelector('.form-message');
+        if (messageElement) {
+          messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 100);
+      
     } catch (error) {
       console.error("Error al registrar la ausencia:", error);
-      setMensaje("error:Hubo un error al guardar la ausencia.");
+      setMensaje("error:❌ Error al guardar la ausencia.\n\nPor favor, verifica que todos los campos estén correctos e intenta nuevamente.\n\nSi el problema persiste, contacta al administrador del sistema.");
     } finally {
       setIsLoading(false);
     }
@@ -158,6 +310,56 @@ const AusenciaForm = () => {
     setMensaje("");
   };
 
+  // 🆕 COMPONENTE de información sobre integración
+  const IntegrationInfoComponent = () => (
+    <div className="integration-info">
+      <h4>
+        🔗 Integración Automática con Sistema de Registros
+        <button 
+          type="button"
+          onClick={() => setMostrarInfo(!mostrarInfo)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            marginLeft: 'auto',
+            fontSize: '1rem',
+            color: '#1d4ed8'
+          }}
+        >
+          {mostrarInfo ? '🔼' : '🔽'}
+        </button>
+      </h4>
+      
+      {mostrarInfo && (
+        <div>
+          <p>
+            <strong>¿Qué sucede cuando registras una ausencia?</strong>
+          </p>
+          <ul>
+            <li>Se crean automáticamente registros en el sistema de horas para cada día de la ausencia</li>
+            <li>Las ausencias aparecen junto con los registros normales de trabajo</li>
+            <li>Si es <strong>remunerada</strong>: cuenta como horas normales trabajadas</li>
+            <li>Si <strong>no es remunerada</strong>: se marca como horas ausentes</li>
+          </ul>
+          
+          <p>
+            <strong>¿Cómo funciona con registros de trabajo del mismo día?</strong>
+          </p>
+          <ul>
+            <li>Puedes registrar tanto ausencias como trabajo en el mismo día</li>
+            <li>El sistema calcula automáticamente si se cumplió la jornada completa</li>
+            <li>Las horas se distribuyen inteligentemente entre normales y extras</li>
+          </ul>
+
+          <p>
+            <strong>Ejemplo:</strong> Juan tiene jornada de 8 horas. Si registras ausencia médica remunerada de 2 horas + trabajo normal de 7 horas = 8 horas normales + 1 hora extra. ✅ Jornada cumplida.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="ausencia-form-container">
       <div className="form-header">
@@ -167,6 +369,9 @@ const AusenciaForm = () => {
         </h1>
         <p className="form-subtitle">Complete el formulario para registrar una nueva ausencia</p>
       </div>
+
+      {/* 🆕 Componente de información sobre integración */}
+      <IntegrationInfoComponent />
 
       <form className="ausencia-form" onSubmit={handleSubmit}>
         {/* Información del Trabajador */}
@@ -351,8 +556,55 @@ const AusenciaForm = () => {
                 <span className="checkbox-custom"></span>
                 <span className="checkbox-text">¿Es remunerado?</span>
               </label>
+              <small style={{ 
+                display: 'block', 
+                marginTop: '5px', 
+                color: '#6b7280', 
+                fontSize: '0.8rem',
+                fontStyle: 'italic'
+              }}>
+                {formData.remunerado 
+                  ? '💰 Contará como horas normales trabajadas' 
+                  : '🚫 Se marcará como horas ausentes'
+                }
+              </small>
             </div>
           </div>
+
+          {/* 🆕 Vista previa de cálculos */}
+          {formData.fechaInicio && formData.fechaFin && formData.horaInicio && formData.horaFin && (
+            <div style={{
+              background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+              border: '2px solid #22c55e',
+              borderRadius: '12px',
+              padding: '15px',
+              marginTop: '20px'
+            }}>
+              <h4 style={{ margin: '0 0 10px 0', color: '#15803d', fontSize: '1rem' }}>
+                📊 Vista Previa de la Ausencia
+              </h4>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+                gap: '10px',
+                fontSize: '0.9rem',
+                color: '#166534'
+              }}>
+                <div>
+                  <strong>Días afectados:</strong> {calcularDiasAusencia(formData.fechaInicio, formData.fechaFin)}
+                </div>
+                <div>
+                  <strong>Horas por día:</strong> {calcularHorasTotales(formData.horaInicio, formData.horaFin, 1).toFixed(2)}
+                </div>
+                <div>
+                  <strong>Total horas:</strong> {calcularHorasTotales(formData.horaInicio, formData.horaFin, calcularDiasAusencia(formData.fechaInicio, formData.fechaFin)).toFixed(2)}
+                </div>
+                <div>
+                  <strong>Tipo:</strong> {formData.remunerado ? 'Remunerada' : 'No remunerada'}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Botones de acción */}
@@ -386,7 +638,7 @@ const AusenciaForm = () => {
           </button>
         </div>
 
-        {/* Mensaje de resultado */}
+        {/* 🆕 MENSAJE DE RESULTADO MEJORADO */}
         {mensaje && (
           <div className={`form-message ${mensaje.startsWith('success:') ? 'success' : 'error'}`}>
             <span className="message-icon">

@@ -4,8 +4,361 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 import { registrosService } from "../api/registrosService";
 import { trabajadoresService } from "../api/trabajadoresService";
-import type { Registro } from "../types/registros";
-import type  { Trabajador } from "../types/trabajadores";
+import type { Registro, RegistroConTipo, FiltroTipoRegistro, EstadisticasDia } from "../types/registros";
+import type { Trabajador } from "../types/trabajadores";
+
+// 🆕 Componente RegistroCard integrado
+const RegistroCard: React.FC<{
+  registro: RegistroConTipo;
+  onEdit?: (id: number) => void;
+  onDelete?: (id: number) => void;
+  compact?: boolean;
+}> = ({ registro, onEdit, onDelete, compact = false }) => {
+  const esAusencia = registro.tipoRegistro === 'AUSENCIA';
+  
+  const formatearHora = (timeString: string) => {
+    return timeString?.substring(0, 5) || "--:--";
+  };
+
+  const formatearHoras = (hours: number) => {
+    if (hours === 0) return "0:00";
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}:${m.toString().padStart(2, "0")}`;
+  };
+
+  const getCardStyle = () => {
+    if (esAusencia) {
+      return {
+        background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+        border: '2px solid #f59e0b',
+        borderLeft: '6px solid #d97706'
+      };
+    }
+    return {
+      background: 'linear-gradient(135deg, #dbeafe, #bfdbfe)',
+      border: '2px solid #3b82f6',
+      borderLeft: '6px solid #1d4ed8'
+    };
+  };
+
+  const getIcono = () => {
+    if (esAusencia) {
+      const tipoAusencia = registro.ausenciaInfo?.tipoAusencia?.toLowerCase();
+      if (tipoAusencia?.includes('médica') || tipoAusencia?.includes('cita')) return '🏥';
+      if (tipoAusencia?.includes('accidente')) return '🚑';
+      if (tipoAusencia?.includes('enfermedad')) return '😷';
+      if (tipoAusencia?.includes('personal') || tipoAusencia?.includes('diligencia')) return '🏃‍♂️';
+      return '📋';
+    }
+    return '👤';
+  };
+
+  const getTipoTexto = () => {
+    if (esAusencia) {
+      return `AUSENCIA - ${registro.ausenciaInfo?.tipoAusencia || 'Tipo no especificado'}`;
+    }
+    return `TRABAJO - ${registro.nombreCentro}`;
+  };
+
+  const getRemunerationBadge = () => {
+    if (!esAusencia) return null;
+    
+    const esRemunerada = registro.ausenciaInfo?.remunerado;
+    return (
+      <span style={{
+        background: esRemunerada ? '#10b981' : '#ef4444',
+        color: 'white',
+        padding: '4px 8px',
+        borderRadius: '12px',
+        fontSize: '0.7rem',
+        fontWeight: '600',
+        textTransform: 'uppercase'
+      }}>
+        {esRemunerada ? '💰 Remunerada' : '🚫 No Remunerada'}
+      </span>
+    );
+  };
+
+  if (compact) {
+    return (
+      <div style={{
+        ...getCardStyle(),
+        padding: '15px',
+        borderRadius: '12px',
+        margin: '8px 0',
+        transition: 'all 0.3s ease'
+      }}>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ fontSize: '1.5rem' }}>{getIcono()}</div>
+            <div>
+              <h5 style={{ margin: '0 0 4px 0', fontSize: '1rem', fontWeight: '600' }}>
+                {registro.trabajadorNombre}
+              </h5>
+              <p style={{ margin: 0, fontSize: '0.8rem', opacity: 0.8 }}>
+                {formatearHora(registro.horaIngreso)} - {formatearHora(registro.horaSalida)}
+              </p>
+            </div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{
+              background: 'rgba(255,255,255,0.8)',
+              padding: '6px 12px',
+              borderRadius: '20px',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              marginBottom: '4px'
+            }}>
+              {formatearHoras(registro.totalHoras)}
+            </div>
+            {getRemunerationBadge()}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{
+      ...getCardStyle(),
+      padding: '25px',
+      borderRadius: '16px',
+      margin: '15px 0',
+      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+      transition: 'all 0.3s ease',
+      position: 'relative'
+    }}
+    onMouseOver={(e) => {
+      e.currentTarget.style.transform = 'translateY(-2px)';
+      e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+    }}
+    onMouseOut={(e) => {
+      e.currentTarget.style.transform = 'translateY(0)';
+      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+    }}
+    >
+      {/* Badge de tipo de registro */}
+      <div style={{
+        position: 'absolute',
+        top: '15px',
+        right: '15px',
+        background: esAusencia ? '#f59e0b' : '#3b82f6',
+        color: 'white',
+        padding: '6px 12px',
+        borderRadius: '20px',
+        fontSize: '0.7rem',
+        fontWeight: '600',
+        textTransform: 'uppercase'
+      }}>
+        {esAusencia ? 'AUSENCIA' : 'TRABAJO'}
+      </div>
+
+      <div style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '20px'
+      }}>
+        {/* Icono y información principal */}
+        <div style={{
+          background: esAusencia ? '#f59e0b' : '#3b82f6',
+          color: 'white',
+          width: '60px',
+          height: '60px',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '1.8rem',
+          flexShrink: 0
+        }}>
+          {getIcono()}
+        </div>
+
+        <div style={{ flex: 1 }}>
+          {/* Nombre del trabajador */}
+          <h4 style={{
+            margin: '0 0 8px 0',
+            fontSize: '1.3rem',
+            fontWeight: '700',
+            color: '#1f2937'
+          }}>
+            {registro.trabajadorNombre || `Trabajador ${registro.trabajadorId}`}
+          </h4>
+
+          {/* Tipo y centro/descripción */}
+          <p style={{
+            margin: '0 0 12px 0',
+            fontSize: '1rem',
+            fontWeight: '600',
+            color: esAusencia ? '#92400e' : '#1e40af'
+          }}>
+            {getTipoTexto()}
+          </p>
+
+          {/* Descripción adicional para ausencias */}
+          {esAusencia && registro.ausenciaInfo?.descripcion && (
+            <p style={{
+              margin: '0 0 12px 0',
+              fontSize: '0.9rem',
+              color: '#6b7280',
+              fontStyle: 'italic',
+              background: 'rgba(255,255,255,0.6)',
+              padding: '8px 12px',
+              borderRadius: '8px'
+            }}>
+              "{registro.ausenciaInfo.descripcion}"
+            </p>
+          )}
+
+          {/* Horarios */}
+          <div style={{
+            display: 'flex',
+            gap: '20px',
+            marginBottom: '15px',
+            flexWrap: 'wrap'
+          }}>
+            <div>
+              <span style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: '600' }}>
+                HORARIO:
+              </span>
+              <span style={{ fontSize: '1rem', fontWeight: '600', marginLeft: '8px' }}>
+                {formatearHora(registro.horaIngreso)} - {formatearHora(registro.horaSalida)}
+              </span>
+            </div>
+            <div>
+              <span style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: '600' }}>
+                TOTAL:
+              </span>
+              <span style={{ 
+                fontSize: '1.1rem', 
+                fontWeight: '700', 
+                marginLeft: '8px',
+                color: esAusencia ? '#d97706' : '#1d4ed8'
+              }}>
+                {formatearHoras(registro.totalHoras)} hrs
+              </span>
+            </div>
+          </div>
+
+          {/* Desglose de horas */}
+          {(!esAusencia || registro.horasExtrasDiurnas > 0 || registro.horasExtrasNocturnas > 0) && (
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+              gap: '12px',
+              marginBottom: '15px'
+            }}>
+              <div style={{
+                background: 'rgba(255,255,255,0.7)',
+                padding: '8px 12px',
+                borderRadius: '8px',
+                textAlign: 'center'
+              }}>
+                <div style={{ fontSize: '0.7rem', color: '#6b7280', fontWeight: '600' }}>
+                  NORMALES
+                </div>
+                <div style={{ fontSize: '1rem', fontWeight: '700', color: '#059669' }}>
+                  {formatearHoras(registro.horasNormales)}
+                </div>
+              </div>
+
+              {registro.horasExtrasDiurnas > 0 && (
+                <div style={{
+                  background: 'rgba(255,255,255,0.7)',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '0.7rem', color: '#6b7280', fontWeight: '600' }}>
+                    EXTRAS DIURNAS
+                  </div>
+                  <div style={{ fontSize: '1rem', fontWeight: '700', color: '#ea580c' }}>
+                    {formatearHoras(registro.horasExtrasDiurnas)}
+                  </div>
+                </div>
+              )}
+
+              {registro.horasExtrasNocturnas > 0 && (
+                <div style={{
+                  background: 'rgba(255,255,255,0.7)',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '0.7rem', color: '#6b7280', fontWeight: '600' }}>
+                    EXTRAS NOCTURNAS
+                  </div>
+                  <div style={{ fontSize: '1rem', fontWeight: '700', color: '#7c2d12' }}>
+                    {formatearHoras(registro.horasExtrasNocturnas)}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Badge de remuneración y acciones */}
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center'
+          }}>
+            <div>
+              {getRemunerationBadge()}
+            </div>
+
+            {/* Botones de acción */}
+            <div style={{ display: 'flex', gap: '8px' }}>
+              {onEdit && (
+                <button
+                  onClick={() => onEdit(registro.id)}
+                  style={{
+                    background: 'linear-gradient(135deg, #06b6d4, #0891b2)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    cursor: registro.id < 0 ? 'not-allowed' : 'pointer',
+                    opacity: registro.id < 0 ? 0.5 : 1,
+                    fontSize: '0.8rem',
+                    fontWeight: '600'
+                  }}
+                  disabled={registro.id < 0}
+                  title={registro.id < 0 ? 'Para editar ausencias, ve a la sección de Ausencias' : 'Editar registro'}
+                >
+                  ✏️ Editar
+                </button>
+              )}
+              
+              {onDelete && (
+                <button
+                  onClick={() => onDelete(registro.id)}
+                  style={{
+                    background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontSize: '0.8rem',
+                    fontWeight: '600'
+                  }}
+                  title={registro.id < 0 ? 'Eliminar ausencia' : 'Eliminar registro'}
+                >
+                  🗑️ Eliminar
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 interface EstadisticaDia {
   fecha: string;
@@ -22,13 +375,17 @@ const RegistrosPage: React.FC = () => {
   const [añoSeleccionado, setAñoSeleccionado] = useState<number>(new Date().getFullYear());
   const [mesSeleccionado, setMesSeleccionado] = useState<number | null>(null);
   const [diaSeleccionado, setDiaSeleccionado] = useState<string | null>(null);
-  const [registrosDelDia, setRegistrosDelDia] = useState<Registro[]>([]);
+  const [registrosDelDia, setRegistrosDelDia] = useState<RegistroConTipo[]>([]);
   const [loading, setLoading] = useState(false);
   const [exportandoExcel, setExportandoExcel] = useState(false);
   const [trabajadoresActivos, setTrabajadoresActivos] = useState<Trabajador[]>([]);
   const [estadisticasMes, setEstadisticasMes] = useState<Map<string, EstadisticaDia>>(new Map());
   const [cargandoEstadisticas, setCargandoEstadisticas] = useState(false);
-  const [centroSeleccionado, setCentroSeleccionado] = useState<string | null>(null);
+  
+  // 🆕 Estados para ausencias integradas
+  const [filtroTipo, setFiltroTipo] = useState<FiltroTipoRegistro>('TODOS');
+  const [mostrarEstadisticas, setMostrarEstadisticas] = useState(false);
+  const [estadisticasDia, setEstadisticasDia] = useState<EstadisticasDia | null>(null);
   
   // Estados para mensajes de éxito
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
@@ -41,7 +398,53 @@ const RegistrosPage: React.FC = () => {
 
   const diasSemana = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-  // ✅ FIX: Wrap in useCallback to avoid dependency issues
+  // 🆕 FUNCIÓN para procesar registros y detectar ausencias - ✅ FIXED: Removed 'any' type
+  const procesarRegistrosConTipo = useCallback((registros: Registro[]): RegistroConTipo[] => {
+    return registros.map(registro => {
+      const esAusencia = registro.tipoRegistro === 'AUSENCIA' || 
+                        registro.centroId === 'AUSENCIA' ||
+                        registro.nombreCentro?.includes('AUSENCIA');
+      
+      return {
+        ...registro,
+        tipoRegistro: esAusencia ? 'AUSENCIA' as const : 'TRABAJO' as const,
+        ausenciaInfo: esAusencia ? registro.ausenciaInfo : undefined
+      } as RegistroConTipo;
+    });
+  }, []);
+
+  // 🆕 FUNCIÓN para calcular estadísticas del día - ✅ FIXED: Added to useCallback dependencies
+  const calcularEstadisticasDia = useCallback((registros: RegistroConTipo[]): EstadisticasDia => {
+    const registrosTrabajo = registros.filter(r => r.tipoRegistro === 'TRABAJO');
+    const registrosAusencia = registros.filter(r => r.tipoRegistro === 'AUSENCIA');
+    
+    return {
+      fecha: diaSeleccionado || '',
+      totalRegistros: registros.length,
+      registrosTrabajo: registrosTrabajo.length,
+      registrosAusencia: registrosAusencia.length,
+      trabajadoresUnicos: new Set(registros.map(r => r.trabajadorId)).size,
+      horasTotales: registros.reduce((sum, r) => sum + r.totalHoras, 0),
+      horasNormales: registros.reduce((sum, r) => sum + r.horasNormales, 0),
+      horasExtras: registros.reduce((sum, r) => 
+        sum + r.horasExtrasDiurnas + r.horasExtrasNocturnas + 
+        r.extrasDominicalesDiurnas + r.extrasDominicalesNocturnas, 0),
+      horasAusenciasRemuneradas: registrosAusencia
+        .filter(r => r.ausenciaInfo?.remunerado)
+        .reduce((sum, r) => sum + r.totalHoras, 0),
+      horasAusenciasNoRemuneradas: registrosAusencia
+        .filter(r => !r.ausenciaInfo?.remunerado)
+        .reduce((sum, r) => sum + r.totalHoras, 0)
+    };
+  }, [diaSeleccionado]);
+
+  // 🆕 FUNCIÓN para filtrar registros por tipo
+  const filtrarRegistrosPorTipo = (registros: RegistroConTipo[]): RegistroConTipo[] => {
+    if (filtroTipo === 'TODOS') return registros;
+    return registros.filter(r => r.tipoRegistro === filtroTipo);
+  };
+
+  // ✅ FIX: Wrap in useCallback to avoid dependency issues + Added missing dependency
   const cargarEstadisticasDelMes = useCallback(async () => {
     if (mesSeleccionado === null) return;
 
@@ -70,7 +473,6 @@ const RegistrosPage: React.FC = () => {
             registros: registrosDia
           });
         } catch {
-          // ✅ FIX: Use underscore prefix to indicate intentionally unused
           // Si no hay registros para ese día, porcentaje = 0
           estadisticas.set(fechaString, {
             fecha: fechaString,
@@ -90,19 +492,25 @@ const RegistrosPage: React.FC = () => {
     }
   }, [mesSeleccionado, añoSeleccionado, trabajadoresActivos]);
 
-  // ✅ FIX: Wrap in useCallback for consistent reference
+  // 🆕 ACTUALIZAR la función obtenerRegistrosDelDia - ✅ FIXED: Added missing dependencies
   const obtenerRegistrosDelDia = useCallback(async (fecha: string) => {
     try {
       setLoading(true);
       const registros = await registrosService.obtenerTodosPorFecha(fecha);
-      setRegistrosDelDia(registros);
+      const registrosConTipo = procesarRegistrosConTipo(registros);
+      setRegistrosDelDia(registrosConTipo);
+      
+      // Calcular estadísticas
+      const estadisticas = calcularEstadisticasDia(registrosConTipo);
+      setEstadisticasDia(estadisticas);
     } catch (error) {
       console.error("Error al obtener registros:", error);
       setRegistrosDelDia([]);
+      setEstadisticasDia(null);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [procesarRegistrosConTipo, calcularEstadisticasDia]);
 
   // Manejar mensajes de éxito al regresar de crear registros
   useEffect(() => {
@@ -127,7 +535,7 @@ const RegistrosPage: React.FC = () => {
         obtenerRegistrosDelDia(diaSeleccionado);
       }
     }
-  }, [searchParams, mesSeleccionado, diaSeleccionado, setSearchParams, cargarEstadisticasDelMes, obtenerRegistrosDelDia]); // ✅ FIX: Added missing dependencies
+  }, [searchParams, mesSeleccionado, diaSeleccionado, setSearchParams, cargarEstadisticasDelMes, obtenerRegistrosDelDia]);
 
   // Cargar trabajadores activos al iniciar
   useEffect(() => {
@@ -149,7 +557,7 @@ const RegistrosPage: React.FC = () => {
     if (mesSeleccionado !== null && trabajadoresActivos.length > 0) {
       cargarEstadisticasDelMes();
     }
-  }, [mesSeleccionado, añoSeleccionado, trabajadoresActivos, cargarEstadisticasDelMes]); // ✅ FIX: Added missing dependency
+  }, [mesSeleccionado, añoSeleccionado, trabajadoresActivos, cargarEstadisticasDelMes]);
 
   // Función para navegar a los formularios
   const navigateToForm = (tipo: 'individual' | 'lote') => {
@@ -167,30 +575,118 @@ const RegistrosPage: React.FC = () => {
     navigate(targetPath);
   };
 
-  // Función para agrupar registros por centro
-  const agruparRegistrosPorCentro = (registros: Registro[]) => {
-    const centrosMap = new Map<string, { 
-      nombreCentro: string; 
-      centroId: string; 
-      trabajadores: Registro[] 
-    }>();
-
-    registros.forEach(registro => {
-      // Manejar centroId null o undefined
-      const centroKey = registro.centroId?.toString() || 'sin-centro';
+  // 🆕 COMPONENTE para mostrar estadísticas del día
+  const EstadisticasDiaComponent: React.FC<{ estadisticas: EstadisticasDia }> = ({ estadisticas }) => (
+    <div style={{
+      background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+      border: '2px solid #0ea5e9',
+      borderRadius: '15px',
+      padding: '20px',
+      marginBottom: '20px'
+    }}>
+      <h4 style={{ 
+        margin: '0 0 15px 0', 
+        color: '#0c4a6e',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px'
+      }}>
+        📊 Estadísticas del Día
+        <button
+          onClick={() => setMostrarEstadisticas(!mostrarEstadisticas)}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            fontSize: '1rem'
+          }}
+        >
+          {mostrarEstadisticas ? '🔼' : '🔽'}
+        </button>
+      </h4>
       
-      if (!centrosMap.has(centroKey)) {
-        centrosMap.set(centroKey, {
-          nombreCentro: registro.nombreCentro || (registro.centroId ? `Centro ${registro.centroId}` : 'Sin Centro Asignado'),
-          centroId: registro.centroId?.toString() || 'sin-centro',
-          trabajadores: []
-        });
-      }
-      centrosMap.get(centroKey)?.trabajadores.push(registro);
-    });
+      {mostrarEstadisticas && (
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+          gap: '15px'
+        }}>
+          <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#0c4a6e' }}>{estadisticas.totalRegistros}</div>
+            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Total Registros</div>
+          </div>
+          
+          <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1d4ed8' }}>{estadisticas.registrosTrabajo}</div>
+            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Trabajo</div>
+          </div>
+          
+          <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#f59e0b' }}>{estadisticas.registrosAusencia}</div>
+            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Ausencias</div>
+          </div>
+          
+          <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#059669' }}>{estadisticas.trabajadoresUnicos}</div>
+            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Trabajadores</div>
+          </div>
+          
+          <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#059669' }}>{estadisticas.horasNormales.toFixed(1)}</div>
+            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Horas Normales</div>
+          </div>
+          
+          <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px' }}>
+            <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#ea580c' }}>{estadisticas.horasExtras.toFixed(1)}</div>
+            <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Horas Extras</div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
-    return Array.from(centrosMap.values());
-  };
+  // 🆕 COMPONENTE para filtros de tipo
+  const FiltrosTipoComponent = () => (
+    <div style={{
+      display: 'flex',
+      gap: '10px',
+      marginBottom: '20px',
+      padding: '15px',
+      background: 'rgba(255,255,255,0.9)',
+      borderRadius: '12px',
+      alignItems: 'center',
+      flexWrap: 'wrap'
+    }}>
+      <span style={{ fontWeight: '600', color: '#374151' }}>Filtrar por:</span>
+      {(['TODOS', 'TRABAJO', 'AUSENCIA'] as FiltroTipoRegistro[]).map(tipo => (
+        <button
+          key={tipo}
+          onClick={() => setFiltroTipo(tipo)}
+          style={{
+            background: filtroTipo === tipo 
+              ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' 
+              : 'white',
+            color: filtroTipo === tipo ? 'white' : '#374151',
+            border: `2px solid ${filtroTipo === tipo ? '#1d4ed8' : '#d1d5db'}`,
+            padding: '8px 16px',
+            borderRadius: '20px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.9rem',
+            transition: 'all 0.3s ease'
+          }}
+        >
+          {tipo === 'TODOS' ? '📋 Todos' : 
+           tipo === 'TRABAJO' ? '👤 Trabajo' : 
+           '📅 Ausencias'}
+        </button>
+      ))}
+      
+      <div style={{ marginLeft: 'auto', fontSize: '0.9rem', color: '#6b7280' }}>
+        {filtrarRegistrosPorTipo(registrosDelDia).length} de {registrosDelDia.length} registros
+      </div>
+    </div>
+  );
 
   const obtenerColorDia = (dia: number): { background: string, color: string, border: string } => {
     if (mesSeleccionado === null) {
@@ -622,18 +1118,8 @@ const RegistrosPage: React.FC = () => {
   const cerrarModal = () => {
     setDiaSeleccionado(null);
     setRegistrosDelDia([]);
-    setCentroSeleccionado(null);
-  };
-
-  const formatearHora = (timeString: string) => {
-    return timeString?.substring(0, 5) || "--:--";
-  };
-
-  const formatearHoras = (hours: number) => {
-    if (hours === 0) return "0:00";
-    const h = Math.floor(hours);
-    const m = Math.round((hours - h) * 60);
-    return `${h}:${m.toString().padStart(2, "0")}`;
+    setFiltroTipo('TODOS');
+    setEstadisticasDia(null);
   };
 
   const formatearFecha = (fecha: string) => {
@@ -648,20 +1134,46 @@ const RegistrosPage: React.FC = () => {
   };
 
   const eliminarRegistro = async (id: number) => {
-    if (confirm("¿Estás seguro de eliminar este registro?")) {
-      try {
-        await registrosService.eliminar(id);
-        if (diaSeleccionado) {
-          await obtenerRegistrosDelDia(diaSeleccionado);
+    if (id > 0) {
+      // Es un registro normal
+      if (confirm("¿Estás seguro de eliminar este registro?")) {
+        try {
+          await registrosService.eliminar(id);
+          if (diaSeleccionado) {
+            await obtenerRegistrosDelDia(diaSeleccionado);
+          }
+          // Recargar estadísticas
+          if (mesSeleccionado !== null) {
+            cargarEstadisticasDelMes();
+          }
+          alert("Registro eliminado correctamente");
+        } catch (error) {
+          console.error("Error al eliminar registro:", error);
+          alert("Error al eliminar el registro");
         }
-        // Recargar estadísticas
-        if (mesSeleccionado !== null) {
-          cargarEstadisticasDelMes();
+      }
+    } else {
+      // Es una ausencia (ID negativo)
+      if (confirm('¿Estás seguro de eliminar esta ausencia? Esto también eliminará el registro asociado.')) {
+        try {
+          const ausenciaId = Math.abs(id);
+          // Llamar al endpoint de eliminar ausencia
+          const response = await fetch(`/api/ausencias/${ausenciaId}`, { method: 'DELETE' });
+          if (!response.ok) {
+            throw new Error('Error al eliminar ausencia');
+          }
+          // Recargar datos
+          if (diaSeleccionado) {
+            await obtenerRegistrosDelDia(diaSeleccionado);
+          }
+          if (mesSeleccionado !== null) {
+            cargarEstadisticasDelMes();
+          }
+          alert('Ausencia eliminada correctamente');
+        } catch (error) {
+          console.error('Error al eliminar ausencia:', error);
+          alert('Error al eliminar la ausencia');
         }
-        alert("Registro eliminado correctamente");
-      } catch (error) {
-        console.error("Error al eliminar registro:", error);
-        alert("Error al eliminar el registro");
       }
     }
   };
@@ -733,7 +1245,7 @@ const RegistrosPage: React.FC = () => {
             📊 Dashboard Global de Registros
           </h1>
           <p style={{ fontSize: '1.2rem', opacity: 0.9 }}>
-            Visualiza todos los registros de todos los trabajadores por día
+            Visualiza todos los registros de todos los trabajadores por día (incluye ausencias)
           </p>
           <div style={{ 
             fontSize: '0.95rem', 
@@ -1213,268 +1725,30 @@ const RegistrosPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Vista por centros o trabajadores */}
-                  {centroSeleccionado === null ? (
-                    // VISTA DE CENTROS
-                    <div>
-                      <div style={{
-                        marginBottom: '20px',
-                        padding: '15px',
-                        background: '#f0f9ff',
-                        borderRadius: '12px',
-                        border: '2px solid #bfdbfe',
-                        textAlign: 'center'
-                      }}>
-                        <h4 style={{ margin: '0 0 10px 0', color: '#1d4ed8' }}>
-                          🏢 Centros con Registros
-                        </h4>
-                        <p style={{ margin: 0, color: '#3730a3', fontSize: '0.9rem' }}>
-                          Haz clic en un centro para ver los trabajadores
-                        </p>
-                      </div>
-
-                      <div style={{
-                        display: 'grid',
-                        gap: '15px',
-                        maxHeight: '400px',
-                        overflowY: 'auto',
-                        padding: '10px'
-                      }}>
-                        {agruparRegistrosPorCentro(registrosDelDia).map((centro) => (
-                          <div 
-                            key={centro.centroId} 
-                            onClick={() => setCentroSeleccionado(centro.centroId)}
-                            style={{
-                              background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
-                              color: 'white',
-                              padding: '25px',
-                              borderRadius: '15px',
-                              cursor: 'pointer',
-                              transition: 'all 0.3s ease',
-                              boxShadow: '0 4px 12px rgba(59, 130, 246, 0.2)',
-                              border: '2px solid transparent'
-                            }}
-                            onMouseOver={(e) => {
-                              e.currentTarget.style.transform = 'translateY(-3px)';
-                              e.currentTarget.style.boxShadow = '0 8px 25px rgba(59, 130, 246, 0.3)';
-                              e.currentTarget.style.borderColor = '#60a5fa';
-                            }}
-                            onMouseOut={(e) => {
-                              e.currentTarget.style.transform = 'translateY(0)';
-                              e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.2)';
-                              e.currentTarget.style.borderColor = 'transparent';
-                            }}
-                          >
-                            <div style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center'
-                            }}>
-                              <div>
-                                <h5 style={{
-                                  margin: '0 0 10px 0',
-                                  fontSize: '1.3rem',
-                                  fontWeight: '700'
-                                }}>
-                                  🏢 {centro.nombreCentro}
-                                </h5>
-                                <p style={{
-                                  margin: 0,
-                                  fontSize: '1rem',
-                                  opacity: 0.9
-                                }}>
-                                  👥 {centro.trabajadores.length} trabajador{centro.trabajadores.length !== 1 ? 'es' : ''} con registro
-                                </p>
-                              </div>
-                              <div style={{
-                                background: 'rgba(255,255,255,0.2)',
-                                padding: '10px 15px',
-                                borderRadius: '20px',
-                                fontSize: '1.5rem'
-                              }}>
-                                ➡️
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ) : (
-                    // VISTA DE TRABAJADORES DEL CENTRO SELECCIONADO
-                    <div>
-                      {(() => {
-                        const centroData = agruparRegistrosPorCentro(registrosDelDia).find(c => c.centroId === centroSeleccionado);
-                        if (!centroData) return null;
-
-                        return (
-                          <div>
-                            <div style={{
-                              marginBottom: '20px',
-                              padding: '15px 20px',
-                              background: 'linear-gradient(135deg, #22c55e, #15803d)',
-                              color: 'white',
-                              borderRadius: '12px',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center'
-                            }}>
-                              <div>
-                                <h4 style={{ margin: '0 0 5px 0', fontSize: '1.2rem' }}>
-                                  🏢 {centroData.nombreCentro}
-                                </h4>
-                                <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.9 }}>
-                                  👥 {centroData.trabajadores.length} trabajador{centroData.trabajadores.length !== 1 ? 'es' : ''} registrado{centroData.trabajadores.length !== 1 ? 's' : ''}
-                                </p>
-                              </div>
-                              <button
-                                onClick={() => setCentroSeleccionado(null)}
-                                style={{
-                                  background: 'rgba(255,255,255,0.2)',
-                                  color: 'white',
-                                  border: '1px solid rgba(255,255,255,0.3)',
-                                  padding: '8px 16px',
-                                  borderRadius: '8px',
-                                  cursor: 'pointer',
-                                  fontWeight: '600',
-                                  fontSize: '0.9rem'
-                                }}
-                              >
-                                ← Volver a Centros
-                              </button>
-                            </div>
-
-                            <div style={{
-                              display: 'grid',
-                              gap: '12px',
-                              maxHeight: '400px',
-                              overflowY: 'auto',
-                              padding: '10px'
-                            }}>
-                              {centroData.trabajadores.map((registro) => (
-                                <div key={registro.id} style={{
-                                  background: 'linear-gradient(135deg, #f8fafb, #ffffff)',
-                                  padding: '20px',
-                                  borderRadius: '15px',
-                                  border: '2px solid #e1e8ed',
-                                  boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                                  transition: 'all 0.3s ease'
-                                }}
-                                onMouseOver={(e) => {
-                                  e.currentTarget.style.transform = 'translateY(-2px)';
-                                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0,0,0,0.1)';
-                                }}
-                                onMouseOut={(e) => {
-                                  e.currentTarget.style.transform = 'translateY(0)';
-                                  e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
-                                }}
-                                >
-                                  <div style={{
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center'
-                                  }}>
-                                    <div style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: '15px'
-                                    }}>
-                                      <div style={{
-                                        background: 'linear-gradient(135deg, #22c55e, #15803d)',
-                                        color: 'white',
-                                        width: '50px',
-                                        height: '50px',
-                                        borderRadius: '50%',
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        fontSize: '1.5rem',
-                                        fontWeight: '700'
-                                      }}>
-                                        👤
-                                      </div>
-                                      <div>
-                                        <h5 style={{
-                                          margin: '0 0 5px 0',
-                                          fontSize: '1.1rem',
-                                          fontWeight: '600',
-                                          color: '#333'
-                                        }}>
-                                          {registro.trabajadorNombre || `Trabajador ${registro.trabajadorId}`}
-                                        </h5>
-                                        <p style={{
-                                          margin: 0,
-                                          color: '#666',
-                                          fontSize: '0.9rem'
-                                        }}>
-                                          🕐 {formatearHora(registro.horaIngreso)} - {formatearHora(registro.horaSalida)}
-                                        </p>
-                                      </div>
-                                    </div>
-                                    <div style={{
-                                      display: 'flex',
-                                      flexDirection: 'column',
-                                      alignItems: 'center',
-                                      gap: '5px'
-                                    }}>
-                                      <div style={{
-                                        background: '#f0fdf4',
-                                        color: '#15803d',
-                                        padding: '6px 12px',
-                                        borderRadius: '20px',
-                                        fontSize: '0.9rem',
-                                        fontWeight: '600'
-                                      }}>
-                                        {formatearHoras(registro.totalHoras)} hrs
-                                      </div>
-                                      <div style={{
-                                        display: 'flex',
-                                        gap: '5px'
-                                      }}>
-                                        <button
-                                          style={{
-                                            background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-                                            color: 'white',
-                                            border: 'none',
-                                            padding: '4px 8px',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer',
-                                            fontSize: '0.7rem'
-                                          }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            alert('Funcionalidad de editar próximamente');
-                                          }}
-                                        >
-                                          ✏️
-                                        </button>
-                                        <button
-                                          style={{
-                                            background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                                            color: 'white',
-                                            border: 'none',
-                                            padding: '4px 8px',
-                                            borderRadius: '4px',
-                                            cursor: 'pointer',
-                                            fontSize: '0.7rem'
-                                          }}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            eliminarRegistro(registro.id);
-                                          }}
-                                        >
-                                          🗑️
-                                        </button>
-                                      </div>
-                                    </div>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  )}
+                  {/* 🆕 Estadísticas del día */}
+                  {estadisticasDia && <EstadisticasDiaComponent estadisticas={estadisticasDia} />}
+                  
+                  {/* 🆕 Filtros de tipo */}
+                  <FiltrosTipoComponent />
+                  
+                  {/* 🆕 Lista de registros con cards mejoradas */}
+                  <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
+                    {filtrarRegistrosPorTipo(registrosDelDia).map((registro) => (
+                      <RegistroCard
+                        key={`${registro.tipoRegistro}-${registro.id}`}
+                        registro={registro}
+                        onEdit={(id) => {
+                          if (id > 0) {
+                            alert('Funcionalidad de editar próximamente');
+                          } else {
+                            alert('Para editar ausencias, ve a la sección de Ausencias');
+                          }
+                        }}
+                        onDelete={eliminarRegistro}
+                        compact={false}
+                      />
+                    ))}
+                  </div>
                 </div>
               ) : (
                 // Mensaje cuando no hay registros
