@@ -7,11 +7,16 @@ import InformacionEjecucionPage from "./InformacionEjecucionPage";
 import type { CentroPorMes, Centro, EstadisticaTrabajador } from "../types/centros";
 import type { Cliente } from "../types/cliente";
 
+// Extender el tipo para incluir mano de obra
+interface CentroPorMesConManoObra extends CentroPorMes {
+  manoObraTotal?: number;
+}
+
 const CentrosPage: React.FC = () => {
   const [añoSeleccionado, setAñoSeleccionado] = useState<number>(new Date().getFullYear());
   const [mesSeleccionado, setMesSeleccionado] = useState<number | null>(null);
-  const [centrosDelMes, setCentrosDelMes] = useState<CentroPorMes[]>([]);
-  const [centroSeleccionado, setCentroSeleccionado] = useState<CentroPorMes | null>(null);
+  const [centrosDelMes, setCentrosDelMes] = useState<CentroPorMesConManoObra[]>([]);
+  const [centroSeleccionado, setCentroSeleccionado] = useState<CentroPorMesConManoObra | null>(null);
   const [vistaActual, setVistaActual] = useState<'info' | 'cargos' | 'crear' | 'ejecucion' | 'busqueda' | null>(null);
   const [loading, setLoading] = useState(false);
   
@@ -52,7 +57,27 @@ const CentrosPage: React.FC = () => {
     setLoading(true);
     try {
       const data = await centrosService.obtenerPorMes(añoSeleccionado, mesSeleccionado);
-      setCentrosDelMes(data);
+      
+      // Cargar mano de obra para cada centro
+      const centrosConManoObra = await Promise.all(
+        data.map(async (centro: CentroPorMes) => {
+          try {
+            const manoObra = await centrosService.obtenerManoObraTotal(centro.centroId);
+            return {
+              ...centro,
+              manoObraTotal: manoObra.manoObraTotal
+            };
+          } catch (error) {
+            console.warn(`Error al cargar mano de obra para centro ${centro.centroId}:`, error);
+            return {
+              ...centro,
+              manoObraTotal: 0
+            };
+          }
+        })
+      );
+      
+      setCentrosDelMes(centrosConManoObra);
     } catch (error) {
       console.error("Error al cargar centros del mes:", error);
       setCentrosDelMes([]);
@@ -160,15 +185,25 @@ const CentrosPage: React.FC = () => {
       // Obtener las estadísticas completas del centro
       const estadisticas = await centrosService.getEstadisticas({ centroId: centroData.id });
       
+      // Obtener mano de obra total para la búsqueda
+      let manoObraTotal = 0;
+      try {
+        const manoObra = await centrosService.obtenerManoObraTotal(centroData.id);
+        manoObraTotal = manoObra.manoObraTotal;
+      } catch (error) {
+        console.warn("No se pudo cargar la mano de obra total:", error);
+      }
+      
       setCentroEncontrado(centroData);
       
       // Si hay estadísticas, crear un objeto CentroPorMes con los datos completos
       if (estadisticas && estadisticas.trabajadores) {
-        const centroCompleto: CentroPorMes = {
+        const centroCompleto: CentroPorMesConManoObra = {
           centroId: centroData.id,
           centroNombre: centroData.nombreCentro,
           fechaInicio: centroData.fechaInicio,
           fechaFinal: centroData.fechaFinal,
+          manoObraTotal,
           trabajadores: estadisticas.trabajadores.map((t: EstadisticaTrabajador) => ({
             trabajadorId: t.trabajadorId,
             nombre: t.nombreTrabajador,
@@ -190,6 +225,7 @@ const CentrosPage: React.FC = () => {
           centroNombre: centroData.nombreCentro,
           fechaInicio: centroData.fechaInicio,
           fechaFinal: centroData.fechaFinal,
+          manoObraTotal,
           trabajadores: []
         });
         
@@ -206,7 +242,7 @@ const CentrosPage: React.FC = () => {
     }
   };
 
-  const handleSeleccionarCentroDelMes = async (centro: CentroPorMes) => {
+  const handleSeleccionarCentroDelMes = async (centro: CentroPorMesConManoObra) => {
     setCentroSeleccionado(centro);
     
     // Obtener datos completos del centro
@@ -545,6 +581,20 @@ const CentrosPage: React.FC = () => {
                             }
                           </div>
                         </div>
+                        
+                        {/* Agregar mano de obra total */}
+                        <div style={{
+                          marginTop: '15px',
+                          paddingTop: '15px',
+                          borderTop: '1px solid #bfdbfe'
+                        }}>
+                          <div style={{ textAlign: 'center' }}>
+                            <strong style={{ color: '#1d4ed8' }}>💰 Mano de Obra Total:</strong><br />
+                            <span style={{ fontSize: '1.1rem', fontWeight: '600', color: '#059669' }}>
+                              {formatearMoneda(centroSeleccionado.manoObraTotal || 0)}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Botones de acción */}
@@ -647,7 +697,7 @@ const CentrosPage: React.FC = () => {
           </div>
         )}
 
-        {/* Vista por meses (código existente pero con el botón actualizado) */}
+        {/* Vista por meses */}
         {vistaActual !== 'busqueda' && (
           <>
             {/* Selector de año */}
@@ -824,9 +874,20 @@ const CentrosPage: React.FC = () => {
                       <h4 style={{ margin: 0, fontSize: '1.2rem' }}>
                         ✅ {centrosDelMes.length} Centro{centrosDelMes.length !== 1 ? 's' : ''} Encontrado{centrosDelMes.length !== 1 ? 's' : ''}
                       </h4>
-                      <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem', opacity: 0.9 }}>
-                        Total de trabajadores: {centrosDelMes.reduce((total, centro) => total + centro.trabajadores.length, 0)}
-                      </p>
+                      <div style={{ 
+                        display: 'flex', 
+                        justifyContent: 'center', 
+                        gap: '30px', 
+                        marginTop: '10px',
+                        flexWrap: 'wrap'
+                      }}>
+                        <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.9 }}>
+                          👥 Total trabajadores: {centrosDelMes.reduce((total, centro) => total + centro.trabajadores.length, 0)}
+                        </p>
+                        <p style={{ margin: 0, fontSize: '0.9rem', opacity: 0.9 }}>
+                          💰 Mano de obra: {formatearMoneda(centrosDelMes.reduce((total, centro) => total + (centro.manoObraTotal || 0), 0))}
+                        </p>
+                      </div>
                     </div>
 
                     <div style={{
@@ -921,6 +982,28 @@ const CentrosPage: React.FC = () => {
                                 <strong style={{ color: '#1d4ed8' }}>⏰ Total Horas:</strong><br />
                                 {formatearHoras(centro.trabajadores.reduce((sum, t) => sum + t.totalHoras, 0))}
                               </div>
+                            </div>
+                            
+                            {/* Mano de obra total */}
+                            <div style={{
+                              marginTop: '15px',
+                              paddingTop: '15px',
+                              borderTop: '1px solid #bfdbfe',
+                              textAlign: 'center'
+                            }}>
+                              <strong style={{ color: '#1d4ed8' }}>💰 Mano de Obra Total:</strong><br />
+                              <span style={{ 
+                                fontSize: '1.1rem', 
+                                fontWeight: '600', 
+                                color: '#059669',
+                                background: '#f0fdf4',
+                                padding: '4px 8px',
+                                borderRadius: '6px',
+                                display: 'inline-block',
+                                marginTop: '5px'
+                              }}>
+                                {formatearMoneda(centro.manoObraTotal || 0)}
+                              </span>
                             </div>
                           </div>
 
@@ -1143,7 +1226,7 @@ const CentrosPage: React.FC = () => {
                       <div style={{ fontSize: '2rem', marginBottom: '10px' }}>💰</div>
                       <h4 style={{ margin: '0 0 5px 0' }}>Mano de Obra</h4>
                       <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-                        {formatearMoneda(datosCompletos.manoObraTotal)}
+                        {formatearMoneda(centroSeleccionado.manoObraTotal || datosCompletos.manoObraTotal)}
                       </p>
                     </div>
                   </div>
