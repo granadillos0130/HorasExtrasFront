@@ -1,7 +1,7 @@
-// src/api/registrosService.ts
+// src/api/registrosService.ts - VERSIÓN ACTUALIZADA
 import { api } from "./api";
 import type { Registro} from "../types/registros";
-import type { RegistroInputDto } from "../types/registros";
+import type { RegistroInputDto, RegistroActualizacionDto } from "../types/registros";
 import type { ResumenSemana } from "../types/ResumenSemana";
 
 // 🆕 NUEVO: Interfaz para el resumen detallado del día
@@ -28,6 +28,19 @@ export interface RespuestaResumenCompleto {
   datos: Registro[];
 }
 
+// 🆕 NUEVO: Interfaz para respuesta de edición en lote
+export interface RespuestaEdicionLote {
+  mensaje: string;
+  registrosActualizados: number;
+  totalProcesados: number;
+  errores: string[];
+  detalleResultados: Array<{
+    id: number;
+    exito: boolean;
+    mensaje: string;
+  }>;
+}
+
 export const registrosService = {
   // Obtener todos los registros
   async obtenerTodos(): Promise<Registro[]> {
@@ -35,14 +48,46 @@ export const registrosService = {
     return res.data;
   },
 
+  // 🆕 NUEVO: Obtener un registro por ID
+  async obtenerPorId(id: number): Promise<Registro> {
+    try {
+      const res = await api.get<Registro>(`/registros/${id}`);
+      return res.data;
+    } catch (error) {
+      console.error('Error al obtener registro por ID:', error);
+      throw error;
+    }
+  },
+
   // Crear registro
   async crear(data: RegistroInputDto): Promise<void> {
     await api.post("/registros", data);
   },
 
-  // Actualizar registro
-  async actualizar(id: number, data: RegistroInputDto): Promise<void> {
-    await api.put(`/registros/${id}`, data);
+  // 🆕 MEJORADO: Actualizar registro individual
+  async actualizar(id: number, data: RegistroInputDto): Promise<{
+    mensaje: string;
+    registro: Registro;
+    resumenDia: ResumenDia;
+  }> {
+    try {
+      const res = await api.put(`/registros/${id}`, data);
+      return res.data;
+    } catch (error) {
+      console.error('Error al actualizar registro:', error);
+      throw error;
+    }
+  },
+
+  // 🆕 NUEVO: Actualizar registros en lote
+  async actualizarLote(registros: RegistroActualizacionDto[]): Promise<RespuestaEdicionLote> {
+    try {
+      const res = await api.put<RespuestaEdicionLote>("/registros/lote", registros);
+      return res.data;
+    } catch (error) {
+      console.error('Error al actualizar registros en lote:', error);
+      throw error;
+    }
   },
 
   // Eliminar registro
@@ -155,6 +200,18 @@ export const registrosService = {
       return res.data;
     } catch (error) {
       console.error('Error al obtener resumen completo:', error);
+      throw error;
+    }
+  },
+
+  // 🆕 NUEVO: Obtener múltiples registros por IDs (para edición en lote)
+  async obtenerPorIds(ids: number[]): Promise<Registro[]> {
+    try {
+      const promesas = ids.map(id => this.obtenerPorId(id));
+      const registros = await Promise.all(promesas);
+      return registros;
+    } catch (error) {
+      console.error('Error al obtener registros por IDs:', error);
       throw error;
     }
   },

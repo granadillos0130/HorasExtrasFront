@@ -398,7 +398,7 @@ const RegistrosPage: React.FC = () => {
 
   const diasSemana = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
 
-  // 🆕 FUNCIÓN para procesar registros y detectar ausencias - ✅ FIXED: Removed 'any' type
+  // 🆕 FUNCIÓN para procesar registros y detectar ausencias
   const procesarRegistrosConTipo = useCallback((registros: Registro[]): RegistroConTipo[] => {
     return registros.map(registro => {
       const esAusencia = registro.tipoRegistro === 'AUSENCIA' || 
@@ -413,7 +413,7 @@ const RegistrosPage: React.FC = () => {
     });
   }, []);
 
-  // 🆕 FUNCIÓN para calcular estadísticas del día - ✅ FIXED: Added to useCallback dependencies
+  // 🆕 FUNCIÓN para calcular estadísticas del día
   const calcularEstadisticasDia = useCallback((registros: RegistroConTipo[]): EstadisticasDia => {
     const registrosTrabajo = registros.filter(r => r.tipoRegistro === 'TRABAJO');
     const registrosAusencia = registros.filter(r => r.tipoRegistro === 'AUSENCIA');
@@ -492,7 +492,7 @@ const RegistrosPage: React.FC = () => {
     }
   }, [mesSeleccionado, añoSeleccionado, trabajadoresActivos]);
 
-  // 🆕 ACTUALIZAR la función obtenerRegistrosDelDia - ✅ FIXED: Added missing dependencies
+  // 🆕 ACTUALIZAR la función obtenerRegistrosDelDia
   const obtenerRegistrosDelDia = useCallback(async (fecha: string) => {
     try {
       setLoading(true);
@@ -511,6 +511,42 @@ const RegistrosPage: React.FC = () => {
       setLoading(false);
     }
   }, [procesarRegistrosConTipo, calcularEstadisticasDia]);
+
+  // 🆕 NUEVAS: Funciones para navegación de edición
+  const navigateToEdit = (id: number) => {
+    const searchParams = new URLSearchParams();
+    searchParams.set('return', '/registros');
+    if (diaSeleccionado) {
+      searchParams.set('fecha', diaSeleccionado);
+    }
+    navigate(`/registros/editar/${id}?${searchParams.toString()}`);
+  };
+
+  const navigateToEditLote = () => {
+    const searchParams = new URLSearchParams();
+    searchParams.set('return', '/registros');
+    if (diaSeleccionado) {
+      searchParams.set('fecha', diaSeleccionado);
+    }
+    navigate(`/registros/editar-lote?${searchParams.toString()}`);
+  };
+
+  const navigateToEditLoteConFiltros = (trabajadorId?: number, fechaInicio?: string, fechaFin?: string) => {
+    const searchParams = new URLSearchParams();
+    searchParams.set('return', '/registros');
+    
+    if (trabajadorId) {
+      searchParams.set('trabajadorId', trabajadorId.toString());
+    }
+    if (fechaInicio) {
+      searchParams.set('fechaInicio', fechaInicio);
+    }
+    if (fechaFin) {
+      searchParams.set('fechaFin', fechaFin);
+    }
+    
+    navigate(`/registros/editar-lote?${searchParams.toString()}`);
+  };
 
   // Manejar mensajes de éxito al regresar de crear registros
   useEffect(() => {
@@ -1196,6 +1232,10 @@ const RegistrosPage: React.FC = () => {
         return '✅ Registro individual creado exitosamente';
       case 'lote-creado':
         return '✅ Registros en lote creados exitosamente';
+      case 'registro-actualizado':
+        return '✅ Registro actualizado exitosamente';
+      case 'lote-actualizado':
+        return '✅ Registros actualizados en lote exitosamente';
       default:
         return '✅ Operación completada exitosamente';
     }
@@ -1419,6 +1459,29 @@ const RegistrosPage: React.FC = () => {
                 >
                   {exportandoExcel ? '⏳ Exportando...' : '📤 Exportar Excel Mes'}
                 </button>
+                
+                {/* 🆕 NUEVO: Botón para edición masiva del mes */}
+                <button
+                  onClick={() => {
+                    const fechaInicio = `${añoSeleccionado}-${mesSeleccionado.toString().padStart(2, '0')}-01`;
+                    const diasEnMes = new Date(añoSeleccionado, mesSeleccionado, 0).getDate();
+                    const fechaFin = `${añoSeleccionado}-${mesSeleccionado.toString().padStart(2, '0')}-${diasEnMes.toString().padStart(2, '0')}`;
+                    navigateToEditLoteConFiltros(undefined, fechaInicio, fechaFin);
+                  }}
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 20px',
+                    borderRadius: '10px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.95rem'
+                  }}
+                >
+                  ✏️ Editar Mes
+                </button>
+                
                 <button
                   onClick={() => setMesSeleccionado(null)}
                   style={{
@@ -1689,7 +1752,7 @@ const RegistrosPage: React.FC = () => {
                     <h4 style={{ margin: 0, fontSize: '1.2rem' }}>
                       ✅ {registrosDelDia.length} Registro{registrosDelDia.length !== 1 ? 's' : ''} Encontrado{registrosDelDia.length !== 1 ? 's' : ''}
                     </h4>
-                    <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                       <button
                         onClick={() => navigateToForm('individual')}
                         style={{
@@ -1722,6 +1785,23 @@ const RegistrosPage: React.FC = () => {
                       >
                         📊 Lote
                       </button>
+                      {/* 🆕 NUEVO: Botón para editar en lote */}
+                      <button
+                        onClick={navigateToEditLote}
+                        style={{
+                          background: 'rgba(255,255,255,0.2)',
+                          color: 'white',
+                          border: '1px solid rgba(255,255,255,0.3)',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          cursor: 'pointer',
+                          fontWeight: '600',
+                          fontSize: '0.9rem',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        ✏️ Editar Lote
+                      </button>
                     </div>
                   </div>
 
@@ -1739,8 +1819,10 @@ const RegistrosPage: React.FC = () => {
                         registro={registro}
                         onEdit={(id) => {
                           if (id > 0) {
-                            alert('Funcionalidad de editar próximamente');
+                            // Es un registro normal, navegar a edición
+                            navigateToEdit(id);
                           } else {
+                            // Es una ausencia
                             alert('Para editar ausencias, ve a la sección de Ausencias');
                           }
                         }}
@@ -1751,7 +1833,7 @@ const RegistrosPage: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                // Mensaje cuando no hay registros
+                // Mensaje cuando no hay registros - ACTUALIZADO
                 <div style={{
                   textAlign: 'center',
                   padding: '40px',
@@ -1802,6 +1884,23 @@ const RegistrosPage: React.FC = () => {
                       }}
                     >
                       📊 Registros en Lote
+                    </button>
+                    {/* 🆕 NUEVO: Botón para ir a edición en lote */}
+                    <button
+                      onClick={navigateToEditLote}
+                      style={{
+                        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '15px 25px',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        fontWeight: '600',
+                        fontSize: '1rem',
+                        transition: 'all 0.3s ease'
+                      }}
+                    >
+                      ✏️ Editar Registros
                     </button>
                   </div>
                 </div>

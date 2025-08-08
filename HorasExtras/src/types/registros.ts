@@ -1,4 +1,4 @@
-// src/types/registros.ts
+// src/types/registros.ts - VERSIÓN ACTUALIZADA
 
 export interface RegistroInputDto {
   Trabajador_ID: number;
@@ -13,12 +13,26 @@ export interface RegistroInputDto {
   AnalistaId?: number;
 }
 
-// 🆕 FIXED: Added optional properties that were missing
+// 🆕 NUEVO: DTO para actualización de registros (incluye ID)
+export interface RegistroActualizacionDto {
+  Id: number; // ID del registro a actualizar
+  Trabajador_ID: number;
+  Centro_ID: string;
+  Nombr_Centro: string;
+  Fecha: string; // "YYYY-MM-DD"
+  Hora_Ingreso: string; // "HH:mm"
+  Hora_Salida: string; // "HH:mm"
+  Tiempo_Almuerzo: string; // "HH:mm:ss"
+  desplazamientoIda?: string;
+  desplazamientoRegreso?: string;
+  AnalistaId?: number;
+}
+
 export interface Registro {
   id: number;
   trabajadorId: number;
   trabajadorNombre: string;
-  centroId: number | string; // ✅ FIX: Allow both number and string (for 'AUSENCIA')
+  centroId: number | string;
   nombreCentro: string;
   ordenCompraId: number;
   ordenCompraNumero: string;
@@ -38,8 +52,7 @@ export interface Registro {
   totalHoras: number;
   desplazamientoIda?: string;
   desplazamientoRegreso?: string;
-  // 🆕 FIXED: Added missing optional properties for ausencia support
-  tipoRegistro?: 'TRABAJO' | 'AUSENCIA'; // Optional in base interface
+  tipoRegistro?: 'TRABAJO' | 'AUSENCIA';
   ausenciaInfo?: {
     id: number;
     tipoAusencia: string;
@@ -49,9 +62,8 @@ export interface Registro {
   };
 }
 
-// 🆕 UPDATED: Now extends Registro with required tipoRegistro
 export interface RegistroConTipo extends Registro {
-  tipoRegistro: 'TRABAJO' | 'AUSENCIA'; // Required in this extended interface
+  tipoRegistro: 'TRABAJO' | 'AUSENCIA';
   ausenciaInfo?: {
     id: number;
     tipoAusencia: string;
@@ -61,14 +73,12 @@ export interface RegistroConTipo extends Registro {
   };
 }
 
-// 🆕 NUEVO: Respuesta mejorada del endpoint por fecha
 export interface RespuestaPorFecha {
   fecha: string;
   totalRegistros: number;
   registros: RegistroConTipo[];
 }
 
-// Nuevo tipo para la respuesta del API con rango de fechas
 export interface RespuestaRangoFechas {
   success: boolean;
   data: Registro[];
@@ -81,10 +91,8 @@ export interface RespuestaRangoFechas {
   };
 }
 
-// 🆕 NUEVO: Filtros para tipos de registro
 export type FiltroTipoRegistro = 'TODOS' | 'TRABAJO' | 'AUSENCIA';
 
-// 🆕 NUEVO: Estadísticas de un día
 export interface EstadisticasDia {
   fecha: string;
   totalRegistros: number;
@@ -96,4 +104,27 @@ export interface EstadisticasDia {
   horasExtras: number;
   horasAusenciasRemuneradas: number;
   horasAusenciasNoRemuneradas: number;
+}
+
+// 🆕 NUEVO: Estado de edición de registro
+export interface EstadoEdicionRegistro {
+  id: number;
+  editando: boolean;
+  guardando: boolean;
+  errores: string[];
+  datosOriginales: Registro;
+  datosEditados: Partial<RegistroActualizacionDto>;
+}
+
+// 🆕 NUEVO: Configuración para edición en lote
+export interface ConfiguracionEdicionLote {
+  mostrarSoloSeleccionados: boolean;
+  aplicarATodos: boolean;
+  camposAEditar: string[];
+  filtros: {
+    trabajadorId?: number;
+    fechaInicio?: string;
+    fechaFin?: string;
+    centroId?: string;
+  };
 }

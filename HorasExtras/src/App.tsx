@@ -11,12 +11,13 @@ import ClientesPage from "./pages/ClientesPage";
 import EstadisticasPage from "./pages/EstadisticasPage";
 import TrabajadorEditPage from './components/trabajadores/TrabajadorEditPage';
 import TrabajadorIntensidad from "./components/trabajadores/TrabajadorIntensidad";
-import EditarRegistroPage from "./components/registros/EditarRegistroPage";
 import RegistroNuevoPage from "./pages/RegistroNuevoPage";
 import RegistroLotePage from "./pages/RegistroLotePage";
 import { AusenciasPage } from "./pages/AusenciasPage";
 import { AusenciasFormPage } from "./pages/AusenciasFormPage";
 import { EstadisticaAusenciaPage } from "./pages/EstadisticaAusenciaPage";
+import EditarRegistrosLotePage from "./pages/EditarRegistrosLotePage";
+import EditarRegistroPage from "./pages/EditarRegistroPage";
 
 export default function App() {
   return (
@@ -31,6 +32,7 @@ export default function App() {
             <Route path="/trabajadores/:id/intensidad" element={<TrabajadorIntensidad />} />
             <Route path="clientes" element={<ClientesPage/>} />
             <Route path="/registros" element={<RegistrosPage />} />
+            <Route path="/registros/editar-lote" element={<EditarRegistrosLotePage />} />
             <Route path="/registros/editar/:id" element={<EditarRegistroPage />} />
             <Route path="/registros/nuevo" element={<RegistroNuevoPage />} />
             <Route path="/registros/lote" element={<RegistroLotePage />} />
