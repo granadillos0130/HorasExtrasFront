@@ -18,6 +18,7 @@ import { AusenciasFormPage } from "./pages/AusenciasFormPage";
 import { EstadisticaAusenciaPage } from "./pages/EstadisticaAusenciaPage";
 import EditarRegistrosLotePage from "./pages/EditarRegistrosLotePage";
 import EditarRegistroPage from "./pages/EditarRegistroPage";
+import { EditarAusenciaPage } from "./pages/EditarAusenciaPage";
 
 export default function App() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
             <Route path="/ausencias" element={<AusenciasPage />} />
             <Route path="/ausencias/nueva" element={<AusenciasFormPage />} />
             <Route path="/ausencias/estadisticas" element={<EstadisticaAusenciaPage />} />
+            <Route path="/ausencias/editar/:id" element={<EditarAusenciaPage />} />
           </Routes>
         </div>
       </div>

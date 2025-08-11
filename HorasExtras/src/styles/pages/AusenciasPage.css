@@ -725,3 +725,280 @@
   transform: scale(1.02);
   transition: transform 0.2s ease;
 }
+/* 🆕 ESTILOS PARA LA COLUMNA DE ACCIONES */
+.acciones-cell {
+  text-align: center;
+  padding: 0.5rem;
+}
+
+.acciones-buttons {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  align-items: center;
+}
+
+.btn-editar,
+.btn-eliminar {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 1.2rem;
+  transition: all 0.2s ease;
+  min-width: 2.5rem;
+  min-height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-editar:hover {
+  background-color: #dbeafe;
+  transform: scale(1.1);
+}
+
+.btn-eliminar:hover {
+  background-color: #fee2e2;
+  transform: scale(1.1);
+}
+
+.btn-editar:active {
+  transform: scale(0.95);
+}
+
+.btn-eliminar:active {
+  transform: scale(0.95);
+}
+
+/* 🆕 ESTILOS PARA EL MODAL DE CONFIRMACIÓN */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 0.75rem;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: slideIn 0.3s ease-out;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 1.5rem 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #dc2626;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0.25rem;
+  border-radius: 0.25rem;
+  transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-body p {
+  margin: 0 0 1.5rem 0;
+  color: #374151;
+  font-size: 1rem;
+}
+
+.ausencia-details {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.detail-row {
+  display: flex;
+  margin-bottom: 0.5rem;
+}
+
+.detail-row:last-child {
+  margin-bottom: 0;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #374151;
+  min-width: 120px;
+  margin-right: 0.5rem;
+}
+
+.detail-value {
+  color: #6b7280;
+  flex: 1;
+}
+
+.warning-message {
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  color: #92400e;
+  font-size: 0.875rem;
+  margin-top: 1rem;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-cancelar,
+.btn-confirmar-eliminar {
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  font-size: 0.875rem;
+}
+
+.btn-cancelar {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.btn-cancelar:hover:not(:disabled) {
+  background-color: #e5e7eb;
+}
+
+.btn-confirmar-eliminar {
+  background-color: #dc2626;
+  color: white;
+}
+
+.btn-confirmar-eliminar:hover:not(:disabled) {
+  background-color: #b91c1c;
+}
+
+.btn-confirmar-eliminar:disabled,
+.btn-cancelar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* 🆕 ANIMACIONES */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* 🆕 RESPONSIVE PARA MÓVILES */
+@media (max-width: 768px) {
+  .acciones-buttons {
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  
+  .btn-editar,
+  .btn-eliminar {
+    min-width: 2rem;
+    min-height: 2rem;
+    font-size: 1rem;
+  }
+  
+  .modal-content {
+    margin: 1rem;
+    width: calc(100% - 2rem);
+  }
+  
+  .modal-footer {
+    flex-direction: column;
+  }
+  
+  .btn-cancelar,
+  .btn-confirmar-eliminar {
+    width: 100%;
+  }
+}
+
+/* 🆕 MEJORAS VISUALES PARA LA TABLA */
+.ausencias-table th:last-child,
+.ausencias-table td:last-child {
+  width: 100px;
+  min-width: 100px;
+}
+
+.table-row:hover .acciones-buttons {
+  opacity: 1;
+}
+
+.acciones-buttons {
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+/* 🆕 ESTILOS PARA ESTADOS DE CARGA */
+.btn-confirmar-eliminar:disabled {
+  background-color: #9ca3af;
+  cursor: wait;
+}
+
+/* 🆕 MEJORAS DE ACCESIBILIDAD */
+.btn-editar:focus,
+.btn-eliminar:focus,
+.modal-close:focus,
+.btn-cancelar:focus,
+.btn-confirmar-eliminar:focus {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}

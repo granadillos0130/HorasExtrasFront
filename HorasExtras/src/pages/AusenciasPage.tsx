@@ -15,6 +15,8 @@ export function AusenciasPage() {
   const [mesSeleccionado, setMesSeleccionado] = useState<number | null>(null);
   const [ausencias, setAusencias] = useState<Ausencia[]>([]);
   const [loading, setLoading] = useState(false);
+  const [ausenciaAEliminar, setAusenciaAEliminar] = useState<Ausencia | null>(null);
+  const [eliminando, setEliminando] = useState(false);
   const navigate = useNavigate();
 
   const cargarAusencias = async (mes: number) => {
@@ -29,6 +31,40 @@ export function AusenciasPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // 🆕 Función para confirmar eliminación
+  const confirmarEliminacion = (ausencia: Ausencia) => {
+    setAusenciaAEliminar(ausencia);
+  };
+
+  // 🆕 Función para eliminar ausencia
+  const eliminarAusencia = async () => {
+    if (!ausenciaAEliminar) return;
+    
+    setEliminando(true);
+    try {
+      await ausenciasService.eliminarAusencia(ausenciaAEliminar.id);
+      
+      // Actualizar la lista local
+      setAusencias(prev => prev.filter(a => a.id !== ausenciaAEliminar.id));
+      
+      // Cerrar modal
+      setAusenciaAEliminar(null);
+      
+      console.log(`✅ Ausencia ${ausenciaAEliminar.id} eliminada correctamente`);
+    } catch (error) {
+      console.error("Error al eliminar ausencia:", error);
+      alert("Error al eliminar la ausencia. Por favor, intenta de nuevo.");
+    } finally {
+      setEliminando(false);
+    }
+  };
+
+  // 🆕 Función para editar ausencia
+  const editarAusencia = (ausencia: Ausencia) => {
+    // Navegar a la página de edición pasando el ID de la ausencia
+    navigate(`/ausencias/editar/${ausencia.id}`);
   };
 
   // 🆕 Funciones auxiliares para mejorar la presentación
@@ -170,6 +206,7 @@ export function AusenciasPage() {
                     <th><span className="header-icon">🕐</span>Hora Inicio</th>
                     <th><span className="header-icon">🕐</span>Hora Fin</th>
                     <th><span className="header-icon">💰</span>Remunerado</th>
+                    <th><span className="header-icon">⚙️</span>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -258,6 +295,26 @@ export function AusenciasPage() {
                           {a.remunerado ? '💰 Sí' : '🚫 No'}
                         </span>
                       </td>
+
+                      {/* 🆕 NUEVA COLUMNA DE ACCIONES */}
+                      <td className="acciones-cell">
+                        <div className="acciones-buttons">
+                          <button
+                            className="btn-editar"
+                            onClick={() => editarAusencia(a)}
+                            title="Editar ausencia"
+                          >
+                            ✏️
+                          </button>
+                          <button
+                            className="btn-eliminar"
+                            onClick={() => confirmarEliminacion(a)}
+                            title="Eliminar ausencia"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -277,6 +334,69 @@ export function AusenciasPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* 🆕 MODAL DE CONFIRMACIÓN PARA ELIMINAR */}
+      {ausenciaAEliminar && (
+        <div className="modal-overlay" onClick={() => setAusenciaAEliminar(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>🗑️ Confirmar Eliminación</h3>
+              <button 
+                className="modal-close"
+                onClick={() => setAusenciaAEliminar(null)}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <div className="modal-body">
+              <p>¿Estás seguro de que quieres eliminar esta ausencia?</p>
+              
+              <div className="ausencia-details">
+                <div className="detail-row">
+                  <span className="detail-label">👤 Trabajador:</span>
+                  <span className="detail-value">{ausenciaAEliminar.trabajadorNombre}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">📋 Tipo:</span>
+                  <span className="detail-value">{ausenciaAEliminar.tipoAusencia}</span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">📅 Período:</span>
+                  <span className="detail-value">
+                    {formatFecha(ausenciaAEliminar.fechaInicio)} - {formatFecha(ausenciaAEliminar.fechaFin)}
+                  </span>
+                </div>
+                <div className="detail-row">
+                  <span className="detail-label">📝 Descripción:</span>
+                  <span className="detail-value">{ausenciaAEliminar.descripcion}</span>
+                </div>
+              </div>
+              
+              <div className="warning-message">
+                ⚠️ <strong>Esta acción no se puede deshacer.</strong> Se eliminarán también los registros de trabajo relacionados.
+              </div>
+            </div>
+            
+            <div className="modal-footer">
+              <button 
+                className="btn-cancelar"
+                onClick={() => setAusenciaAEliminar(null)}
+                disabled={eliminando}
+              >
+                Cancelar
+              </button>
+              <button 
+                className="btn-confirmar-eliminar"
+                onClick={eliminarAusencia}
+                disabled={eliminando}
+              >
+                {eliminando ? "Eliminando..." : "🗑️ Eliminar"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
