@@ -33,6 +33,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     Tiempo_Almuerzo: "01:00",
     desplazamientoIda: "",
     desplazamientoRegreso: "",
+    EsConductor: false, // 🆕 NUEVO CAMPO
   });
 
   useEffect(() => {
@@ -109,9 +110,14 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     // Advertencia adicional si hay registros duplicados
     if (showDuplicateWarning) {
       const trabajadorNombre = trabajadores.find(t => t.id === formData.Trabajador_ID)?.nombre || "este trabajador";
+      const tipoTrabajador = formData.EsConductor ? "conductor" : "trabajador";
       const confirmMessage = `⚠️ ATENCIÓN: Ya existe${registrosExistentes.length > 1 ? 'n' : ''} ${registrosExistentes.length} registro${registrosExistentes.length > 1 ? 's' : ''} para ${trabajadorNombre} en la fecha ${new Date(formData.Fecha).toLocaleDateString('es-ES')}.\n\n` +
+        `${formData.EsConductor 
+          ? '🚛 CONDUCTOR: Los desplazamientos se incluirán como tiempo de trabajo.' 
+          : '👷 NO CONDUCTOR: Los desplazamientos se restarán del tiempo trabajado.'
+        }\n\n` +
         `${registrosExistentes.length === 1 ? 'El tiempo de almuerzo NO se descontará de este nuevo registro.' : 'El tiempo de almuerzo ya fue descontado en el primer registro del día.'}\n\n` +
-        `¿Está seguro que desea continuar creando este registro adicional?`;
+        `¿Está seguro que desea continuar creando este registro adicional para ${tipoTrabajador}?`;
       
       if (!confirm(confirmMessage)) {
         return;
@@ -136,7 +142,12 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
       };
 
       await registrosService.crear(payload);
-      alert("Registro creado correctamente");
+      
+      const tipoMensaje = formData.EsConductor 
+        ? "Registro de conductor creado correctamente (desplazamientos incluidos)" 
+        : "Registro creado correctamente (desplazamientos descontados)";
+      
+      alert(tipoMensaje);
       onSuccess();
     } catch (error: unknown) {
       console.error("Error al crear registro:", error);
@@ -153,7 +164,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     }
   };
 
-  const handleInputChange = (field: keyof RegistroInputDto, value: string | number) => {
+  const handleInputChange = (field: keyof RegistroInputDto, value: string | number | boolean) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
@@ -174,6 +185,41 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
       Centro_ID: centroId,
       Nombr_Centro: centroSeleccionado?.nombreCentro || "",
     }));
+  };
+
+  // 🆕 FUNCIÓN PARA MOSTRAR INFORMACIÓN SOBRE EL CÁLCULO DE HORAS
+  const mostrarInfoCalculoHoras = () => {
+    const tiempoDesplazamiento = formData.desplazamientoIda || formData.desplazamientoRegreso;
+    
+    if (!tiempoDesplazamiento) return null;
+
+    if (formData.EsConductor) {
+      return (
+        <div style={{
+          background: 'linear-gradient(135deg, #10b981, #059669)',
+          color: 'white',
+          padding: '12px 15px',
+          borderRadius: '8px',
+          fontSize: '0.9rem',
+          fontWeight: '600'
+        }}>
+          🚛 <strong>CONDUCTOR:</strong> Los desplazamientos se INCLUYEN como tiempo de trabajo
+        </div>
+      );
+    } else {
+      return (
+        <div style={{
+          background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+          color: 'white',
+          padding: '12px 15px',
+          borderRadius: '8px',
+          fontSize: '0.9rem',
+          fontWeight: '600'
+        }}>
+          👷 <strong>NO CONDUCTOR:</strong> Los desplazamientos se DESCUENTAN del tiempo trabajado
+        </div>
+      );
+    }
   };
 
   return (
@@ -345,6 +391,44 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           </div>
         </div>
 
+        {/* 🆕 SECCIÓN CONDUCTOR */}
+        <div
+          className="form-section-header"
+          style={{
+            marginTop: "25px",
+            marginBottom: "15px",
+            padding: "10px 0",
+            borderTop: "2px solid #e1e8ed",
+            color: "#666",
+          }}
+        >
+          <h4 style={{ margin: 0, fontSize: "1.1rem" }}>
+            🚛 Información del Trabajador
+          </h4>
+        </div>
+
+        <div className="form-row">
+          <div className="form-group">
+            <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+              <input
+                type="checkbox"
+                checked={formData.EsConductor}
+                onChange={(e) => handleInputChange("EsConductor", e.target.checked)}
+                style={{ transform: 'scale(1.2)' }}
+              />
+              <span style={{ fontWeight: '600', fontSize: '1rem' }}>
+                {formData.EsConductor ? '🚛 Es Conductor' : '👷 No es Conductor'}
+              </span>
+            </label>
+            <small style={{ color: "#666", fontSize: "0.8rem", marginTop: '5px', display: 'block' }}>
+              {formData.EsConductor 
+                ? 'Los desplazamientos se incluirán como tiempo de trabajo'
+                : 'Los desplazamientos se descontarán del tiempo trabajado'
+              }
+            </small>
+          </div>
+        </div>
+
         {/* 🚗 Desplazamientos */}
         <div
           className="form-section-header"
@@ -365,6 +449,13 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
             Si el trabajador tiene tiempo de desplazamiento, ingrésalo aquí
           </p>
         </div>
+
+        {/* 🆕 Información sobre el cálculo */}
+        {mostrarInfoCalculoHoras() && (
+          <div style={{ marginBottom: '15px' }}>
+            {mostrarInfoCalculoHoras()}
+          </div>
+        )}
 
         <div className="form-row">
           <div className="form-group">
@@ -397,6 +488,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
         <button type="submit" disabled={loading} className="btn-submit">
           {loading ? "Guardando..." : "Crear Registro"}
           {showDuplicateWarning && " (Registro Adicional)"}
+          {formData.EsConductor ? " 🚛" : " 👷"}
         </button>
       </form>
     </div>

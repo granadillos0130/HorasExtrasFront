@@ -1,4 +1,4 @@
-// HorasExtras/src/pages/EditarRegistrosLotePage.tsx
+// HorasExtras/src/pages/EditarRegistrosLotePage.tsx - VERSIÓN CORREGIDA
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { registrosService } from "../api/registrosService";
@@ -160,7 +160,7 @@ const EditarRegistrosLotePage: React.FC = () => {
   };
 
   // Actualizar datos editados
-  const actualizarDatosEditados = (id: number, campo: string, valor: any) => {
+  const actualizarDatosEditados = (id: number, campo: string, valor: string | number | boolean) => {
     const nuevosEstados = new Map(estadosEdicion);
     const estado = nuevosEstados.get(id);
     if (estado) {
@@ -195,6 +195,8 @@ const EditarRegistrosLotePage: React.FC = () => {
         Tiempo_Almuerzo: estado.datosEditados.Tiempo_Almuerzo || registro.tiempoAlmuerzo,
         desplazamientoIda: estado.datosEditados.desplazamientoIda || registro.desplazamientoIda?.substring(0, 5),
         desplazamientoRegreso: estado.datosEditados.desplazamientoRegreso || registro.desplazamientoRegreso?.substring(0, 5),
+        // 🆕 AGREGAR CAMPO CONDUCTOR
+        EsConductor: estado.datosEditados.EsConductor !== undefined ? Boolean(estado.datosEditados.EsConductor) : (registro.esConductor || false),
         AnalistaId: estado.datosEditados.AnalistaId || analistas[0]?.id || 0
       };
 
@@ -213,13 +215,17 @@ const EditarRegistrosLotePage: React.FC = () => {
       nuevosEstados.set(id, estado);
       setEstadosEdicion(nuevosEstados);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error al guardar:", err);
       const nuevosEstados = new Map(estadosEdicion);
       const estado = nuevosEstados.get(id);
       if (estado) {
         estado.guardando = false;
-        estado.errores = [err.response?.data?.message || 'Error al guardar'];
+        // 🔧 Corregir el tipo any
+        const errorMessage = err instanceof Error ? err.message : 
+                           (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 
+                           'Error al guardar';
+        estado.errores = [errorMessage];
         nuevosEstados.set(id, estado);
         setEstadosEdicion(nuevosEstados);
       }
@@ -268,6 +274,9 @@ const EditarRegistrosLotePage: React.FC = () => {
             valoresLote.desplazamientoIda : registro.desplazamientoIda?.substring(0, 5),
           desplazamientoRegreso: camposLoteSeleccionados.has('desplazamientoRegreso') ? 
             valoresLote.desplazamientoRegreso : registro.desplazamientoRegreso?.substring(0, 5),
+          // 🆕 AGREGAR CAMPO CONDUCTOR
+          EsConductor: camposLoteSeleccionados.has('EsConductor') ? 
+            Boolean(valoresLote.EsConductor) : (registro.esConductor || false),
           AnalistaId: camposLoteSeleccionados.has('AnalistaId') ? 
             (valoresLote.AnalistaId || analistas[0]?.id || 0) : analistas[0]?.id || 0
         };
@@ -299,9 +308,13 @@ const EditarRegistrosLotePage: React.FC = () => {
         alert(`✅ Se actualizaron ${respuesta.registrosActualizados} registros correctamente`);
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error al aplicar cambios en lote:", err);
-      setError(err.response?.data?.message || "Error al aplicar cambios en lote");
+      // 🔧 Corregir el tipo any
+      const errorMessage = err instanceof Error ? err.message : 
+                         (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 
+                         'Error al aplicar cambios en lote';
+      setError(errorMessage);
     } finally {
       setGuardando(false);
     }
@@ -319,7 +332,7 @@ const EditarRegistrosLotePage: React.FC = () => {
   };
 
   // Renderizar campo editable
-  const renderizarCampoEditable = (registro: Registro, campo: string, tipo: 'text' | 'time' | 'date' | 'select' = 'text') => {
+  const renderizarCampoEditable = (registro: Registro, campo: string, tipo: 'text' | 'time' | 'date' | 'select' | 'checkbox' = 'text') => {
     const estado = estadosEdicion.get(registro.id);
     if (!estado || !estado.editando) {
       // Modo vista
@@ -349,6 +362,9 @@ const EditarRegistrosLotePage: React.FC = () => {
         case 'desplazamientoRegreso':
           valor = registro.desplazamientoRegreso?.substring(0, 5) || '--:--';
           break;
+        case 'esConductor':
+          valor = registro.esConductor ? '🚛 Conductor' : '👷 No Conductor';
+          break;
         default:
           valor = '--';
       }
@@ -357,6 +373,21 @@ const EditarRegistrosLotePage: React.FC = () => {
 
     // Modo edición
     const valorEditado = estado.datosEditados[campo as keyof RegistroActualizacionDto];
+    
+    if (tipo === 'checkbox') {
+      const valorActual = valorEditado !== undefined ? Boolean(valorEditado) : (registro.esConductor || false);
+      return (
+        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <input
+            type="checkbox"
+            checked={valorActual}
+            onChange={(e) => actualizarDatosEditados(registro.id, campo, e.target.checked)}
+          />
+          <span>{valorActual ? '🚛 Conductor' : '👷 No Conductor'}</span>
+        </label>
+      );
+    }
+
     const valorActual = valorEditado ?? (() => {
       switch (campo) {
         case 'Trabajador_ID': return registro.trabajadorId;
@@ -375,7 +406,7 @@ const EditarRegistrosLotePage: React.FC = () => {
       if (campo === 'Trabajador_ID') {
         return (
           <select
-            value={valorActual}
+            value={valorActual.toString()}
             onChange={(e) => actualizarDatosEditados(registro.id, campo, Number(e.target.value))}
             style={{
               width: '100%',
@@ -393,7 +424,7 @@ const EditarRegistrosLotePage: React.FC = () => {
       } else if (campo === 'Centro_ID') {
         return (
           <select
-            value={valorActual}
+            value={valorActual.toString()}
             onChange={(e) => actualizarDatosEditados(registro.id, campo, e.target.value)}
             style={{
               width: '100%',
@@ -414,7 +445,7 @@ const EditarRegistrosLotePage: React.FC = () => {
     return (
       <input
         type={tipo}
-        value={valorActual}
+        value={valorActual.toString()}
         onChange={(e) => actualizarDatosEditados(registro.id, campo, e.target.value)}
         style={{
           width: '100%',
@@ -614,7 +645,7 @@ const EditarRegistrosLotePage: React.FC = () => {
                   </label>
                   <select
                     disabled={!camposLoteSeleccionados.has('Trabajador_ID')}
-                    value={valoresLote.Trabajador_ID || ''}
+                    value={valoresLote.Trabajador_ID?.toString() || ''}
                     onChange={(e) => setValoresLote(prev => ({ ...prev, Trabajador_ID: Number(e.target.value) }))}
                     style={{
                       width: '100%',
@@ -643,7 +674,7 @@ const EditarRegistrosLotePage: React.FC = () => {
                   </label>
                   <select
                     disabled={!camposLoteSeleccionados.has('Centro_ID')}
-                    value={valoresLote.Centro_ID || ''}
+                    value={valoresLote.Centro_ID?.toString() || ''}
                     onChange={(e) => setValoresLote(prev => ({ ...prev, Centro_ID: e.target.value }))}
                     style={{
                       width: '100%',
@@ -709,6 +740,36 @@ const EditarRegistrosLotePage: React.FC = () => {
                     }}
                   />
                 </div>
+
+                {/* 🆕 Campo Conductor */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <input
+                      type="checkbox"
+                      checked={camposLoteSeleccionados.has('EsConductor')}
+                      onChange={() => toggleCampoLote('EsConductor')}
+                    />
+                    <span style={{ fontWeight: '600' }}>🚛 Es Conductor</span>
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="checkbox"
+                      disabled={!camposLoteSeleccionados.has('EsConductor')}
+                      checked={Boolean(valoresLote.EsConductor)}
+                      onChange={(e) => setValoresLote(prev => ({ ...prev, EsConductor: e.target.checked }))}
+                      style={{ 
+                        opacity: camposLoteSeleccionados.has('EsConductor') ? 1 : 0.5,
+                        transform: 'scale(1.2)'
+                      }}
+                    />
+                    <span style={{ 
+                      fontSize: '0.9rem',
+                      opacity: camposLoteSeleccionados.has('EsConductor') ? 1 : 0.5
+                    }}>
+                      {valoresLote.EsConductor ? '🚛 Conductor' : '👷 No Conductor'}
+                    </span>
+                  </label>
+                </div>
               </div>
 
               <div style={{ textAlign: 'center' }}>
@@ -762,6 +823,7 @@ const EditarRegistrosLotePage: React.FC = () => {
                 <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>Fecha</th>
                 <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>Ingreso</th>
                 <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>Salida</th>
+                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>Conductor</th>
                 <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>H. Totales</th>
                 <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>Acciones</th>
               </tr>
@@ -801,6 +863,9 @@ const EditarRegistrosLotePage: React.FC = () => {
                     </td>
                     <td style={{ padding: '12px 8px' }}>
                       {renderizarCampoEditable(registro, 'Hora_Salida', 'time')}
+                    </td>
+                    <td style={{ padding: '12px 8px' }}>
+                      {renderizarCampoEditable(registro, 'EsConductor', 'checkbox')}
                     </td>
                     <td style={{ padding: '12px 8px', fontWeight: '600' }}>
                       {registro.totalHoras.toFixed(2)}h

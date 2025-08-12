@@ -1,4 +1,4 @@
-// src/types/registros.ts - VERSIÓN ACTUALIZADA
+// src/types/registros.ts - VERSIÓN ACTUALIZADA CON CONDUCTOR
 
 export interface RegistroInputDto {
   Trabajador_ID: number;
@@ -10,6 +10,7 @@ export interface RegistroInputDto {
   Tiempo_Almuerzo: string; // "HH:mm:ss"
   desplazamientoIda?: string;
   desplazamientoRegreso?: string;
+  EsConductor: boolean; // 🆕 NUEVO CAMPO
   AnalistaId?: number;
 }
 
@@ -25,6 +26,7 @@ export interface RegistroActualizacionDto {
   Tiempo_Almuerzo: string; // "HH:mm:ss"
   desplazamientoIda?: string;
   desplazamientoRegreso?: string;
+  EsConductor: boolean; // 🆕 NUEVO CAMPO
   AnalistaId?: number;
 }
 
@@ -52,6 +54,7 @@ export interface Registro {
   totalHoras: number;
   desplazamientoIda?: string;
   desplazamientoRegreso?: string;
+  esConductor: boolean; // 🆕 NUEVO CAMPO
   tipoRegistro?: 'TRABAJO' | 'AUSENCIA';
   ausenciaInfo?: {
     id: number;

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { registrosService } from "../../api/registrosService";
 import { trabajadoresService } from "../../api/trabajadoresService";
@@ -29,16 +29,11 @@ const EditarRegistroPage: React.FC = () => {
     Tiempo_Almuerzo: "01:00:00",
     desplazamientoIda: "",
     desplazamientoRegreso: "",
+    EsConductor: false,
     AnalistaId: 1
   });
 
-  useEffect(() => {
-    if (id) {
-      cargarDatos();
-    }
-  }, [id]);
-
-  const cargarDatos = async () => {
+  const cargarDatos = useCallback(async () => {
     try {
       setLoading(true);
       
@@ -78,6 +73,7 @@ const EditarRegistroPage: React.FC = () => {
         Tiempo_Almuerzo: registroEncontrado.tiempoAlmuerzo || "01:00:00",
         desplazamientoIda: timeSpanToString(registroEncontrado.desplazamientoIda || ""),
         desplazamientoRegreso: timeSpanToString(registroEncontrado.desplazamientoRegreso || ""),
+        EsConductor: registroEncontrado.esConductor || false,
         AnalistaId: 1
       });
 
@@ -87,9 +83,15 @@ const EditarRegistroPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
-  const handleInputChange = (field: keyof RegistroInputDto, value: string | number) => {
+  useEffect(() => {
+    if (id) {
+      cargarDatos();
+    }
+  }, [id, cargarDatos]);
+
+  const handleInputChange = (field: keyof RegistroInputDto, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -406,10 +408,10 @@ const EditarRegistroPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Fila 2: Fecha y Tiempo de Almuerzo */}
+            {/* Fila 2: Fecha, Tiempo de Almuerzo y Es Conductor */}
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
               gap: '20px'
             }}>
               <div>
@@ -465,6 +467,40 @@ const EditarRegistroPage: React.FC = () => {
                   <option value="01:30:00">1 hora 30 minutos</option>
                   <option value="02:00:00">2 horas</option>
                 </select>
+              </div>
+
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontWeight: '600',
+                  color: '#374151',
+                  marginBottom: '8px',
+                  fontSize: '1rem'
+                }}>
+                  🚗 Es Conductor
+                </label>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  padding: '12px',
+                  border: '2px solid #d1d5db',
+                  borderRadius: '8px',
+                  background: '#f9fafb'
+                }}>
+                  <input
+                    type="checkbox"
+                    id="esConductor"
+                    checked={formData.EsConductor}
+                    onChange={(e) => handleInputChange('EsConductor', e.target.checked)}
+                    style={{
+                      marginRight: '8px',
+                      transform: 'scale(1.2)'
+                    }}
+                  />
+                  <label htmlFor="esConductor" style={{ cursor: 'pointer' }}>
+                    {formData.EsConductor ? 'Sí' : 'No'}
+                  </label>
+                </div>
               </div>
             </div>
 

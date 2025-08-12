@@ -23,7 +23,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
 
   const { loading, error, crearLote, reset } = useRegistrosLote();
 
-  // 🆕 Estados para el rango de fechas
+  // Estados para el rango de fechas
   const [modoRangoFechas, setModoRangoFechas] = useState(false);
   const [fechaInicio, setFechaInicio] = useState(fechaInicial || new Date().toISOString().split("T")[0]);
   const [fechaFin, setFechaFin] = useState(fechaInicial || new Date().toISOString().split("T")[0]);
@@ -42,10 +42,10 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
       Tiempo_Almuerzo: "01:00:00",
       desplazamientoIda: "",
       desplazamientoRegreso: "",
+      EsConductor: false, // 🆕 NUEVO CAMPO
     }
   ]);
 
-  // Función convertirATimeSpan idéntica a RegistrosForm
   const convertirATimeSpan = (valor: string): string => {
     const parts = valor.trim().split(":");
     if (parts.length === 1 && /^\d+$/.test(parts[0])) {
@@ -58,16 +58,14 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
     return "";
   };
 
-  // 🆕 Función para generar fechas del rango
   const generarFechasDelRango = (): string[] => {
     const fechas: string[] = [];
     const inicio = new Date(fechaInicio);
     const fin = new Date(fechaFin);
 
     for (let fecha = new Date(inicio); fecha <= fin; fecha.setDate(fecha.getDate() + 1)) {
-      const diaSemana = fecha.getDay(); // 0 = Domingo, 1 = Lunes, ..., 5 = Viernes, 6 = Sábado
+      const diaSemana = fecha.getDay();
       
-      // Verificar exclusiones
       if (excluirDomingos && diaSemana === 0) continue;
       if (excluirSabados && diaSemana === 6) continue;
       if (excluirViernes && diaSemana === 5) continue;
@@ -78,12 +76,11 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
     return fechas;
   };
 
-  // 🆕 Función para generar registros automáticamente por rango de fechas
   const generarRegistrosPorRango = () => {
     if (!modoRangoFechas) return;
 
     const fechas = generarFechasDelRango();
-    const registroBase = registros[0]; // Usar el primer registro como plantilla
+    const registroBase = registros[0];
 
     if (fechas.length === 0) {
       alert("No hay fechas válidas en el rango seleccionado con las exclusiones configuradas.");
@@ -155,7 +152,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
   const actualizarRegistro = (
     index: number,
     field: keyof RegistroInputDto,
-    value: string | number
+    value: string | number | boolean
   ) => {
     const nuevosRegistros = [...registros];
     nuevosRegistros[index] = {
@@ -177,9 +174,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
     setRegistros(nuevosRegistros);
   };
 
-  // Fixed: Remove unused parameter or use underscore prefix to indicate intentional non-use
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleTrabajadorChange = (index: number, trabajadorId: number, _trabajador?: Trabajador) => {
+  const handleTrabajadorChange = (index: number, trabajadorId: number) => {
     const nuevosRegistros = [...registros];
     nuevosRegistros[index] = {
       ...nuevosRegistros[index],
@@ -200,7 +195,6 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
     setRegistros(nuevosRegistros);
   };
 
-  // 🆕 Aplicar configuración a todos los registros
   const aplicarConfiguracionATodos = () => {
     if (registros.length === 0) return;
 
@@ -211,6 +205,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
       Tiempo_Almuerzo: registroBase.Tiempo_Almuerzo,
       desplazamientoIda: registroBase.desplazamientoIda,
       desplazamientoRegreso: registroBase.desplazamientoRegreso,
+      EsConductor: registroBase.EsConductor, // 🆕 INCLUIR CONDUCTOR
       AnalistaId: registroBase.AnalistaId,
       Centro_ID: registroBase.Centro_ID,
       Nombr_Centro: registroBase.Nombr_Centro,
@@ -272,15 +267,23 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
 
     if (success) {
       reset();
-      alert(`¡Éxito! Se crearon ${registrosNormalizados.length} registros correctamente.`);
+      const conductores = registrosNormalizados.filter(r => r.EsConductor).length;
+      const noConductores = registrosNormalizados.length - conductores;
+      alert(`¡Éxito! Se crearon ${registrosNormalizados.length} registros correctamente.\n${conductores} conductores y ${noConductores} no conductores.`);
       onSuccess();
     }
   };
 
-  // Utility function to get worker name by ID - now used in the component
   const getTrabajadorNombre = (id: number) => {
     const trabajador = trabajadores.find(t => t.id === id);
     return trabajador ? trabajador.nombre : "Sin seleccionar";
+  };
+
+  // 🆕 FUNCIÓN PARA OBTENER RESUMEN DE CONDUCTORES
+  const getResumenConductores = () => {
+    const conductores = registros.filter(r => r.EsConductor).length;
+    const noConductores = registros.length - conductores;
+    return { conductores, noConductores };
   };
 
   if (loadingData) {
@@ -328,7 +331,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
         </div>
       )}
 
-      {/* 🆕 Sección de Rango de Fechas */}
+      {/* Sección de Rango de Fechas */}
       <div className="rango-fechas-section" style={{
         background: 'linear-gradient(135deg, #667eea, #764ba2)',
         color: 'white',
@@ -488,12 +491,15 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                 <div style={{ fontSize: '0.8rem', color: '#666', marginLeft: '10px' }}>
                   📅 {new Date(registro.Fecha).toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })}
                 </div>
-                {/* Show worker name if selected */}
                 {registro.Trabajador_ID > 0 && (
                   <div style={{ fontSize: '0.8rem', color: '#007bff', marginLeft: '10px' }}>
                     👤 {getTrabajadorNombre(registro.Trabajador_ID)}
                   </div>
                 )}
+                {/* 🆕 MOSTRAR SI ES CONDUCTOR */}
+                <div style={{ fontSize: '0.8rem', marginLeft: '10px' }}>
+                  {registro.EsConductor ? '🚛 Conductor' : '👷 No Conductor'}
+                </div>
                 <div className="registro-actions">
                   <button type="button" className="btn-duplicate" onClick={() => duplicarRegistro(index)} title="Duplicar registro">
                     📋
@@ -512,7 +518,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                     <TrabajadorBuscador
                       trabajadores={trabajadores}
                       value={registro.Trabajador_ID}
-                      onChange={(trabajadorId, trabajador) => handleTrabajadorChange(index, trabajadorId, trabajador)}
+                      onChange={(trabajadorId) => handleTrabajadorChange(index, trabajadorId)}
                       label="Trabajador *"
                       required
                       showSelectedInfo={false}
@@ -588,8 +594,28 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                   </div>
                 </div>
 
-                {/* Campo de Analista */}
+                {/* 🆕 CAMPO CONDUCTOR */}
                 <div className="form-row">
+                  <div className="form-group">
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                      <input
+                        type="checkbox"
+                        checked={registro.EsConductor}
+                        onChange={(e) => actualizarRegistro(index, "EsConductor", e.target.checked)}
+                        style={{ transform: 'scale(1.2)' }}
+                      />
+                      <span style={{ fontWeight: '600' }}>
+                        {registro.EsConductor ? '🚛 Es Conductor' : '👷 No es Conductor'}
+                      </span>
+                    </label>
+                    <small style={{ color: "#666", fontSize: "0.8rem", marginTop: '5px', display: 'block' }}>
+                      {registro.EsConductor 
+                        ? 'Los desplazamientos se incluirán como tiempo de trabajo'
+                        : 'Los desplazamientos se descontarán del tiempo trabajado'
+                      }
+                    </small>
+                  </div>
+
                   <div className="form-group">
                     <label className="form-label">Analista encargado</label>
                     <select
@@ -624,7 +650,10 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                   <p
                     style={{ margin: "5px 0 0 0", fontSize: "0.9rem", color: "#888" }}
                   >
-                    Si el trabajador tiene tiempo de desplazamiento, ingrésalo aquí
+                    {registro.EsConductor 
+                      ? 'Como es conductor, estos tiempos se INCLUYEN en el cálculo'
+                      : 'Como NO es conductor, estos tiempos se DESCUENTAN del trabajo'
+                    }
                   </p>
                 </div>
 
@@ -699,6 +728,21 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
           <span className="summary-text">
             <strong>Centros únicos:</strong>{" "}
             {new Set(registros.map((r) => r.Centro_ID).filter((id) => id !== "")).size}
+          </span>
+        </div>
+        {/* 🆕 RESUMEN DE CONDUCTORES */}
+        <div className="summary-item">
+          <span className="summary-icon">🚛</span>
+          <span className="summary-text">
+            <strong>Conductores:</strong>{" "}
+            {getResumenConductores().conductores}
+          </span>
+        </div>
+        <div className="summary-item">
+          <span className="summary-icon">👷</span>
+          <span className="summary-text">
+            <strong>No Conductores:</strong>{" "}
+            {getResumenConductores().noConductores}
           </span>
         </div>
         {modoRangoFechas && (
