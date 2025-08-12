@@ -36,6 +36,7 @@ const EditarRegistroPage: React.FC = () => {
     Tiempo_Almuerzo: "01:00:00",
     desplazamientoIda: "",
     desplazamientoRegreso: "",
+    EsConductor: false, // 🆕 Campo agregado
     AnalistaId: 0
   });
 
@@ -84,6 +85,7 @@ const EditarRegistroPage: React.FC = () => {
           Tiempo_Almuerzo: tiempoAlmuerzoFormateado,
           desplazamientoIda: registroData.desplazamientoIda?.substring(0, 5) || "",
           desplazamientoRegreso: registroData.desplazamientoRegreso?.substring(0, 5) || "",
+          EsConductor: registroData.esConductor || false, // 🆕 Campo agregado
           AnalistaId: analistasData[0]?.id || 0
         });
 
@@ -99,7 +101,7 @@ const EditarRegistroPage: React.FC = () => {
   }, [id]);
 
   // Manejar cambios en el formulario
-  const handleInputChange = (field: keyof RegistroInputDto, value: string | number) => {
+  const handleInputChange = (field: keyof RegistroInputDto, value: string | number | boolean) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -188,9 +190,10 @@ const EditarRegistroPage: React.FC = () => {
       targetUrl.searchParams.set('success', 'registro-actualizado');
       navigate(targetUrl.pathname + targetUrl.search);
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Error al guardar:", err);
-      setError(err.response?.data?.message || "Error al guardar el registro");
+      const error = err as { response?: { data?: { message?: string } } };
+      setError(error.response?.data?.message || "Error al guardar el registro");
     } finally {
       setGuardando(false);
     }
@@ -316,6 +319,7 @@ const EditarRegistroPage: React.FC = () => {
               <div><strong>Horario:</strong> {registro.horaIngreso} - {registro.horaSalida}</div>
               <div><strong>Horas Totales:</strong> {registro.totalHoras}h</div>
               <div><strong>Horas Normales:</strong> {registro.horasNormales}h</div>
+              <div><strong>Es Conductor:</strong> {registro.esConductor ? 'Sí' : 'No'}</div>
             </div>
           </div>
         )}
@@ -561,6 +565,38 @@ const EditarRegistroPage: React.FC = () => {
                   }}
                 />
               </div>
+            </div>
+
+            {/* Es Conductor */}
+            <div>
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                fontWeight: '600',
+                color: '#333',
+                cursor: 'pointer'
+              }}>
+                <input
+                  type="checkbox"
+                  checked={formData.EsConductor}
+                  onChange={(e) => handleInputChange('EsConductor', e.target.checked)}
+                  style={{
+                    marginRight: '10px',
+                    width: '18px',
+                    height: '18px',
+                    cursor: 'pointer'
+                  }}
+                />
+                🚛 ¿Es conductor en este registro?
+              </label>
+              <p style={{ 
+                fontSize: '0.9rem', 
+                color: '#666', 
+                marginTop: '5px',
+                marginLeft: '28px' 
+              }}>
+                Marca esta opción si el trabajador desempeñó funciones de conductor
+              </p>
             </div>
 
             {/* Analista */}
