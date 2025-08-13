@@ -22,6 +22,102 @@ interface EstadisticaDiagnostico {
   totalHoras: number;
 }
 
+// 🆕 Interfaces adicionales para las nuevas estadísticas
+interface EstadisticaMensual {
+  mes: number;
+  anio: number;
+  nombreMes: string;
+  totalAusencias: number;
+  totalHoras: number;
+  manoObraPerdida: number;
+  citasMedicas: number;
+  incapacidades: number;
+  permisos: number;
+  otros: number;
+  trabajadoresAfectados: number;
+  ausenciasRemuneradas: number;
+  ausenciasNoRemuneradas: number;
+}
+
+interface EstadisticaTipoDetallado {
+  tipoAusencia: string;
+  totalAusencias: number;
+  totalHoras: number;
+  manoObraPerdida: number;
+  trabajadoresAfectados: number;
+  remuneradas: number;
+  noRemuneradas: number;
+  diagnosticosMasFrecuentes: {
+    codigo: string;
+    descripcion: string;
+    cantidad: number;
+  }[];
+}
+
+interface EstadisticaDiagnosticoDetallado {
+  diagnosticoCodigo: string;
+  diagnosticoDescripcion: string;
+  cantidadAusencias: number;
+  totalHoras: number;
+  manoObraPerdida: number;
+  trabajadoresAfectados: number;
+  promedioDuracion: number;
+  tiposAusencia: {
+    tipo: string;
+    cantidad: number;
+  }[];
+  distribucionMensual: {
+    mes: number;
+    cantidad: number;
+  }[];
+}
+
+interface TendenciaAusencia {
+  anio: number;
+  mes: number;
+  fecha: string;
+  totalAusencias: number;
+  totalHoras: number;
+  manoObraPerdida: number;
+  trabajadoresAfectados: number;
+  diagnosticosPrincipales: {
+    codigo: string;
+    cantidad: number;
+  }[];
+}
+
+interface ResumenEjecutivo {
+  anio: number;
+  resumenGeneral: {
+    totalAusencias: number;
+    totalHoras: number;
+    manoObraPerdida: number;
+    trabajadoresAfectados: number;
+    totalTrabajadores: number;
+    porcentajeTrabajadoresAfectados: number;
+    promedioHorasPorAusencia: number;
+  };
+  porTipoAusencia: {
+    tipo: string;
+    cantidad: number;
+    porcentaje: number;
+  }[];
+  topDiagnosticos: {
+    codigo: string;
+    descripcion: string;
+    cantidad: number;
+    porcentaje: number;
+  }[];
+  tendenciaMensual: {
+    mes: number;
+    nombreMes: string;
+    cantidad: number;
+    manoObraPerdida: number;
+  }[];
+}
+
+// ===== FUNCIONES EXISTENTES =====
+
 export async function getPorMes(anio: number, mes: number) {
   const response = await api.get<Ausencia[]>(`/ausencias/mes/${anio}/${mes}`);
   return response.data;
@@ -91,7 +187,7 @@ export async function getEstadisticasHorasPorArea() {
   return response.data;
 }
 
-// 🆕 NUEVAS FUNCIONES PARA DIAGNÓSTICOS
+// 🆕 FUNCIONES PARA DIAGNÓSTICOS
 export async function getAllDiagnosticos() {
   const response = await api.get<Diagnostico[]>("/ausencias/diagnosticos");
   return response.data;
@@ -107,7 +203,126 @@ export async function getEstadisticasPorDiagnostico() {
   return response.data;
 }
 
+// ===== 🆕 NUEVAS FUNCIONES PARA ESTADÍSTICAS AVANZADAS =====
+
+// Obtener estadísticas mensuales de un año
+export async function getEstadisticasMensuales(anio: number) {
+  const response = await api.get<EstadisticaMensual[]>(`/ausencias/estadisticas/mensual/${anio}`);
+  return response.data;
+}
+
+// Obtener estadísticas detalladas por tipo de ausencia
+export async function getEstadisticasTiposDetallado() {
+  const response = await api.get<EstadisticaTipoDetallado[]>("/ausencias/estadisticas/tipos-detallado");
+  return response.data;
+}
+
+// Obtener estadísticas detalladas por diagnóstico
+export async function getEstadisticasDiagnosticosDetallado() {
+  const response = await api.get<EstadisticaDiagnosticoDetallado[]>("/ausencias/estadisticas/diagnosticos-detallado");
+  return response.data;
+}
+
+// Obtener tendencias de ausencias por período
+export async function getTendenciasAusencias(anioInicio: number, anioFin: number) {
+  const response = await api.get<TendenciaAusencia[]>("/ausencias/estadisticas/tendencias", {
+    params: { anioInicio, anioFin }
+  });
+  return response.data;
+}
+
+// Obtener resumen ejecutivo de ausencias
+export async function getResumenEjecutivo(anio?: number) {
+  const response = await api.get<ResumenEjecutivo>("/ausencias/estadisticas/resumen-ejecutivo", {
+    params: anio ? { anio } : {}
+  });
+  return response.data;
+}
+
+// 🆕 Función para calcular métricas adicionales en el frontend
+export function calcularMetricasAusencias(ausencias: Ausencia[]) {
+  const totalHoras = ausencias.reduce((total, ausencia) => {
+    if (ausencia.horaInicio && ausencia.horaFin) {
+      const inicio = new Date(`1970-01-01T${ausencia.horaInicio}`);
+      const fin = new Date(`1970-01-01T${ausencia.horaFin}`);
+      return total + (fin.getTime() - inicio.getTime()) / (1000 * 60 * 60);
+    }
+    return total;
+  }, 0);
+
+  const trabajadoresUnicos = new Set(ausencias.map(a => a.trabajadorNombre)).size;
+  
+  const ausenciasRemuneradas = ausencias.filter(a => a.remunerado).length;
+  const ausenciasNoRemuneradas = ausencias.filter(a => !a.remunerado).length;
+
+  const diagnosticosUnicos = new Set(
+    ausencias
+      .filter(a => a.diagnosticoCodigo)
+      .map(a => a.diagnosticoCodigo)
+  ).size;
+
+  return {
+    totalAusencias: ausencias.length,
+    totalHoras: Math.round(totalHoras * 100) / 100,
+    trabajadoresAfectados: trabajadoresUnicos,
+    ausenciasRemuneradas,
+    ausenciasNoRemuneradas,
+    diagnosticosUnicos,
+    promedioDuracion: ausencias.length > 0 ? Math.round((totalHoras / ausencias.length) * 100) / 100 : 0
+  };
+}
+
+// 🆕 Función para exportar datos de ausencias a CSV
+export function exportarAusenciasCSV(ausencias: Ausencia[], filename: string = 'ausencias') {
+  const headers = [
+    'Fecha',
+    'Trabajador',
+    'Cargo',
+    'Tipo Ausencia',
+    'Descripción',
+    'Fecha Inicio',
+    'Fecha Fin',
+    'Hora Inicio',
+    'Hora Fin',
+    'Remunerado',
+    'Diagnóstico Código',
+    'Diagnóstico Descripción'
+  ];
+
+  const csvContent = [
+    headers.join(','),
+    ...ausencias.map(ausencia => [
+      ausencia.fecha,
+      `"${ausencia.trabajadorNombre}"`,
+      `"${ausencia.cargo || ''}"`,
+      `"${ausencia.tipoAusencia || ''}"`,
+      `"${ausencia.descripcion || ''}"`,
+      ausencia.fechaInicio,
+      ausencia.fechaFin,
+      ausencia.horaInicio || '',
+      ausencia.horaFin || '',
+      ausencia.remunerado ? 'Sí' : 'No',
+      ausencia.diagnosticoCodigo || '',
+      `"${ausencia.diagnosticoDescripcion || ''}"`
+    ].join(','))
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
+
+// ===== OBJETO EXPORTADO ACTUALIZADO =====
 export const ausenciasService = {
+  // Funciones existentes
   getPorMes,
   crearAusencia,
   getAll,
@@ -116,8 +331,16 @@ export const ausenciasService = {
   eliminarAusencia,
   getEstadisticasHoras,
   getEstadisticasHorasPorArea,
-  // 🆕 Nuevos servicios para diagnósticos
   getAllDiagnosticos,
   buscarDiagnosticos,
-  getEstadisticasPorDiagnostico
+  getEstadisticasPorDiagnostico,
+
+  // 🆕 Nuevas funciones para estadísticas avanzadas
+  getEstadisticasMensuales,
+  getEstadisticasTiposDetallado,
+  getEstadisticasDiagnosticosDetallado,
+  getTendenciasAusencias,
+  getResumenEjecutivo,
+  calcularMetricasAusencias,
+  exportarAusenciasCSV
 };

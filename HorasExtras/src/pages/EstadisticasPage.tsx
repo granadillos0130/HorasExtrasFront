@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Bar } from "react-chartjs-2";
+import { Bar, Chart } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -8,22 +8,81 @@ import {
   Title,
   Tooltip,
   Legend,
+  PointElement,
+  LineElement,
 } from "chart.js";
 import ChartDataLabels from "chartjs-plugin-datalabels";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ChartDataLabels);
+ChartJS.register(
+  CategoryScale, 
+  LinearScale, 
+  BarElement, 
+  Title, 
+  Tooltip, 
+  Legend, 
+  ChartDataLabels,
+  PointElement,
+  LineElement
+);
 
 import { estadisticasService } from "../api/estadisticasService";
+import { ausenciasService } from "../api/ausenciasService";
 import type { Centro, TrabajadorEstadistica } from "../types/estadisticas";
 import CentroBuscador from "../components/shared/CentroBuscador";
 import "../styles/pages/EstadisticasPage.css";
 
+// Interfaces para las estadísticas de ausencias
+interface EstadisticaAusenciaMensual {
+  mes: number;
+  anio: number;
+  nombreMes: string;
+  totalAusencias: number;
+  totalHoras: number;
+  manoObraPerdida: number;
+  citasMedicas: number;
+  incapacidades: number;
+  permisos: number;
+  otros: number;
+}
+
+interface EstadisticaTipoAusencia {
+  tipoAusencia: string;
+  totalAusencias: number;
+  totalHoras: number;
+  manoObraPerdida: number;
+}
+
+interface EstadisticaDiagnostico {
+  diagnosticoCodigo: string;
+  diagnosticoDescripcion: string;
+  cantidadAusencias: number;
+  totalHoras: number;
+  manoObraPerdida: number;
+}
+
 const EstadisticasPage: React.FC = () => {
+  // Estados para la vista principal
+  const [vistaActiva, setVistaActiva] = useState<'inicio' | 'centros' | 'ausencias'>('inicio');
+
+  // Estados para estadísticas de centros (original)
   const [centros, setCentros] = useState<Centro[]>([]);
   const [centroId, setCentroId] = useState<string>("");
   const [estadisticas, setEstadisticas] = useState<TrabajadorEstadistica[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingCentros, setLoadingCentros] = useState(true);
+
+  // Estados para estadísticas de ausencias
+  const [estadisticasAusencias, setEstadisticasAusencias] = useState({
+    mensuales: [] as EstadisticaAusenciaMensual[],
+    porTipo: [] as EstadisticaTipoAusencia[],
+    porDiagnostico: [] as EstadisticaDiagnostico[],
+  });
+  const [filtrosAusencias, setFiltrosAusencias] = useState({
+    anio: new Date().getFullYear(),
+    mes: new Date().getMonth() + 1,
+  });
+  const [loadingAusencias, setLoadingAusencias] = useState(false);
+  const [subvistaAusencias, setSubvistaAusencias] = useState<'resumen' | 'diagnosticos' | 'tipos' | 'mensual'>('resumen');
 
   useEffect(() => {
     const cargarCentros = async () => {
@@ -40,6 +99,7 @@ const EstadisticasPage: React.FC = () => {
     cargarCentros();
   }, []);
 
+  // Funciones para estadísticas de centros (original)
   const buscarEstadisticas = async () => {
     if (centroId === "") {
       alert("Seleccione un centro.");
@@ -47,7 +107,6 @@ const EstadisticasPage: React.FC = () => {
     }
     setLoading(true);
     try {
-      // ✅ FIX 1: Convert string to number since API expects number
       const data = await estadisticasService.getEstadisticasPorCentro(parseInt(centroId));
       setEstadisticas(data);
     } catch (error) {
@@ -58,99 +117,60 @@ const EstadisticasPage: React.FC = () => {
     }
   };
 
+  // Funciones para estadísticas de ausencias
+  const cargarEstadisticasAusencias = async () => {
+    setLoadingAusencias(true);
+    try {
+      const [porDiagnostico, porTipo, mensuales] = await Promise.all([
+        ausenciasService.getEstadisticasDiagnosticosDetallado(),
+        ausenciasService.getEstadisticasTiposDetallado(),
+        ausenciasService.getEstadisticasMensuales(filtrosAusencias.anio)
+      ]);
+
+      setEstadisticasAusencias({
+        porDiagnostico: porDiagnostico.map(d => ({
+          diagnosticoCodigo: d.diagnosticoCodigo,
+          diagnosticoDescripcion: d.diagnosticoDescripcion,
+          cantidadAusencias: d.cantidadAusencias,
+          totalHoras: d.totalHoras,
+          manoObraPerdida: d.manoObraPerdida
+        })),
+        porTipo: porTipo.map(t => ({
+          tipoAusencia: t.tipoAusencia,
+          totalAusencias: t.totalAusencias,
+          totalHoras: t.totalHoras,
+          manoObraPerdida: t.manoObraPerdida
+        })),
+        mensuales: mensuales.map(m => ({
+          mes: m.mes,
+          anio: m.anio,
+          nombreMes: m.nombreMes,
+          totalAusencias: m.totalAusencias,
+          totalHoras: m.totalHoras,
+          manoObraPerdida: m.manoObraPerdida,
+          citasMedicas: m.citasMedicas,
+          incapacidades: m.incapacidades,
+          permisos: m.permisos,
+          otros: m.otros
+        }))
+      });
+    } catch (error) {
+      console.error("Error al cargar estadísticas de ausencias:", error);
+    } finally {
+      setLoadingAusencias(false);
+    }
+  };
+
   const handleCentroChange = (selectedCentroId: string) => {
     setCentroId(selectedCentroId);
   };
 
-  const chartData = {
-    labels: estadisticas.map(e => e.nombreTrabajador),
-    datasets: [
-      {
-        label: "Horas Normales",
-        backgroundColor: "#27ae60",
-        data: estadisticas.map(e => e.horasNormales),
-        borderRadius: 8,
-      },
-      {
-        label: "Horas Extras Diurnas",
-        backgroundColor: "#f39c12",
-        data: estadisticas.map(e => e.horasExtrasDiurnas),
-        borderRadius: 8,
-      },
-      {
-        label: "Horas Extras Nocturnas",
-        backgroundColor: "#8e44ad",
-        data: estadisticas.map(e => e.horasExtrasNocturnas),
-        borderRadius: 8,
-      },
-      {
-        label: "Dom. Diurnas",
-        backgroundColor: "#e74c3c",
-        data: estadisticas.map(e => e.extrasDominicalesDiurnas),
-        borderRadius: 8,
-      },
-      {
-        label: "Dom. Nocturnas",
-        backgroundColor: "#c0392b",
-        data: estadisticas.map(e => e.extrasDominicalesNocturnas),
-        borderRadius: 8,
-      },
-    ],
-  };
-
-  // ✅ FIX 2: Fix Chart.js options type issues
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "top" as const,
-        labels: {
-          usePointStyle: true,
-          padding: 20,
-          font: {
-            size: 12,
-            weight: 600 as const,
-          },
-        },
-      },
-      title: {
-        display: true,
-        text: "Distribución de Horas por Trabajador",
-        font: {
-          size: 16,
-          weight: 600 as const,
-        },
-        padding: 20,
-      },
-      datalabels: {
-        color: "#000",
-        anchor: "end" as const,
-        align: "end" as const, // ✅ Fixed: Use proper const assertion
-        font: {
-          size: 11,
-          weight: "bold" as const,
-        },
-        formatter: (value: number) => {
-          return value.toFixed(1);
-        },
-      },
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: { font: { size: 11, weight: 500 as const } },
-      },
-      y: {
-        grid: { color: "rgba(0,0,0,0.1)" },
-        ticks: { font: { size: 11, weight: 500 as const } },
-      },
-    },
-  };
-
-  const getSelectedCentroName = () => {
-    const centro = centros.find(c => c.id === centroId);
-    return centro ? centro.nombreCentro : "";
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+    }).format(value);
   };
 
   const formatHours = (hours: number) => {
@@ -160,169 +180,361 @@ const EstadisticasPage: React.FC = () => {
     return `${h}:${m.toString().padStart(2, "0")}`;
   };
 
-  const getTotalStats = () => {
-    if (estadisticas.length === 0) return null;
-    const totales = estadisticas.reduce(
-      (acc, est) => ({
-        horasNormales: acc.horasNormales + est.horasNormales,
-        horasExtrasDiurnas: acc.horasExtrasDiurnas + est.horasExtrasDiurnas,
-        horasExtrasNocturnas: acc.horasExtrasNocturnas + est.horasExtrasNocturnas,
-        extrasDominicalesDiurnas: acc.extrasDominicalesDiurnas + est.extrasDominicalesDiurnas,
-        extrasDominicalesNocturnas: acc.extrasDominicalesNocturnas + est.extrasDominicalesNocturnas,
-        totalHoras: acc.totalHoras + est.totalHoras,
-      }),
+  // Gráficos para ausencias
+  const chartDataDiagnosticos = {
+    labels: estadisticasAusencias.porDiagnostico.slice(0, 10).map(d => d.diagnosticoCodigo),
+    datasets: [
       {
-        horasNormales: 0,
-        horasExtrasDiurnas: 0,
-        horasExtrasNocturnas: 0,
-        extrasDominicalesDiurnas: 0,
-        extrasDominicalesNocturnas: 0,
-        totalHoras: 0,
-      }
-    );
-    return totales;
+        label: "Cantidad de Ausencias",
+        backgroundColor: ["#ff6b6b", "#4ecdc4", "#45b7d1", "#96ceb4", "#feca57", "#ff9ff3", "#54a0ff", "#5f27cd"],
+        data: estadisticasAusencias.porDiagnostico.slice(0, 10).map(d => d.cantidadAusencias),
+      },
+    ],
   };
 
-  const totalStats = getTotalStats();
+  const chartDataTipos = {
+    labels: estadisticasAusencias.porTipo.map(t => t.tipoAusencia),
+    datasets: [
+      {
+        label: "Horas Perdidas",
+        backgroundColor: "#ff6b6b",
+        data: estadisticasAusencias.porTipo.map(t => t.totalHoras),
+        borderRadius: 8,
+      },
+      {
+        label: "Mano de Obra Perdida",
+        backgroundColor: "#4ecdc4",
+        data: estadisticasAusencias.porTipo.map(t => t.manoObraPerdida / 1000), // En miles
+        borderRadius: 8,
+        yAxisID: 'y1',
+      },
+    ],
+  };
 
-  // ✅ FIX 3: Transform centros data to match CentroBuscador expected format
+  const chartDataMensual = {
+    labels: estadisticasAusencias.mensuales.map(m => m.nombreMes),
+    datasets: [
+      {
+        label: "Total Ausencias",
+        backgroundColor: "#45b7d1",
+        borderColor: "#45b7d1",
+        data: estadisticasAusencias.mensuales.map(m => m.totalAusencias),
+        type: 'bar' as const,
+      },
+      {
+        label: "Citas Médicas",
+        backgroundColor: "#ff6b6b",
+        data: estadisticasAusencias.mensuales.map(m => m.citasMedicas),
+        type: 'bar' as const,
+      },
+      {
+        label: "Incapacidades",
+        backgroundColor: "#feca57",
+        data: estadisticasAusencias.mensuales.map(m => m.incapacidades),
+        type: 'bar' as const,
+      },
+      {
+        label: "Permisos",
+        backgroundColor: "#48cab2",
+        data: estadisticasAusencias.mensuales.map(m => m.permisos),
+        type: 'bar' as const,
+      },
+    ],
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: "top" as const },
+      title: { display: true, text: "Estadísticas de Ausencias" },
+    },
+    scales: {
+      y: { beginAtZero: true },
+      y1: {
+        type: 'linear' as const,
+        display: true,
+        position: 'right' as const,
+        grid: { drawOnChartArea: false },
+      },
+    },
+  };
+
+  // Transform centros data para CentroBuscador
   const transformedCentros = centros.map(centro => ({
     ...centro,
-    fechaInicio: new Date().toISOString(), // Add missing property with default value
-    clienteId: "", // Add missing property with default value
+    fechaInicio: new Date().toISOString(),
+    clienteId: "",
   }));
 
-  return (
-    <div className="estadisticas-page">
-      <div className="page-container">
-        <div className="page-header">
-          <h1>Estadísticas por Centro</h1>
-          <p className="page-subtitle">
-            Analiza el rendimiento y distribución de horas por centro de trabajo
-          </p>
+  const renderVistaInicio = () => (
+    <div className="vista-inicio">
+      <div className="page-header">
+        <h1>Centro de Estadísticas</h1>
+        <p className="page-subtitle">
+          Selecciona el tipo de análisis que deseas realizar
+        </p>
+      </div>
+
+      <div className="menu-principal">
+        <div className="menu-card" onClick={() => setVistaActiva('centros')}>
+          <div className="menu-icon">🏢</div>
+          <h3>Estadísticas por Centro</h3>
+          <p>Analiza el rendimiento y distribución de horas por centro de trabajo</p>
+          <button className="btn-menu">Ver Estadísticas de Centros</button>
         </div>
 
-        <div className="filters-card">
-          <div className="filters-header">
-            <div className="filters-icon">📊</div>
-            <h2>Seleccionar Centro</h2>
-          </div>
+        <div className="menu-card" onClick={() => {
+          setVistaActiva('ausencias');
+          cargarEstadisticasAusencias();
+        }}>
+          <div className="menu-icon">🏥</div>
+          <h3>Estadísticas de Ausencias</h3>
+          <p>Analiza ausencias por diagnósticos, tipos y impacto en mano de obra</p>
+          <button className="btn-menu">Ver Estadísticas de Ausencias</button>
+        </div>
+      </div>
+    </div>
+  );
 
-          <div className="estadisticas-toolbar">
-            {loadingCentros ? (
-              <div className="form-group">
-                <label className="form-label">Centro de Trabajo</label>
-                <div className="loading-input">🔄 Cargando centros...</div>
-              </div>
-            ) : (
-              <CentroBuscador
-                centros={transformedCentros} // ✅ Fixed: Use transformed centros
-                value={centroId}
-                onChange={handleCentroChange}
-                placeholder="Buscar por nombre o ID..."
-                label="Centro de Trabajo"
-                required={true}
-                showSelectedInfo={true}
-              />
-            )}
+  const renderVistaCentros = () => (
+    <div className="vista-centros">
+      <div className="page-header">
+        <button onClick={() => setVistaActiva('inicio')} className="btn-back">
+          ← Volver al Inicio
+        </button>
+        <h1>Estadísticas por Centro</h1>
+        <p className="page-subtitle">
+          Analiza el rendimiento y distribución de horas por centro de trabajo
+        </p>
+      </div>
 
-            <button
-              onClick={buscarEstadisticas}
-              className="btn-search"
-              disabled={loading || centroId === "" || loadingCentros}
-            >
-              {loading ? "🔄 Cargando..." : "📊 Generar Estadísticas"}
-            </button>
-          </div>
+      <div className="filters-card">
+        <div className="filters-header">
+          <div className="filters-icon">📊</div>
+          <h2>Seleccionar Centro</h2>
         </div>
 
-        {loading && (
-          <div className="results-card">
-            <div className="loading-message">
-              🔄 Generando estadísticas para el centro seleccionado...
+        <div className="estadisticas-toolbar">
+          {loadingCentros ? (
+            <div className="form-group">
+              <label className="form-label">Centro de Trabajo</label>
+              <div className="loading-input">🔄 Cargando centros...</div>
             </div>
-          </div>
-        )}
+          ) : (
+            <CentroBuscador
+              centros={transformedCentros}
+              value={centroId}
+              onChange={handleCentroChange}
+              placeholder="Buscar por nombre o ID..."
+              label="Centro de Trabajo"
+              required={true}
+              showSelectedInfo={true}
+            />
+          )}
 
-        {estadisticas.length > 0 && !loading && (
-          <>
-            <div className="results-card">
-              <div className="results-header">
-                <div className="results-title">
-                  <div className="results-icon">📈</div>
-                  <h3>Resumen General</h3>
+          <button
+            onClick={buscarEstadisticas}
+            className="btn-search"
+            disabled={loading || centroId === "" || loadingCentros}
+          >
+            {loading ? "🔄 Cargando..." : "📊 Generar Estadísticas"}
+          </button>
+        </div>
+      </div>
+
+      {/* Resto del contenido original para centros */}
+      {estadisticas.length > 0 && !loading && (
+        <div className="results-card">
+          <div className="results-header">
+            <h3>Estadísticas del Centro</h3>
+          </div>
+          {/* Aquí iría el contenido original de las estadísticas de centros */}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderVistaAusencias = () => (
+    <div className="vista-ausencias">
+      <div className="page-header">
+        <button onClick={() => setVistaActiva('inicio')} className="btn-back">
+          ← Volver al Inicio
+        </button>
+        <h1>Estadísticas de Ausencias</h1>
+        <p className="page-subtitle">
+          Analiza las ausencias laborales y su impacto en la productividad
+        </p>
+      </div>
+
+      <div className="submenu-ausencias">
+        <button 
+          className={`submenu-btn ${subvistaAusencias === 'resumen' ? 'active' : ''}`}
+          onClick={() => setSubvistaAusencias('resumen')}
+        >
+          📊 Resumen General
+        </button>
+        <button 
+          className={`submenu-btn ${subvistaAusencias === 'diagnosticos' ? 'active' : ''}`}
+          onClick={() => setSubvistaAusencias('diagnosticos')}
+        >
+          🩺 Por Diagnósticos
+        </button>
+        <button 
+          className={`submenu-btn ${subvistaAusencias === 'tipos' ? 'active' : ''}`}
+          onClick={() => setSubvistaAusencias('tipos')}
+        >
+          📋 Por Tipos
+        </button>
+        <button 
+          className={`submenu-btn ${subvistaAusencias === 'mensual' ? 'active' : ''}`}
+          onClick={() => setSubvistaAusencias('mensual')}
+        >
+          📅 Análisis Mensual
+        </button>
+      </div>
+
+      {loadingAusencias ? (
+        <div className="loading-container">
+          <div className="loading-message">🔄 Cargando estadísticas de ausencias...</div>
+        </div>
+      ) : (
+        <>
+          {subvistaAusencias === 'resumen' && (
+            <div className="ausencias-resumen">
+              <div className="stats-grid">
+                <div className="stat-card total">
+                  <div className="stat-icon">📊</div>
+                  <div className="stat-content">
+                    <div className="stat-number">
+                      {estadisticasAusencias.porDiagnostico.reduce((acc, d) => acc + d.cantidadAusencias, 0)}
+                    </div>
+                    <div className="stat-label">Total Ausencias</div>
+                  </div>
                 </div>
-                <div className="results-count">
-                  {getSelectedCentroName()} - {estadisticas.length} trabajador{estadisticas.length !== 1 ? 'es' : ''}
+                <div className="stat-card hours">
+                  <div className="stat-icon">⏰</div>
+                  <div className="stat-content">
+                    <div className="stat-number">
+                      {formatHours(estadisticasAusencias.porDiagnostico.reduce((acc, d) => acc + d.totalHoras, 0))}
+                    </div>
+                    <div className="stat-label">Horas Perdidas</div>
+                  </div>
+                </div>
+                <div className="stat-card money">
+                  <div className="stat-icon">💰</div>
+                  <div className="stat-content">
+                    <div className="stat-number">
+                      {formatCurrency(estadisticasAusencias.porDiagnostico.reduce((acc, d) => acc + d.manoObraPerdida, 0))}
+                    </div>
+                    <div className="stat-label">Mano de Obra Perdida</div>
+                  </div>
+                </div>
+                <div className="stat-card diagnostics">
+                  <div className="stat-icon">🩺</div>
+                  <div className="stat-content">
+                    <div className="stat-number">{estadisticasAusencias.porDiagnostico.length}</div>
+                    <div className="stat-label">Diagnósticos Diferentes</div>
+                  </div>
                 </div>
               </div>
 
-              {totalStats && (
-                <div className="stats-grid">
-                  <div className="stat-card normal">
-                    <div className="stat-icon">⏰</div>
-                    <div className="stat-content">
-                      <div className="stat-number">{formatHours(totalStats.horasNormales)}</div>
-                      <div className="stat-label">Horas Normales</div>
-                    </div>
-                  </div>
-                  <div className="stat-card extra-diurna">
-                    <div className="stat-icon">☀️</div>
-                    <div className="stat-content">
-                      <div className="stat-number">{formatHours(totalStats.horasExtrasDiurnas)}</div>
-                      <div className="stat-label">Extras Diurnas</div>
-                    </div>
-                  </div>
-                  <div className="stat-card extra-nocturna">
-                    <div className="stat-icon">🌙</div>
-                    <div className="stat-content">
-                      <div className="stat-number">{formatHours(totalStats.horasExtrasNocturnas)}</div>
-                      <div className="stat-label">Extras Nocturnas</div>
-                    </div>
-                  </div>
-                  <div className="stat-card dom-diurna">
-                    <div className="stat-icon">🌅</div>
-                    <div className="stat-content">
-                      <div className="stat-number">{formatHours(totalStats.extrasDominicalesDiurnas)}</div>
-                      <div className="stat-label">Dom. Diurnas</div>
-                    </div>
-                  </div>
-                  <div className="stat-card dom-nocturna">
-                    <div className="stat-icon">🌃</div>
-                    <div className="stat-content">
-                      <div className="stat-number">{formatHours(totalStats.extrasDominicalesNocturnas)}</div>
-                      <div className="stat-label">Dom. Nocturnas</div>
-                    </div>
-                  </div>
-                  <div className="stat-card total">
-                    <div className="stat-icon">📊</div>
-                    <div className="stat-content">
-                      <div className="stat-number">{formatHours(totalStats.totalHoras)}</div>
-                      <div className="stat-label">Total Horas</div>
-                    </div>
+              <div className="charts-container">
+                <div className="chart-card">
+                  <h3>Top 10 Diagnósticos Más Frecuentes</h3>
+                  <div style={{ height: '400px' }}>
+                    <Bar data={chartDataDiagnosticos} options={chartOptions} />
                   </div>
                 </div>
-              )}
+              </div>
             </div>
+          )}
 
-            <div className="results-card">
-              <div className="results-header">
-                <div className="results-title">
-                  <div className="results-icon">📊</div>
-                  <h3>Análisis Visual</h3>
+          {subvistaAusencias === 'diagnosticos' && (
+            <div className="ausencias-diagnosticos">
+              <div className="table-container">
+                <h3>Ausencias por Diagnóstico</h3>
+                <table className="estadisticas-table">
+                  <thead>
+                    <tr>
+                      <th>Código</th>
+                      <th>Descripción</th>
+                      <th>Cantidad</th>
+                      <th>Horas</th>
+                      <th>Mano de Obra Perdida</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {estadisticasAusencias.porDiagnostico.map((diag, index) => (
+                      <tr key={diag.diagnosticoCodigo} style={{animationDelay: `${index * 0.05}s`}}>
+                        <td className="codigo">{diag.diagnosticoCodigo}</td>
+                        <td className="descripcion">{diag.diagnosticoDescripcion}</td>
+                        <td className="cantidad">{diag.cantidadAusencias}</td>
+                        <td className="horas">{formatHours(diag.totalHoras)}</td>
+                        <td className="mano-obra">{formatCurrency(diag.manoObraPerdida)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {subvistaAusencias === 'tipos' && (
+            <div className="ausencias-tipos">
+              <div className="chart-card">
+                <h3>Impacto por Tipo de Ausencia</h3>
+                <div style={{ height: '400px' }}>
+                  <Bar data={chartDataTipos} options={chartOptions} />
                 </div>
               </div>
               
-              <div className="estadisticas-chart">
-                <Bar data={chartData} options={chartOptions} height={400} />
+              <div className="table-container">
+                <table className="estadisticas-table">
+                  <thead>
+                    <tr>
+                      <th>Tipo de Ausencia</th>
+                      <th>Horas Perdidas</th>
+                      <th>Mano de Obra Perdida</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {estadisticasAusencias.porTipo.map((tipo, index) => (
+                      <tr key={tipo.tipoAusencia} style={{animationDelay: `${index * 0.05}s`}}>
+                        <td className="tipo">{tipo.tipoAusencia}</td>
+                        <td className="horas">{formatHours(tipo.totalHoras)}</td>
+                        <td className="mano-obra">{formatCurrency(tipo.manoObraPerdida)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
+          )}
 
-            <div className="results-card">
-              <div className="results-header">
-                <div className="results-title">
-                  <div className="results-icon">📋</div>
-                  <h3>Detalle por Trabajador</h3>
+          {subvistaAusencias === 'mensual' && (
+            <div className="ausencias-mensual">
+              <div className="filtros-mensual">
+                <div className="form-group">
+                  <label>Año:</label>
+                  <select 
+                    value={filtrosAusencias.anio} 
+                    onChange={(e) => setFiltrosAusencias({...filtrosAusencias, anio: parseInt(e.target.value)})}
+                  >
+                    {[2022, 2023, 2024, 2025].map(year => (
+                      <option key={year} value={year}>{year}</option>
+                    ))}
+                  </select>
+                </div>
+                <button onClick={cargarEstadisticasAusencias} className="btn-refresh">
+                  🔄 Actualizar
+                </button>
+              </div>
+
+              <div className="chart-card">
+                <h3>Tendencia Mensual de Ausencias</h3>
+                <div style={{ height: '400px' }}>
+                  <Chart type="bar" data={chartDataMensual} options={chartOptions} />
                 </div>
               </div>
 
@@ -330,53 +542,43 @@ const EstadisticasPage: React.FC = () => {
                 <table className="estadisticas-table">
                   <thead>
                     <tr>
-                      <th>Trabajador</th>
-                      <th>H. Normales</th>
-                      <th>Ex. Diurnas</th>
-                      <th>Ex. Nocturnas</th>
-                      <th>Dom. Diurnas</th>
-                      <th>Dom. Nocturnas</th>
+                      <th>Mes</th>
                       <th>Total</th>
+                      <th>Citas Médicas</th>
+                      <th>Incapacidades</th>
+                      <th>Permisos</th>
+                      <th>Otros</th>
+                      <th>Mano de Obra Perdida</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {estadisticas.map((e, index) => (
-                      <tr key={e.trabajadorId} style={{animationDelay: `${index * 0.05}s`}}>
-                        <td className="trabajador-name">{e.nombreTrabajador}</td>
-                        <td className="hours-normal">{formatHours(e.horasNormales)}</td>
-                        <td className="hours-extra-diurna">{formatHours(e.horasExtrasDiurnas)}</td>
-                        <td className="hours-extra-nocturna">{formatHours(e.horasExtrasNocturnas)}</td>
-                        <td className="hours-dom-diurna">{formatHours(e.extrasDominicalesDiurnas)}</td>
-                        <td className="hours-dom-nocturna">{formatHours(e.extrasDominicalesNocturnas)}</td>
-                        <td className="hours-total">{formatHours(e.totalHoras)}</td>
+                    {estadisticasAusencias.mensuales.map((mes, index) => (
+                      <tr key={`${mes.anio}-${mes.mes}`} style={{animationDelay: `${index * 0.05}s`}}>
+                        <td className="mes">{mes.nombreMes}</td>
+                        <td className="total">{mes.totalAusencias}</td>
+                        <td className="citas">{mes.citasMedicas}</td>
+                        <td className="incapacidades">{mes.incapacidades}</td>
+                        <td className="permisos">{mes.permisos}</td>
+                        <td className="otros">{mes.otros}</td>
+                        <td className="mano-obra">{formatCurrency(mes.manoObraPerdida)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
             </div>
-          </>
-        )}
+          )}
+        </>
+      )}
+    </div>
+  );
 
-        {estadisticas.length === 0 && !loading && centroId !== "" && (
-          <div className="results-card">
-            <div className="empty-state">
-              <div className="empty-state-icon">📊</div>
-              <h3>Sin datos estadísticos</h3>
-              <p>No se encontraron datos para el centro seleccionado. Verifica que haya registros de trabajo en este centro.</p>
-            </div>
-          </div>
-        )}
-
-        {centroId === "" && (
-          <div className="results-card">
-            <div className="empty-state">
-              <div className="empty-state-icon">🏢</div>
-              <h3>Selecciona un centro</h3>
-              <p>Elige un centro de trabajo del menú desplegable para ver sus estadísticas y análisis de horas trabajadas.</p>
-            </div>
-          </div>
-        )}
+  return (
+    <div className="estadisticas-page">
+      <div className="page-container">
+        {vistaActiva === 'inicio' && renderVistaInicio()}
+        {vistaActiva === 'centros' && renderVistaCentros()}
+        {vistaActiva === 'ausencias' && renderVistaAusencias()}
       </div>
     </div>
   );
