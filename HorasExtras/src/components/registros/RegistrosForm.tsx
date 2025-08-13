@@ -1,5 +1,5 @@
 import { AxiosError } from "axios";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { trabajadoresService } from "../../api/trabajadoresService";
 import { centrosService } from "../../api/centrosService";
 import { registrosService } from "../../api/registrosService";
@@ -15,14 +15,34 @@ interface Props {
   fechaInicial?: string;
 }
 
+// 🆕 TIPO ESPECÍFICO PARA REGISTROS EXISTENTES (corrige el error ESLint)
+interface RegistroExistente {
+  id: number;
+  trabajadorId: number;
+  fecha: string;
+  // Propiedades mínimas necesarias - el resto se maneja dinámicamente
+}
+
 const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
+  // Estados principales
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
   const [centros, setCentros] = useState<Centro[]>([]);
   const [loading, setLoading] = useState(false);
   const [analistas, setAnalistas] = useState<{ id: number; nombreCompleto: string }[]>([]);
-  const [registrosExistentes, setRegistrosExistentes] = useState<any[]>([]);
+  
+  // 🆕 TIPOS ESPECÍFICOS PARA REGISTROS EXISTENTES
+  const [registrosExistentes, setRegistrosExistentes] = useState<RegistroExistente[]>([]);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  
+  // 🆕 NUEVOS ESTADOS PARA CONTROL DE VERIFICACIÓN
+  const [verificandoRegistros, setVerificandoRegistros] = useState(false);
+  const [componenteMontado, setComponenteMontado] = useState(false);
+  
+  // 🆕 REFS PARA CONTROL DE MONTAJE Y TIMEOUTS
+  const isMountedRef = useRef(true);
+  const verificacionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Estado del formulario
   const [formData, setFormData] = useState<RegistroInputDto>({
     Trabajador_ID: 0,
     Centro_ID: "",
@@ -33,9 +53,21 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     Tiempo_Almuerzo: "01:00",
     desplazamientoIda: "",
     desplazamientoRegreso: "",
-    EsConductor: false, // 🆕 NUEVO CAMPO
+    EsConductor: false,
   });
 
+  // 🆕 CONTROL DE MONTAJE DEL COMPONENTE
+  useEffect(() => {
+    setComponenteMontado(true);
+    return () => {
+      isMountedRef.current = false;
+      if (verificacionTimeoutRef.current) {
+        clearTimeout(verificacionTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Sincronizar fecha inicial
   useEffect(() => {
     if (fechaInicial) {
       setFormData((prev) => ({
@@ -45,6 +77,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     }
   }, [fechaInicial]);
 
+  // Cargar datos iniciales
   useEffect(() => {
     const cargarDatos = async () => {
       try {
@@ -53,9 +86,12 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           centrosService.getAll(),
           trabajadoresService.getAnalistas(),
         ]);
-        setTrabajadores(trabajadoresData);
-        setCentros(centrosData);
-        setAnalistas(analistasData);
+        
+        if (isMountedRef.current) {
+          setTrabajadores(trabajadoresData);
+          setCentros(centrosData);
+          setAnalistas(analistasData);
+        }
       } catch (error) {
         console.error("Error al cargar datos:", error);
       }
@@ -64,28 +100,70 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     cargarDatos();
   }, []);
 
-  // Verificar registros existentes cuando cambie el trabajador o la fecha
-  useEffect(() => {
-    const verificarRegistrosExistentes = async () => {
-      if (formData.Trabajador_ID > 0 && formData.Fecha) {
-        try {
-          const registros = await registrosService.obtenerTodosPorFecha(formData.Fecha);
-          const registrosDelTrabajador = registros.filter(r => r.trabajadorId === formData.Trabajador_ID);
+  // 🆕 FUNCIÓN MEMOIZADA PARA VERIFICAR REGISTROS EXISTENTES
+  const verificarRegistrosExistentes = useCallback(async (trabajadorId: number, fecha: string) => {
+    if (!isMountedRef.current || !trabajadorId || !fecha) return;
+    
+    if (trabajadorId > 0 && fecha) {
+      setVerificandoRegistros(true);
+      try {
+        const registros = await registrosService.obtenerTodosPorFecha(fecha);
+        // 🆕 FILTRAR Y MAPEAR CON TYPE ASSERTION SEGURA
+        const registrosDelTrabajador = registros
+          .filter((r: unknown) => {
+            // Type guard para verificar que el objeto tiene las propiedades necesarias
+            return r && 
+                   typeof r === 'object' && 
+                   'trabajadorId' in r && 
+                   (r as { trabajadorId: number }).trabajadorId === trabajadorId;
+          })
+          .map((r: unknown) => r as RegistroExistente);
+        
+        // Solo actualizar si el componente sigue montado
+        if (isMountedRef.current) {
           setRegistrosExistentes(registrosDelTrabajador);
           setShowDuplicateWarning(registrosDelTrabajador.length > 0);
-        } catch (error) {
-          console.error("Error al verificar registros existentes:", error);
+        }
+      } catch (error) {
+        console.error("Error al verificar registros existentes:", error);
+        if (isMountedRef.current) {
           setRegistrosExistentes([]);
           setShowDuplicateWarning(false);
         }
-      } else {
+      } finally {
+        if (isMountedRef.current) {
+          setVerificandoRegistros(false);
+        }
+      }
+    } else {
+      if (isMountedRef.current) {
         setRegistrosExistentes([]);
         setShowDuplicateWarning(false);
+        setVerificandoRegistros(false);
+      }
+    }
+  }, []);
+
+  // 🆕 USEEFFECT MEJORADO CON DEBOUNCING Y CONTROL DE MONTAJE
+  useEffect(() => {
+    // Limpiar timeout anterior
+    if (verificacionTimeoutRef.current) {
+      clearTimeout(verificacionTimeoutRef.current);
+    }
+
+    // Solo verificar si el componente está montado
+    if (componenteMontado && isMountedRef.current) {
+      verificacionTimeoutRef.current = setTimeout(() => {
+        verificarRegistrosExistentes(formData.Trabajador_ID, formData.Fecha);
+      }, 300); // Debounce de 300ms
+    }
+
+    return () => {
+      if (verificacionTimeoutRef.current) {
+        clearTimeout(verificacionTimeoutRef.current);
       }
     };
-
-    verificarRegistrosExistentes();
-  }, [formData.Trabajador_ID, formData.Fecha]);
+  }, [formData.Trabajador_ID, formData.Fecha, componenteMontado, verificarRegistrosExistentes]);
 
   const convertirATimeSpan = (valor: string): string => {
     const parts = valor.trim().split(":");
@@ -165,29 +243,37 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
   };
 
   const handleInputChange = (field: keyof RegistroInputDto, value: string | number | boolean) => {
+    if (!isMountedRef.current) return;
+    
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
 
-  const handleTrabajadorChange = (trabajadorId: number) => {
+  // 🆕 HANDLER MEMOIZADO PARA CAMBIO DE TRABAJADOR
+  const handleTrabajadorChange = useCallback((trabajadorId: number) => {
+    if (!isMountedRef.current) return;
+    
     setFormData((prev) => ({
       ...prev,
       Trabajador_ID: trabajadorId,
     }));
-  };
+  }, []);
 
-  const handleCentroChange = (centroId: string) => {
+  // 🆕 HANDLER MEMOIZADO PARA CAMBIO DE CENTRO
+  const handleCentroChange = useCallback((centroId: string) => {
+    if (!isMountedRef.current) return;
+    
     const centroSeleccionado = centros.find((c) => c.id === centroId);
     setFormData((prev) => ({
       ...prev,
       Centro_ID: centroId,
       Nombr_Centro: centroSeleccionado?.nombreCentro || "",
     }));
-  };
+  }, [centros]);
 
-  // 🆕 FUNCIÓN PARA MOSTRAR INFORMACIÓN SOBRE EL CÁLCULO DE HORAS
+  // Función para mostrar información sobre el cálculo de horas
   const mostrarInfoCalculoHoras = () => {
     const tiempoDesplazamiento = formData.desplazamientoIda || formData.desplazamientoRegreso;
     
@@ -225,6 +311,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
   return (
     <div className="registros-form-container">
       <h3>Crear Nuevo Registro</h3>
+      
       {fechaInicial && (
         <div
           style={{
@@ -247,8 +334,33 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
         </div>
       )}
 
+      {/* 🆕 INDICADOR DE VERIFICACIÓN */}
+      {verificandoRegistros && (
+        <div style={{
+          background: '#f0f9ff',
+          color: '#0369a1',
+          padding: '8px 12px',
+          borderRadius: '6px',
+          marginBottom: '15px',
+          fontSize: '0.9rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px'
+        }}>
+          <div style={{ 
+            width: '16px', 
+            height: '16px', 
+            border: '2px solid #0369a1',
+            borderTop: '2px solid transparent',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite'
+          }} />
+          🔍 Verificando registros existentes...
+        </div>
+      )}
+
       {/* Advertencia de registro duplicado */}
-      {showDuplicateWarning && (
+      {showDuplicateWarning && !verificandoRegistros && (
         <div
           style={{
             background: 'linear-gradient(135deg, #ff9500, #ff6b35)',
@@ -278,23 +390,36 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
       <form onSubmit={handleSubmit} className="registros-form">
         <div className="form-row">
           <div className="form-group">
-            <TrabajadorBuscador
-              trabajadores={trabajadores}
-              value={formData.Trabajador_ID}
-              onChange={handleTrabajadorChange}
-              label="Trabajador *"
-              required
-            />
+            {/* 🆕 RENDERIZADO CONDICIONAL CON KEY ÚNICA */}
+            {componenteMontado && !verificandoRegistros ? (
+              <TrabajadorBuscador
+                key={`trabajador-${formData.Fecha}-${Date.now()}`}
+                trabajadores={trabajadores}
+                value={formData.Trabajador_ID}
+                onChange={handleTrabajadorChange}
+                label="Trabajador *"
+                required
+              />
+            ) : (
+              <div style={{ height: '40px', background: '#f5f5f5', borderRadius: '4px', marginBottom: '10px' }}>
+                <label className="form-label">Trabajador *</label>
+              </div>
+            )}
           </div>
 
           <div className="form-group">
             <label>Centro *</label>
-            <CentroBuscador
-              centros={centros}
-              value={formData.Centro_ID}
-              onChange={handleCentroChange}
-              required
-            />
+            {componenteMontado ? (
+              <CentroBuscador
+                key={`centro-${formData.Fecha}-${formData.Trabajador_ID}`}
+                centros={centros}
+                value={formData.Centro_ID}
+                onChange={handleCentroChange}
+                required
+              />
+            ) : (
+              <div style={{ height: '40px', background: '#f5f5f5', borderRadius: '4px' }} />
+            )}
           </div>
 
           <div className="form-group">
@@ -391,7 +516,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           </div>
         </div>
 
-        {/* 🆕 SECCIÓN CONDUCTOR */}
+        {/* Sección Conductor */}
         <div
           className="form-section-header"
           style={{
@@ -429,7 +554,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           </div>
         </div>
 
-        {/* 🚗 Desplazamientos */}
+        {/* Desplazamientos */}
         <div
           className="form-section-header"
           style={{
@@ -450,7 +575,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           </p>
         </div>
 
-        {/* 🆕 Información sobre el cálculo */}
+        {/* Información sobre el cálculo */}
         {mostrarInfoCalculoHoras() && (
           <div style={{ marginBottom: '15px' }}>
             {mostrarInfoCalculoHoras()}
@@ -485,12 +610,24 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           </div>
         </div>
 
-        <button type="submit" disabled={loading} className="btn-submit">
+        <button 
+          type="submit" 
+          disabled={loading || verificandoRegistros} 
+          className="btn-submit"
+        >
           {loading ? "Guardando..." : "Crear Registro"}
           {showDuplicateWarning && " (Registro Adicional)"}
           {formData.EsConductor ? " 🚛" : " 👷"}
         </button>
       </form>
+
+      {/* 🆕 CSS PARA ANIMACIÓN DE LOADING */}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 // src/components/shared/TrabajadorBuscador.tsx
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import type { Trabajador } from "../../types/trabajadores";
 import "../../styles/shared/TrabajadorBuscador.css";
 
@@ -29,31 +29,65 @@ const TrabajadorBuscador: React.FC<Props> = ({
   const [busqueda, setBusqueda] = useState<string>("");
   const [mostrarResultados, setMostrarResultados] = useState<boolean>(false);
   const [trabajadorSeleccionado, setTrabajadorSeleccionado] = useState<Trabajador | null>(null);
+  
+  // 🆕 REFS MEJORADAS CON CONTROL DE MONTAJE
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const isMountedRef = useRef(true);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Sincronizar con el valor externo
+  // 🆕 CONTROL DE MONTAJE
   useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (debounceTimeoutRef.current) {
+        clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // 🆕 MEMOIZAR TRABAJADORES FILTRADOS PARA OPTIMIZAR PERFORMANCE
+  const trabajadoresFiltrados = useMemo(() => {
+    if (!busqueda.trim()) return [];
+    
+    return trabajadores
+      .filter(t =>
+        t.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
+        t.cedula.toLowerCase().includes(busqueda.toLowerCase())
+      )
+      .slice(0, 10); // Limitar a 10 resultados
+  }, [trabajadores, busqueda]);
+
+  // 🆕 SINCRONIZAR CON EL VALOR EXTERNO (MEJORADO)
+  useEffect(() => {
+    if (!isMountedRef.current) return;
+
     if (value && value > 0) {
       const trabajador = trabajadores.find(t => t.id === value);
-      if (trabajador) {
+      if (trabajador && trabajador.id !== trabajadorSeleccionado?.id) {
         setTrabajadorSeleccionado(trabajador);
         setBusqueda(trabajador.nombre);
       }
-    } else {
+    } else if (value === 0 && trabajadorSeleccionado) {
+      // Limpiar selección cuando el valor externo es 0
       setTrabajadorSeleccionado(null);
       setBusqueda("");
     }
-  }, [value, trabajadores]);
+  }, [value, trabajadores, trabajadorSeleccionado]);
 
-  // Cerrar dropdown al hacer clic fuera
+  // 🆕 CERRAR DROPDOWN AL HACER CLIC FUERA (MEJORADO)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      if (!isMountedRef.current) return;
+
+      const target = event.target as Node;
+      
       if (
         dropdownRef.current && 
-        !dropdownRef.current.contains(event.target as Node) &&
+        !dropdownRef.current.contains(target) &&
         inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
+        !inputRef.current.contains(target)
       ) {
         setMostrarResultados(false);
       }
@@ -63,53 +97,86 @@ const TrabajadorBuscador: React.FC<Props> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const trabajadoresFiltrados = trabajadores.filter(t =>
-    t.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
-    t.cedula.toLowerCase().includes(busqueda.toLowerCase())
-  ).slice(0, 10);
+  // 🆕 HANDLER DE INPUT CON DEBOUNCING
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!isMountedRef.current) return;
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const valor = e.target.value;
     setBusqueda(valor);
-    setMostrarResultados(true);
     
-    // Si se borra todo, notificar que no hay selección
-    if (!valor.trim()) {
-      setTrabajadorSeleccionado(null);
-      onChange(0);
+    // Limpiar timeout anterior
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
     }
-  };
 
-  const handleSelectTrabajador = (trabajador: Trabajador) => {
+    // Debounce para mostrar resultados
+    debounceTimeoutRef.current = setTimeout(() => {
+      if (isMountedRef.current) {
+        setMostrarResultados(valor.trim().length > 0);
+        
+        // Si se borra todo, notificar que no hay selección
+        if (!valor.trim()) {
+          setTrabajadorSeleccionado(null);
+          onChange(0);
+        }
+      }
+    }, 150); // 150ms de debounce
+  }, [onChange]);
+
+  // 🆕 HANDLER DE SELECCIÓN MEMOIZADO
+  const handleSelectTrabajador = useCallback((trabajador: Trabajador) => {
+    if (!isMountedRef.current) return;
+
     setTrabajadorSeleccionado(trabajador);
     setBusqueda(trabajador.nombre);
     setMostrarResultados(false);
     onChange(trabajador.id, trabajador);
-  };
+  }, [onChange]);
 
-  const handleFocus = () => {
-    setMostrarResultados(true);
-  };
+  // 🆕 HANDLER DE FOCUS MEJORADO
+  const handleFocus = useCallback(() => {
+    if (!isMountedRef.current || disabled) return;
+    
+    // Solo mostrar resultados si hay búsqueda o si hay trabajadores
+    if (busqueda.trim() || trabajadores.length > 0) {
+      setMostrarResultados(true);
+    }
+  }, [busqueda, trabajadores.length, disabled]);
 
-  const handleClear = () => {
+  // 🆕 HANDLER DE LIMPIAR MEJORADO
+  const handleClear = useCallback(() => {
+    if (!isMountedRef.current || disabled) return;
+
     setBusqueda("");
     setTrabajadorSeleccionado(null);
     setMostrarResultados(false);
     onChange(0);
-    inputRef.current?.focus();
-  };
+    
+    // Focus al input después de limpiar
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [onChange, disabled]);
 
-  const getInitials = (name: string) => {
+  // 🆕 FUNCIÓN MEMOIZADA PARA OBTENER INICIALES
+  const getInitials = useCallback((name: string) => {
     return name
       .split(' ')
       .map(word => word[0])
       .join('')
       .toUpperCase()
       .substring(0, 2);
-  };
+  }, []);
+
+  // 🆕 PREVENIR RE-RENDERS INNECESARIOS
+  const containerClassName = useMemo(() => `trabajador-buscador ${className}`, [className]);
+  const inputClassName = useMemo(() => 
+    `form-input buscador-input ${trabajadorSeleccionado ? 'has-selection' : ''}`, 
+    [trabajadorSeleccionado]
+  );
 
   return (
-    <div className={`trabajador-buscador ${className}`}>
+    <div className={containerClassName}>
       <div className="form-group">
         {label && (
           <label className="form-label">
@@ -122,22 +189,24 @@ const TrabajadorBuscador: React.FC<Props> = ({
           <input
             ref={inputRef}
             type="text"
-            className={`form-input buscador-input ${trabajadorSeleccionado ? 'has-selection' : ''}`}
+            className={inputClassName}
             placeholder={placeholder}
             value={busqueda}
             onChange={handleInputChange}
             onFocus={handleFocus}
             disabled={disabled}
             required={required}
+            autoComplete="off" // 🆕 Prevenir autocompletado del navegador
+            spellCheck={false} // 🆕 Desactivar corrector ortográfico
           />
           
-          {trabajadorSeleccionado && (
+          {trabajadorSeleccionado && !disabled && (
             <button
               type="button"
               className="clear-button"
               onClick={handleClear}
               title="Limpiar selección"
-              disabled={disabled}
+              tabIndex={-1} // 🆕 Evitar que reciba focus
             >
               ✕
             </button>
@@ -148,13 +217,21 @@ const TrabajadorBuscador: React.FC<Props> = ({
           </div>
           
           {mostrarResultados && !disabled && (
-            <div ref={dropdownRef} className="resultados-dropdown">
+            <div 
+              ref={dropdownRef} 
+              className="resultados-dropdown"
+              role="listbox" // 🆕 Mejorar accesibilidad
+              aria-label="Resultados de búsqueda"
+            >
               {trabajadoresFiltrados.length > 0 ? (
-                trabajadoresFiltrados.map(trabajador => (
+                trabajadoresFiltrados.map((trabajador) => (
                   <div
-                    key={trabajador.id}
+                    key={`trabajador-${trabajador.id}-${trabajador.cedula}`} // 🆕 KEY ÚNICA MEJORADA
                     className={`resultado-item ${trabajadorSeleccionado?.id === trabajador.id ? 'selected' : ''}`}
                     onClick={() => handleSelectTrabajador(trabajador)}
+                    role="option" // 🆕 Accesibilidad
+                    aria-selected={trabajadorSeleccionado?.id === trabajador.id}
+                    onMouseDown={(e) => e.preventDefault()} // 🆕 Prevenir pérdida de focus del input
                   >
                     <div className="resultado-content">
                       <div className="resultado-avatar">
@@ -168,11 +245,26 @@ const TrabajadorBuscador: React.FC<Props> = ({
                     </div>
                   </div>
                 ))
-              ) : (
-                <div className="resultado-item no-resultados">
+              ) : busqueda.trim() ? (
+                <div 
+                  className="resultado-item no-resultados"
+                  role="option"
+                  aria-selected={false}
+                >
                   <div className="no-resultados-icon">❌</div>
                   <div className="no-resultados-text">
                     No se encontraron trabajadores que coincidan con "{busqueda}"
+                  </div>
+                </div>
+              ) : (
+                <div 
+                  className="resultado-item no-resultados"
+                  role="option"
+                  aria-selected={false}
+                >
+                  <div className="no-resultados-icon">🔍</div>
+                  <div className="no-resultados-text">
+                    Escribe para buscar trabajadores...
                   </div>
                 </div>
               )}
@@ -198,4 +290,5 @@ const TrabajadorBuscador: React.FC<Props> = ({
   );
 };
 
-export default TrabajadorBuscador;
+// 🆕 MEMOIZAR EL COMPONENTE PARA EVITAR RE-RENDERS INNECESARIOS
+export default React.memo(TrabajadorBuscador);
