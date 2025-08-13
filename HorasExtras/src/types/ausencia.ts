@@ -1,7 +1,8 @@
+// types/ausencia.ts (actualizado)
 export interface Ausencia {
   id: number;
-  fecha: string; // ISO string
-  fechaSolicitud?: string; // ISO string
+  fecha: string;
+  fechaSolicitud?: string;
   fechaInicio: string;
   fechaFin: string;
   horaInicio: string;
@@ -11,7 +12,10 @@ export interface Ausencia {
   trabajadorNombre: string;
   cargo: string;
   remunerado: boolean;
-  dx?: string; // 🆕 Nuevo campo opcional para diagnóstico
+  // 🆕 Campos de diagnóstico actualizados
+  diagnosticoId?: number;
+  diagnosticoCodigo?: string;
+  diagnosticoDescripcion?: string;
 }
 
 export interface AusenciaDto {
@@ -26,5 +30,8 @@ export interface AusenciaDto {
   horaInicio: string;
   horaFin: string;
   remunerado: boolean;
-  dx?: string; // 🆕 Nuevo campo opcional para diagnóstico
+  // 🆕 Campos de diagnóstico actualizados  
+  diagnosticoId?: number;
+  diagnosticoCodigo?: string;
+  diagnosticoDescripcion?: string;
 }

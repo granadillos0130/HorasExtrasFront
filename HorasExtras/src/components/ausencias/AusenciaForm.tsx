@@ -2,11 +2,13 @@ import React, { useState, useEffect } from "react";
 import { crearAusencia } from "../../api/ausenciasService";
 import { trabajadoresService } from "../../api/trabajadoresService";
 import TrabajadorBuscador from "../shared/TrabajadorBuscador";
+import DiagnosticoBuscador from "../shared/DiagnosticoBuscador";
 import type { AusenciaDto } from "../../types/ausencia";
 import type { Trabajador } from "../../types/trabajadores";
+import type { Diagnostico } from "../../types/diagnostico";
 import "../../styles/components/ausencias/AusenciaForm.css";
 
-// Estilos adicionales para el loading
+// Estilos adicionales para el loading (mantenemos los mismos del original)
 const loadingStyles = `
 .loading-container {
   display: flex;
@@ -35,7 +37,6 @@ const loadingStyles = `
   100% { transform: rotate(360deg); }
 }
 
-/* 🆕 Estilos mejorados para mensajes largos */
 .form-message {
   white-space: pre-line;
   line-height: 1.6;
@@ -70,7 +71,6 @@ const loadingStyles = `
   display: inline-block;
 }
 
-/* 🆕 Componente de información sobre integración */
 .integration-info {
   background: linear-gradient(135deg, #eff6ff, #dbeafe);
   border: 2px solid #3b82f6;
@@ -123,12 +123,12 @@ const loadingStyles = `
   margin: 5px 0;
 }
 
-/* 🆕 Estilos para el campo DX condicional */
-.dx-field-container {
+/* 🆕 Estilos mejorados para el área de diagnóstico */
+.diagnostico-section {
   background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
   border: 2px solid #0ea5e9;
   border-radius: 12px;
-  padding: 15px;
+  padding: 20px;
   margin-bottom: 15px;
   animation: slideIn 0.3s ease-out;
 }
@@ -144,28 +144,26 @@ const loadingStyles = `
   }
 }
 
-.dx-field-header {
+.diagnostico-header {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 15px;
   color: #0c4a6e;
-  font-size: 0.9rem;
+  font-size: 1.1rem;
+  font-weight: 600;
 }
 
-.dx-field-textarea {
-  background: white;
-  border: 2px solid #bae6fd;
-  border-radius: 8px;
-  margin: 0;
-}
-
-.dx-field-help {
+.diagnostico-help {
   display: block;
   margin-top: 8px;
   color: #0369a1;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-style: italic;
+  background: rgba(255, 255, 255, 0.7);
+  padding: 8px 12px;
+  border-radius: 6px;
+  border-left: 3px solid #0ea5e9;
 }
 `;
 
@@ -188,7 +186,10 @@ const initialState: AusenciaDto = {
   horaInicio: "08:00",
   horaFin: "10:00",
   remunerado: false,
-  dx: "", // 🆕 Campo para diagnóstico
+  // 🆕 Campos de diagnóstico actualizados
+  diagnosticoId: undefined,
+  diagnosticoCodigo: "",
+  diagnosticoDescripcion: "",
 };
 
 const AusenciaForm = () => {
@@ -200,8 +201,8 @@ const AusenciaForm = () => {
   const [loadingTrabajadores, setLoadingTrabajadores] = useState(true);
   const [mostrarInfo, setMostrarInfo] = useState(false);
 
-  // 🆕 Función para determinar si mostrar el campo DX
-  const mostrarCampoDx = () => {
+  // 🆕 Función para determinar si mostrar el campo diagnóstico
+  const mostrarCampoDiagnostico = () => {
     return formData.tipoAusencia === "Cita médica general" || 
            formData.tipoAusencia === "Cita Seguimiento EO";
   };
@@ -224,7 +225,6 @@ const AusenciaForm = () => {
     cargarTrabajadores();
   }, []);
 
-  // 🔧 ARREGLO DEL ERROR TYPESCRIPT - handleChange corregido
   const handleChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -243,12 +243,15 @@ const AusenciaForm = () => {
       newValue = new Date(value);
     }
 
-    // 🆕 ARREGLADO: Cast explícito para tipoAusencia
+    // 🆕 Limpiar diagnóstico cuando cambia el tipo de ausencia
     if (name === "tipoAusencia") {
       setFormData((prev) => ({
         ...prev,
-        tipoAusencia: value as string, // ✅ Cast explícito
-        dx: "" // Limpiar DX cuando cambia el tipo
+        tipoAusencia: value as string,
+        // Limpiar diagnóstico cuando cambia el tipo
+        diagnosticoId: undefined,
+        diagnosticoCodigo: "",
+        diagnosticoDescripcion: ""
       }));
       return;
     }
@@ -267,10 +270,9 @@ const AusenciaForm = () => {
       setFormData(prev => ({
         ...prev,
         trabajadorNombre: trabajador.nombre,
-        cargo: trabajador.cargo || "" // Usar el campo cargo del trabajador
+        cargo: trabajador.cargo || ""
       }));
     } else {
-      // Si no hay trabajador seleccionado, limpiar los campos
       setFormData(prev => ({
         ...prev,
         trabajadorNombre: "",
@@ -279,14 +281,22 @@ const AusenciaForm = () => {
     }
   };
 
-  // 🆕 FUNCIÓN MEJORADA para calcular días de ausencia
+  // 🆕 Manejar selección de diagnóstico
+  const handleDiagnosticoSelect = (diagnosticoId: number | undefined, diagnostico?: Diagnostico) => {
+    setFormData(prev => ({
+      ...prev,
+      diagnosticoId: diagnosticoId,
+      diagnosticoCodigo: diagnostico?.codigo || "",
+      diagnosticoDescripcion: diagnostico?.descripcion || ""
+    }));
+  };
+
   const calcularDiasAusencia = (fechaInicio: Date, fechaFin: Date): number => {
     const tiempoTranscurrido = fechaFin.getTime() - fechaInicio.getTime();
     const diasTranscurridos = Math.ceil(tiempoTranscurrido / (1000 * 60 * 60 * 24));
-    return diasTranscurridos + 1; // +1 porque incluye ambos días
+    return diasTranscurridos + 1;
   };
 
-  // 🆕 FUNCIÓN MEJORADA para calcular horas totales
   const calcularHorasTotales = (horaInicio: string, horaFin: string, dias: number): number => {
     const [horaInicioH, horaInicioM] = horaInicio.split(':').map(Number);
     const [horaFinH, horaFinM] = horaFin.split(':').map(Number);
@@ -298,7 +308,6 @@ const AusenciaForm = () => {
     return horasPorDia * dias;
   };
 
-  // 🆕 HANDLESUBMIT MEJORADO con mensaje explicativo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
@@ -307,13 +316,11 @@ const AusenciaForm = () => {
     try {
       const nuevaAusencia = {
         ...formData,
-        fecha: new Date(), // fecha de solicitud actual
-        dx: mostrarCampoDx() ? formData.dx : undefined // Solo incluir DX si es necesario
+        fecha: new Date(),
       };
 
       await crearAusencia(nuevaAusencia);
       
-      // 🆕 MENSAJE MEJORADO que explica la funcionalidad integrada
       const diasAusencia = calcularDiasAusencia(formData.fechaInicio, formData.fechaFin);
       const horasTotales = calcularHorasTotales(formData.horaInicio, formData.horaFin, diasAusencia);
       
@@ -324,7 +331,7 @@ const AusenciaForm = () => {
 • Fechas afectadas: ${formData.fechaInicio.toLocaleDateString('es-ES')} - ${formData.fechaFin.toLocaleDateString('es-ES')}
 • Horario de ausencia: ${formData.horaInicio} - ${formData.horaFin}
 • Total de horas: ${horasTotales.toFixed(2)} horas
-${formData.dx ? `• Diagnóstico registrado: ${formData.dx}` : ''}
+${formData.diagnosticoCodigo ? `• Diagnóstico: ${formData.diagnosticoCodigo} - ${formData.diagnosticoDescripcion}` : ''}
 
 ${formData.remunerado 
   ? `💰 AUSENCIA REMUNERADA:
@@ -375,7 +382,7 @@ ${formData.remunerado
     setMensaje("");
   };
 
-  // 🆕 COMPONENTE de información sobre integración
+  // Componente de información sobre integración
   const IntegrationInfoComponent = () => (
     <div className="integration-info">
       <h4>
@@ -406,6 +413,7 @@ ${formData.remunerado
             <li>Las ausencias aparecen junto con los registros normales de trabajo</li>
             <li>Si es <strong>remunerada</strong>: cuenta como horas normales trabajadas</li>
             <li>Si <strong>no es remunerada</strong>: se marca como horas ausentes</li>
+            <li><strong>Para citas médicas</strong>: puedes agregar el diagnóstico CIE-10 correspondiente</li>
           </ul>
           
           <p>
@@ -435,7 +443,6 @@ ${formData.remunerado
         <p className="form-subtitle">Complete el formulario para registrar una nueva ausencia</p>
       </div>
 
-      {/* 🆕 Componente de información sobre integración */}
       <IntegrationInfoComponent />
 
       <form className="ausencia-form" onSubmit={handleSubmit}>
@@ -544,35 +551,27 @@ ${formData.remunerado
               />
             </div>
 
-            {/* 🆕 CAMPO DX CONDICIONAL */}
-            {mostrarCampoDx() && (
+            {/* 🆕 CAMPO DIAGNÓSTICO CON BUSCADOR */}
+            {mostrarCampoDiagnostico() && (
               <div className="form-group full-width">
-                <label className="form-label">
-                  DX - Diagnóstico
-                  <small style={{ 
-                    marginLeft: '10px', 
-                    fontWeight: 'normal', 
-                    color: '#6b7280',
-                    fontSize: '0.8rem'
-                  }}>
-                    (Opcional)
-                  </small>
-                </label>
-                <div className="dx-field-container">
-                  <div className="dx-field-header">
-                    <span style={{ fontSize: '1.2rem' }}>🏥</span>
-                    <strong>Campo específico para citas médicas</strong>
+                <div className="diagnostico-section">
+                  <div className="diagnostico-header">
+                    <span style={{ fontSize: '1.5rem' }}>🏥</span>
+                    <strong>Diagnóstico Médico (CIE-10)</strong>
                   </div>
-                  <textarea
-                    name="dx"
-                    value={formData.dx || ""}
-                    onChange={handleChange}
-                    className="form-textarea dx-field-textarea"
-                    placeholder="Ingrese el diagnóstico médico (opcional)..."
-                    rows={3}
+                  
+                  <DiagnosticoBuscador
+                    value={formData.diagnosticoId}
+                    onChange={handleDiagnosticoSelect}
+                    placeholder="Buscar por código (ej: A09) o descripción (ej: diarrea)..."
+                    label=""
+                    required={false}
+                    showSelectedInfo={true}
                   />
-                  <small className="dx-field-help">
-                    💡 Este campo es opcional y solo aparece para citas médicas y de seguimiento
+                  
+                  <small className="diagnostico-help">
+                    💡 <strong>Ayuda:</strong> Puedes buscar por código CIE-10 (ejemplo: "A09") o por descripción (ejemplo: "diarrea", "cefalea"). 
+                    Este campo es opcional pero recomendado para citas médicas ya que permite un mejor seguimiento estadístico.
                   </small>
                 </div>
               </div>
@@ -670,7 +669,7 @@ ${formData.remunerado
             </div>
           </div>
 
-          {/* 🆕 Vista previa de cálculos */}
+          {/* Vista previa de cálculos */}
           {formData.fechaInicio && formData.fechaFin && formData.horaInicio && formData.horaFin && (
             <div style={{
               background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
@@ -701,9 +700,9 @@ ${formData.remunerado
                 <div>
                   <strong>Tipo:</strong> {formData.remunerado ? 'Remunerada' : 'No remunerada'}
                 </div>
-                {mostrarCampoDx() && formData.dx && (
-                  <div style={{ gridColumn: '1 / -1' }}>
-                    <strong>🏥 DX:</strong> {formData.dx}
+                {mostrarCampoDiagnostico() && formData.diagnosticoCodigo && (
+                  <div style={{ gridColumn: '1 / -1', marginTop: '10px', padding: '10px', background: 'rgba(255,255,255,0.8)', borderRadius: '6px' }}>
+                    <strong>🏥 Diagnóstico:</strong> {formData.diagnosticoCodigo} - {formData.diagnosticoDescripcion}
                   </div>
                 )}
               </div>
@@ -742,7 +741,7 @@ ${formData.remunerado
           </button>
         </div>
 
-        {/* 🆕 MENSAJE DE RESULTADO MEJORADO */}
+        {/* Mensaje de resultado */}
         {mensaje && (
           <div className={`form-message ${mensaje.startsWith('success:') ? 'success' : 'error'}`}>
             <span className="message-icon">

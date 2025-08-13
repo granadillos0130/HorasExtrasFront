@@ -1,5 +1,6 @@
 import { api } from "./api";
 import type { Ausencia, AusenciaDto } from "../types/ausencia";
+import type { Diagnostico } from "../types/diagnostico";
 
 // Interfaz para las estadísticas de horas por tipo
 interface EstadisticaHoras {
@@ -7,9 +8,17 @@ interface EstadisticaHoras {
   totalHoras: number;
 }
 
-// Nueva interfaz para las estadísticas de horas por área
+// Interfaz para las estadísticas de horas por área
 interface EstadisticaHorasArea {
   area: string;
+  totalHoras: number;
+}
+
+// 🆕 Interface para estadísticas por diagnóstico
+interface EstadisticaDiagnostico {
+  diagnosticoCodigo: string;
+  diagnosticoDescripcion: string;
+  cantidadAusencias: number;
   totalHoras: number;
 }
 
@@ -30,7 +39,8 @@ export async function crearAusencia(data: AusenciaDto) {
     fechaFin: data.fechaFin,
     horaInicio: data.horaInicio,
     horaFin: data.horaFin,
-    remunerado: data.remunerado
+    remunerado: data.remunerado,
+    diagnosticoId: data.diagnosticoId // 🆕 Incluir diagnóstico
   };
 
   const response = await api.post<AusenciaDto>("/ausencias", ausenciaDto);
@@ -58,7 +68,8 @@ export async function actualizarAusencia(id: number, data: AusenciaDto) {
     fechaFin: data.fechaFin,
     horaInicio: data.horaInicio,
     horaFin: data.horaFin,
-    remunerado: data.remunerado
+    remunerado: data.remunerado,
+    diagnosticoId: data.diagnosticoId // 🆕 Incluir diagnóstico
   };
 
   const response = await api.put(`/ausencias/${id}`, ausenciaDto);
@@ -70,15 +81,29 @@ export async function eliminarAusencia(id: number) {
   return response.data;
 }
 
-// Función existente para obtener estadísticas por tipo
 export async function getEstadisticasHoras() {
   const response = await api.get<EstadisticaHoras[]>("/ausencias/estadisticas/horas-por-tipo");
   return response.data;
 }
 
-// Nueva función para obtener estadísticas por área
 export async function getEstadisticasHorasPorArea() {
   const response = await api.get<EstadisticaHorasArea[]>("/ausencias/estadisticas/horas-ausencia-por-area");
+  return response.data;
+}
+
+// 🆕 NUEVAS FUNCIONES PARA DIAGNÓSTICOS
+export async function getAllDiagnosticos() {
+  const response = await api.get<Diagnostico[]>("/ausencias/diagnosticos");
+  return response.data;
+}
+
+export async function buscarDiagnosticos(termino: string) {
+  const response = await api.get<Diagnostico[]>(`/ausencias/diagnosticos/buscar/${termino}`);
+  return response.data;
+}
+
+export async function getEstadisticasPorDiagnostico() {
+  const response = await api.get<EstadisticaDiagnostico[]>("/ausencias/estadisticas/por-diagnostico");
   return response.data;
 }
 
@@ -90,5 +115,9 @@ export const ausenciasService = {
   actualizarAusencia,
   eliminarAusencia,
   getEstadisticasHoras,
-  getEstadisticasHorasPorArea, // Agregamos la nueva función
+  getEstadisticasHorasPorArea,
+  // 🆕 Nuevos servicios para diagnósticos
+  getAllDiagnosticos,
+  buscarDiagnosticos,
+  getEstadisticasPorDiagnostico
 };

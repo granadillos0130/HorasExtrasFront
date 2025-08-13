@@ -1,8 +1,13 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ausenciasService } from "../api/ausenciasService";
+import { trabajadoresService } from "../api/trabajadoresService";
+import TrabajadorBuscador from "../components/shared/TrabajadorBuscador";
+import DiagnosticoBuscador from "../components/shared/DiagnosticoBuscador";
 import type { Ausencia, AusenciaDto } from "../types/ausencia";
-import "../styles/pages/EditarAusenciaPage.css"
+import type { Trabajador } from "../types/trabajadores";
+import type { Diagnostico } from "../types/diagnostico";
+import "../styles/pages/EditarAusenciaPage.css";
 
 export function EditarAusenciaPage() {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +16,8 @@ export function EditarAusenciaPage() {
   const [guardando, setGuardando] = useState(false);
   const [ausencia, setAusencia] = useState<Ausencia | null>(null);
   const [error, setError] = useState<string>("");
+  const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
+  const [trabajadorSeleccionadoId, setTrabajadorSeleccionadoId] = useState<number>(0);
 
   // Estados del formulario
   const [formData, setFormData] = useState({
@@ -24,8 +31,31 @@ export function EditarAusenciaPage() {
     horaInicio: "",
     horaFin: "",
     remunerado: false,
-    dx: ""
+    // 🆕 Campos de diagnóstico actualizados
+    diagnosticoId: undefined as number | undefined,
+    diagnosticoCodigo: "",
+    diagnosticoDescripcion: ""
   });
+
+  // 🆕 Función para determinar si mostrar el campo diagnóstico
+  const mostrarCampoDiagnostico = () => {
+    return formData.tipoAusencia === "Cita médica general" || 
+           formData.tipoAusencia === "Cita Seguimiento EO";
+  };
+
+  // Cargar trabajadores al montar el componente
+  useEffect(() => {
+    const cargarTrabajadores = async () => {
+      try {
+        const data = await trabajadoresService.getAll();
+        setTrabajadores(data);
+      } catch (error) {
+        console.error("Error al cargar trabajadores:", error);
+      }
+    };
+
+    cargarTrabajadores();
+  }, []);
 
   // Cargar datos de la ausencia al montar el componente
   useEffect(() => {
@@ -40,9 +70,15 @@ export function EditarAusenciaPage() {
         const ausenciaData = await ausenciasService.getById(parseInt(id));
         setAusencia(ausenciaData);
         
+        // Buscar el trabajador para obtener el ID
+        const trabajador = trabajadores.find(t => t.nombre === ausenciaData.trabajadorNombre);
+        if (trabajador) {
+          setTrabajadorSeleccionadoId(trabajador.id);
+        }
+        
         // Llenar el formulario con los datos existentes
         setFormData({
-          fecha: ausenciaData.fecha.split('T')[0], // Convertir a formato YYYY-MM-DD
+          fecha: ausenciaData.fecha.split('T')[0],
           tipoAusencia: ausenciaData.tipoAusencia,
           descripcion: ausenciaData.descripcion,
           trabajadorNombre: ausenciaData.trabajadorNombre,
@@ -52,7 +88,10 @@ export function EditarAusenciaPage() {
           horaInicio: ausenciaData.horaInicio,
           horaFin: ausenciaData.horaFin,
           remunerado: ausenciaData.remunerado,
-          dx: ausenciaData.dx || ""
+          // 🆕 Campos de diagnóstico actualizados
+          diagnosticoId: ausenciaData.diagnosticoId,
+          diagnosticoCodigo: ausenciaData.diagnosticoCodigo || "",
+          diagnosticoDescripcion: ausenciaData.diagnosticoDescripcion || ""
         });
       } catch (error) {
         console.error("Error al cargar ausencia:", error);
@@ -62,15 +101,59 @@ export function EditarAusenciaPage() {
       }
     };
 
-    cargarAusencia();
-  }, [id]);
+    if (trabajadores.length > 0) {
+      cargarAusencia();
+    }
+  }, [id, trabajadores]);
 
   // Manejar cambios en los inputs
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
+    
+    if (name === "tipoAusencia") {
+      setFormData(prev => ({
+        ...prev,
+        tipoAusencia: value,
+        // Limpiar diagnóstico cuando cambia el tipo
+        diagnosticoId: undefined,
+        diagnosticoCodigo: "",
+        diagnosticoDescripcion: ""
+      }));
+      return;
+    }
+
     setFormData(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
+    }));
+  };
+
+  // Manejar selección de trabajador
+  const handleTrabajadorSelect = (trabajadorId: number, trabajador?: Trabajador) => {
+    setTrabajadorSeleccionadoId(trabajadorId);
+    
+    if (trabajador) {
+      setFormData(prev => ({
+        ...prev,
+        trabajadorNombre: trabajador.nombre,
+        cargo: trabajador.cargo || ""
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        trabajadorNombre: "",
+        cargo: ""
+      }));
+    }
+  };
+
+  // 🆕 Manejar selección de diagnóstico
+  const handleDiagnosticoSelect = (diagnosticoId: number | undefined, diagnostico?: Diagnostico) => {
+    setFormData(prev => ({
+      ...prev,
+      diagnosticoId: diagnosticoId,
+      diagnosticoCodigo: diagnostico?.codigo || "",
+      diagnosticoDescripcion: diagnostico?.descripcion || ""
     }));
   };
 
@@ -96,7 +179,10 @@ export function EditarAusenciaPage() {
         horaInicio: formData.horaInicio,
         horaFin: formData.horaFin,
         remunerado: formData.remunerado,
-        dx: formData.dx || undefined
+        // 🆕 Campos de diagnóstico actualizados
+        diagnosticoId: formData.diagnosticoId,
+        diagnosticoCodigo: formData.diagnosticoCodigo,
+        diagnosticoDescripcion: formData.diagnosticoDescripcion
       };
 
       await ausenciasService.actualizarAusencia(parseInt(id), ausenciaDto);
@@ -190,161 +276,204 @@ export function EditarAusenciaPage() {
                 }
               </span>
             </div>
+            {/* 🆕 Mostrar diagnóstico actual si existe */}
+            {ausencia.diagnosticoCodigo && (
+              <div className="info-item full-width">
+                <span className="info-label">🏥 Diagnóstico actual:</span>
+                <span className="info-value diagnostico-actual">
+                  {ausencia.diagnosticoCodigo} - {ausencia.diagnosticoDescripcion}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="ausencia-form">
-        <div className="form-grid">
-          {/* Fecha */}
-          <div className="form-group">
-            <label htmlFor="fecha">📅 Fecha de Ausencia</label>
-            <input
-              type="date"
-              id="fecha"
-              name="fecha"
-              value={formData.fecha}
-              onChange={handleInputChange}
-              required
+        {/* Información del Trabajador */}
+        <div className="form-section">
+          <h3 className="section-title">
+            <span className="section-icon">👤</span>
+            Información del Trabajador
+          </h3>
+          <div className="form-group full-width">
+            <TrabajadorBuscador
+              trabajadores={trabajadores}
+              value={trabajadorSeleccionadoId}
+              onChange={handleTrabajadorSelect}
+              placeholder="Buscar trabajador por nombre o cédula..."
+              label="Seleccionar Trabajador"
+              required={true}
+              showSelectedInfo={true}
             />
           </div>
 
-          {/* Trabajador */}
-          <div className="form-group">
-            <label htmlFor="trabajadorNombre">👤 Nombre del Trabajador</label>
-            <input
-              type="text"
-              id="trabajadorNombre"
-              name="trabajadorNombre"
-              value={formData.trabajadorNombre}
-              onChange={handleInputChange}
-              required
-              placeholder="Nombre completo del trabajador"
-            />
-          </div>
+          <div className="form-grid">
+            <div className="form-group">
+              <label htmlFor="trabajadorNombre">👤 Nombre del Trabajador</label>
+              <input
+                type="text"
+                id="trabajadorNombre"
+                name="trabajadorNombre"
+                value={formData.trabajadorNombre}
+                onChange={handleInputChange}
+                required
+                readOnly
+                disabled
+              />
+            </div>
 
-          {/* Cargo */}
-          <div className="form-group">
-            <label htmlFor="cargo">💼 Cargo</label>
-            <input
-              type="text"
-              id="cargo"
-              name="cargo"
-              value={formData.cargo}
-              onChange={handleInputChange}
-              required
-              placeholder="Cargo del trabajador"
-            />
-          </div>
-
-          {/* Tipo de Ausencia */}
-          <div className="form-group">
-            <label htmlFor="tipoAusencia">📋 Tipo de Ausencia</label>
-            <select
-              id="tipoAusencia"
-              name="tipoAusencia"
-              value={formData.tipoAusencia}
-              onChange={handleInputChange}
-              required
-            >
-              <option value="">Seleccionar tipo...</option>
-              {tiposAusencia.map(tipo => (
-                <option key={tipo} value={tipo}>{tipo}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Fecha Inicio */}
-          <div className="form-group">
-            <label htmlFor="fechaInicio">📅 Fecha de Inicio</label>
-            <input
-              type="date"
-              id="fechaInicio"
-              name="fechaInicio"
-              value={formData.fechaInicio}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-
-          {/* Fecha Fin */}
-          <div className="form-group">
-            <label htmlFor="fechaFin">📅 Fecha de Fin</label>
-            <input
-              type="date"
-              id="fechaFin"
-              name="fechaFin"
-              value={formData.fechaFin}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-
-          {/* Hora Inicio */}
-          <div className="form-group">
-            <label htmlFor="horaInicio">🕐 Hora de Inicio</label>
-            <input
-              type="time"
-              id="horaInicio"
-              name="horaInicio"
-              value={formData.horaInicio}
-              onChange={handleInputChange}
-              required
-            />
-          </div>
-
-          {/* Hora Fin */}
-          <div className="form-group">
-            <label htmlFor="horaFin">🕐 Hora de Fin</label>
-            <input
-              type="time"
-              id="horaFin"
-              name="horaFin"
-              value={formData.horaFin}
-              onChange={handleInputChange}
-              required
-            />
+            <div className="form-group">
+              <label htmlFor="cargo">💼 Cargo</label>
+              <input
+                type="text"
+                id="cargo"
+                name="cargo"
+                value={formData.cargo}
+                onChange={handleInputChange}
+                required
+                readOnly
+                disabled
+              />
+            </div>
           </div>
         </div>
 
-        {/* Descripción */}
-        <div className="form-group full-width">
-          <label htmlFor="descripcion">📝 Descripción</label>
-          <textarea
-            id="descripcion"
-            name="descripcion"
-            value={formData.descripcion}
-            onChange={handleInputChange}
-            required
-            rows={3}
-            placeholder="Describe la razón de la ausencia..."
-          />
-        </div>
+        {/* Información de la Ausencia */}
+        <div className="form-section">
+          <h3 className="section-title">
+            <span className="section-icon">📅</span>
+            Detalles de la Ausencia
+          </h3>
+          
+          <div className="form-grid">
+            <div className="form-group">
+              <label htmlFor="fecha">📅 Fecha de Ausencia</label>
+              <input
+                type="date"
+                id="fecha"
+                name="fecha"
+                value={formData.fecha}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
 
-        {/* Diagnóstico */}
-        <div className="form-group full-width">
-          <label htmlFor="dx">🏥 Diagnóstico (Opcional)</label>
-          <textarea
-            id="dx"
-            name="dx"
-            value={formData.dx}
-            onChange={handleInputChange}
-            rows={2}
-            placeholder="Diagnóstico médico si aplica..."
-          />
-        </div>
+            <div className="form-group">
+              <label htmlFor="tipoAusencia">📋 Tipo de Ausencia</label>
+              <select
+                id="tipoAusencia"
+                name="tipoAusencia"
+                value={formData.tipoAusencia}
+                onChange={handleInputChange}
+                required
+              >
+                <option value="">Seleccionar tipo...</option>
+                {tiposAusencia.map(tipo => (
+                  <option key={tipo} value={tipo}>{tipo}</option>
+                ))}
+              </select>
+            </div>
 
-        {/* Remunerado */}
-        <div className="form-group checkbox-group">
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              name="remunerado"
-              checked={formData.remunerado}
+            <div className="form-group">
+              <label htmlFor="fechaInicio">📅 Fecha de Inicio</label>
+              <input
+                type="date"
+                id="fechaInicio"
+                name="fechaInicio"
+                value={formData.fechaInicio}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="fechaFin">📅 Fecha de Fin</label>
+              <input
+                type="date"
+                id="fechaFin"
+                name="fechaFin"
+                value={formData.fechaFin}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="horaInicio">🕐 Hora de Inicio</label>
+              <input
+                type="time"
+                id="horaInicio"
+                name="horaInicio"
+                value={formData.horaInicio}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="horaFin">🕐 Hora de Fin</label>
+              <input
+                type="time"
+                id="horaFin"
+                name="horaFin"
+                value={formData.horaFin}
+                onChange={handleInputChange}
+                required
+              />
+            </div>
+          </div>
+
+          <div className="form-group full-width">
+            <label htmlFor="descripcion">📝 Descripción</label>
+            <textarea
+              id="descripcion"
+              name="descripcion"
+              value={formData.descripcion}
               onChange={handleInputChange}
+              required
+              rows={3}
+              placeholder="Describe la razón de la ausencia..."
             />
-            <span className="checkbox-text">💰 Ausencia Remunerada</span>
-          </label>
+          </div>
+
+          {/* 🆕 CAMPO DIAGNÓSTICO CON BUSCADOR */}
+          {mostrarCampoDiagnostico() && (
+            <div className="form-group full-width">
+              <div className="diagnostico-section">
+                <div className="diagnostico-header">
+                  <span style={{ fontSize: '1.5rem' }}>🏥</span>
+                  <strong>Diagnóstico Médico (CIE-10)</strong>
+                </div>
+                
+                <DiagnosticoBuscador
+                  value={formData.diagnosticoId}
+                  onChange={handleDiagnosticoSelect}
+                  placeholder="Buscar por código (ej: A09) o descripción (ej: diarrea)..."
+                  label=""
+                  required={false}
+                  showSelectedInfo={true}
+                />
+                
+                <small className="diagnostico-help">
+                  💡 <strong>Ayuda:</strong> Puedes buscar por código CIE-10 (ejemplo: "A09") o por descripción (ejemplo: "diarrea", "cefalea"). 
+                  Este campo es opcional pero recomendado para citas médicas.
+                </small>
+              </div>
+            </div>
+          )}
+
+          <div className="form-group checkbox-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                name="remunerado"
+                checked={formData.remunerado}
+                onChange={handleInputChange}
+              />
+              <span className="checkbox-text">💰 Ausencia Remunerada</span>
+            </label>
+          </div>
         </div>
 
         {/* Botones */}

@@ -23,8 +23,8 @@ export function AusenciasPage() {
     setMesSeleccionado(mes);
     setLoading(true);
     try {
-      const data = await ausenciasService.getPorMes(anio, mes + 1); // +1 porque los meses empiezan en 0
-      console.log("Datos recibidos:", data); // ✅ Para debug
+      const data = await ausenciasService.getPorMes(anio, mes + 1);
+      console.log("Datos recibidos:", data);
       setAusencias(data);
     } catch (error) {
       console.error("Error al cargar ausencias:", error);
@@ -33,12 +33,10 @@ export function AusenciasPage() {
     }
   };
 
-  // 🆕 Función para confirmar eliminación
   const confirmarEliminacion = (ausencia: Ausencia) => {
     setAusenciaAEliminar(ausencia);
   };
 
-  // 🆕 Función para eliminar ausencia
   const eliminarAusencia = async () => {
     if (!ausenciaAEliminar) return;
     
@@ -46,10 +44,7 @@ export function AusenciasPage() {
     try {
       await ausenciasService.eliminarAusencia(ausenciaAEliminar.id);
       
-      // Actualizar la lista local
       setAusencias(prev => prev.filter(a => a.id !== ausenciaAEliminar.id));
-      
-      // Cerrar modal
       setAusenciaAEliminar(null);
       
       console.log(`✅ Ausencia ${ausenciaAEliminar.id} eliminada correctamente`);
@@ -61,13 +56,10 @@ export function AusenciasPage() {
     }
   };
 
-  // 🆕 Función para editar ausencia
   const editarAusencia = (ausencia: Ausencia) => {
-    // Navegar a la página de edición pasando el ID de la ausencia
     navigate(`/ausencias/editar/${ausencia.id}`);
   };
 
-  // 🆕 Funciones auxiliares para mejorar la presentación
   const getTipoBadgeClass = (tipo: string): string => {
     switch (tipo) {
       case "Cita médica general":
@@ -113,7 +105,6 @@ export function AusenciasPage() {
     });
   };
 
-  // 🆕 Función para truncar texto largo
   const truncateText = (text: string, maxLength: number): string => {
     if (text.length <= maxLength) return text;
     return text.substring(0, maxLength) + "...";
@@ -177,7 +168,7 @@ export function AusenciasPage() {
             </div>
           ) : (
             <div className="table-container">
-              {/* 🆕 Estadísticas rápidas */}
+              {/* 🆕 Estadísticas rápidas actualizadas */}
               <div className="stats-summary">
                 <span className="total-ausencias">
                   📊 Total: <strong>{ausencias.length}</strong>
@@ -189,7 +180,7 @@ export function AusenciasPage() {
                   🚫 No remuneradas: <strong>{ausencias.filter(a => !a.remunerado).length}</strong>
                 </span>
                 <span className="badge badge-info">
-                  🏥 Con DX: <strong>{ausencias.filter(a => a.dx).length}</strong>
+                  🏥 Con Diagnóstico: <strong>{ausencias.filter(a => a.diagnosticoCodigo).length}</strong>
                 </span>
               </div>
 
@@ -200,7 +191,7 @@ export function AusenciasPage() {
                     <th><span className="header-icon">💼</span>Cargo</th>
                     <th><span className="header-icon">📋</span>Tipo de Ausencia</th>
                     <th><span className="header-icon">📝</span>Descripción</th>
-                    <th><span className="header-icon">🏥</span>DX</th>
+                    <th><span className="header-icon">🏥</span>Diagnóstico</th>
                     <th><span className="header-icon">📅</span>Fecha Inicio</th>
                     <th><span className="header-icon">📅</span>Fecha Fin</th>
                     <th><span className="header-icon">🕐</span>Hora Inicio</th>
@@ -250,18 +241,22 @@ export function AusenciasPage() {
                         </div>
                       </td>
 
-                      {/* 🆕 DX - Campo de Diagnóstico */}
+                      {/* 🆕 Diagnóstico - Actualizado */}
                       <td className="dx-cell">
-                        {a.dx ? (
+                        {a.diagnosticoCodigo && a.diagnosticoDescripcion ? (
                           <div 
-                            title={a.dx.length > 30 ? a.dx : undefined}
+                            title={`${a.diagnosticoCodigo}: ${a.diagnosticoDescripcion}`}
+                            className="diagnostico-info"
                           >
-                            <span className="dx-badge">
-                              🏥 {truncateText(a.dx, 30)}
+                            <span className="diagnostico-badge">
+                              🏥 {a.diagnosticoCodigo}
                             </span>
+                            <div className="diagnostico-descripcion">
+                              {truncateText(a.diagnosticoDescripcion, 30)}
+                            </div>
                           </div>
                         ) : (
-                          <span className="dx-empty">N/A</span>
+                          <span className="diagnostico-empty">N/A</span>
                         )}
                       </td>
 
@@ -296,7 +291,7 @@ export function AusenciasPage() {
                         </span>
                       </td>
 
-                      {/* 🆕 NUEVA COLUMNA DE ACCIONES */}
+                      {/* Acciones */}
                       <td className="acciones-cell">
                         <div className="acciones-buttons">
                           <button
@@ -320,7 +315,7 @@ export function AusenciasPage() {
                 </tbody>
               </table>
 
-              {/* 🆕 Footer de la tabla */}
+              {/* Footer de la tabla */}
               <div style={{
                 padding: '1rem',
                 background: '#f9fafb',
@@ -337,7 +332,7 @@ export function AusenciasPage() {
         </div>
       )}
 
-      {/* 🆕 MODAL DE CONFIRMACIÓN PARA ELIMINAR */}
+      {/* Modal de confirmación para eliminar */}
       {ausenciaAEliminar && (
         <div className="modal-overlay" onClick={() => setAusenciaAEliminar(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
@@ -373,6 +368,15 @@ export function AusenciasPage() {
                   <span className="detail-label">📝 Descripción:</span>
                   <span className="detail-value">{ausenciaAEliminar.descripcion}</span>
                 </div>
+                {/* 🆕 Mostrar diagnóstico en el modal si existe */}
+                {ausenciaAEliminar.diagnosticoCodigo && (
+                  <div className="detail-row">
+                    <span className="detail-label">🏥 Diagnóstico:</span>
+                    <span className="detail-value">
+                      {ausenciaAEliminar.diagnosticoCodigo} - {ausenciaAEliminar.diagnosticoDescripcion}
+                    </span>
+                  </div>
+                )}
               </div>
               
               <div className="warning-message">
