@@ -202,6 +202,38 @@
 .btn-deselect:hover {
   background: #b91c1c;
 }
+/* Agregar al final de TrabajadorCard.css */
+
+/* Estilos específicos para el botón de ausencias */
+.btn-ausencias:hover {
+  background: #6366f1;
+  color: white;
+}
+
+/* Ajustar el grid para 6 botones */
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* 3 columnas para 6 botones */
+  gap: 8px;
+  padding: 16px;
+  background: rgba(248, 250, 252, 0.8);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+}
+
+/* Animaciones para el nuevo botón */
+.btn-action:nth-child(6) { 
+  animation-delay: 0.35s; 
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  .actions-grid {
+    grid-template-columns: repeat(2, 1fr); /* 2 columnas en móviles */
+    gap: 6px;
+    padding: 12px;
+  }
+}
 
 /* Responsive */
 @media (max-width: 768px) {

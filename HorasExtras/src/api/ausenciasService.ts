@@ -1,5 +1,10 @@
 import { api } from "./api";
-import type { Ausencia, AusenciaDto } from "../types/ausencia";
+import type { 
+  Ausencia, 
+  AusenciaDto, 
+  EstadisticasTrabajador, 
+  ResumenTrabajador 
+} from "../types/ausencia";
 import type { Diagnostico } from "../types/diagnostico";
 
 // Interfaz para las estadísticas de horas por tipo
@@ -291,7 +296,7 @@ export function exportarAusenciasCSV(ausencias: Ausencia[], filename: string = '
 
   const csvContent = [
     headers.join(','),
-    ...ausencias.map(ausencia => [
+    ...ausencias.map((ausencia: Ausencia) => [
       ausencia.fecha,
       `"${ausencia.trabajadorNombre}"`,
       `"${ausencia.cargo || ''}"`,
@@ -320,6 +325,78 @@ export function exportarAusenciasCSV(ausencias: Ausencia[], filename: string = '
   }
 }
 
+// 🆕 FUNCIONES PARA ESTADÍSTICAS DE TRABAJADORES
+
+// Obtener estadísticas completas de ausencias de un trabajador
+export async function getEstadisticasTrabajador(trabajadorId: number) {
+  const response = await api.get<EstadisticasTrabajador>(`/ausencias/trabajador/${trabajadorId}/estadisticas`);
+  return response.data;
+}
+
+// Obtener resumen rápido de ausencias de un trabajador
+export async function getResumenTrabajador(trabajadorId: number) {
+  const response = await api.get<ResumenTrabajador>(`/ausencias/trabajador/${trabajadorId}/resumen`);
+  return response.data;
+}
+
+// 🆕 Función para exportar estadísticas de trabajador a CSV
+export function exportarEstadisticasTrabajadorCSV(estadisticas: EstadisticasTrabajador, filename?: string) {
+  const nombreArchivo = filename || `ausencias_${estadisticas.trabajadorNombre.replace(/\s+/g, '_')}`;
+  
+  const headers = [
+    'ID',
+    'Fecha Registro',
+    'Tipo Ausencia',
+    'Descripción',
+    'Fecha Inicio',
+    'Fecha Fin',
+    'Hora Inicio',
+    'Hora Fin',
+    'Duración (Horas)',
+    'Remunerado',
+    'Diagnóstico Código',
+    'Diagnóstico Descripción',
+    'Cargo'
+  ];
+
+  const csvContent = [
+    `# Estadísticas de Ausencias - ${estadisticas.trabajadorNombre}`,
+    `# Total de ausencias: ${estadisticas.totalAusencias}`,
+    `# Total de horas: ${estadisticas.totalHoras}`,
+    `# Remuneradas: ${estadisticas.ausenciasRemuneradas} | No remuneradas: ${estadisticas.ausenciasNoRemuneradas}`,
+    `# Fecha de consulta: ${new Date(estadisticas.fechaConsulta).toLocaleDateString()}`,
+    '',
+    headers.join(','),
+    ...estadisticas.ausencias.map(ausencia => [
+      ausencia.id,
+      ausencia.fecha,
+      `"${ausencia.tipoAusencia || ''}"`,
+      `"${ausencia.descripcion || ''}"`,
+      ausencia.fechaInicio,
+      ausencia.fechaFin,
+      ausencia.horaInicio || '',
+      ausencia.horaFin || '',
+      ausencia.duracion,
+      ausencia.remunerado ? 'Sí' : 'No',
+      ausencia.diagnosticoCodigo || '',
+      `"${ausencia.diagnosticoDescripcion || ''}"`,
+      `"${ausencia.cargo || ''}"`
+    ].join(','))
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  if (link.download !== undefined) {
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `${nombreArchivo}_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+}
+
 // ===== OBJETO EXPORTADO ACTUALIZADO =====
 export const ausenciasService = {
   // Funciones existentes
@@ -334,13 +411,16 @@ export const ausenciasService = {
   getAllDiagnosticos,
   buscarDiagnosticos,
   getEstadisticasPorDiagnostico,
-
-  // 🆕 Nuevas funciones para estadísticas avanzadas
   getEstadisticasMensuales,
   getEstadisticasTiposDetallado,
   getEstadisticasDiagnosticosDetallado,
   getTendenciasAusencias,
   getResumenEjecutivo,
   calcularMetricasAusencias,
-  exportarAusenciasCSV
+  exportarAusenciasCSV,
+
+  // 🆕 Nuevas funciones para trabajadores
+  getEstadisticasTrabajador,
+  getResumenTrabajador,
+  exportarEstadisticasTrabajadorCSV
 };

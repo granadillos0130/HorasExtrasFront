@@ -1,26 +1,33 @@
 import React, { useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom"; // 🆕 Para navegación
 import { useTrabajadores } from "../hooks/useTrabajadores";
 import TrabajadorForm from "../components/trabajadores/TrabajadorForm";
 import TrabajadorCard from "../components/trabajadores/TrabajadorCard";
 import TrabajadorDetail from "../components/trabajadores/TrabajadorDetailModal";
 import TrabajadorBuscador from "../components/shared/TrabajadorBuscador";
 import { trabajadoresService } from "../api/trabajadoresService";
+import { ausenciasService } from "../api/ausenciasService"; // 🆕 Importar servicio
+import type { ResumenTrabajador } from "../types/ausencia"; // 🆕 Importar tipo
 import "../styles/pages/TrabajadoresPage.css";
 import type { Trabajador } from "../types/trabajadores";
 
 const TrabajadoresPage: React.FC = () => {
+  const navigate = useNavigate(); // 🆕 Hook de navegación
   const { trabajadores, loading, error, refetch } = useTrabajadores();
   const [showForm, setShowForm] = useState(false);
   const [detalleId, setDetalleId] = useState<number | null>(null);
   const [mostrarSoloNoVigentes, setMostrarSoloNoVigentes] = useState(false);
   const [selectedTrabajadorId, setSelectedTrabajadorId] = useState<number | null>(null);
   
+  // 🆕 Estados para el resumen de ausencias
+  const [resumenAusencias, setResumenAusencias] = useState<ResumenTrabajador | null>(null);
+  const [loadingResumen, setLoadingResumen] = useState(false);
+  
   // Estados para el buscador
   const [trabajadorSeleccionadoId, setTrabajadorSeleccionadoId] = useState<number>(0);
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [terminoBusqueda, setTerminoBusqueda] = useState<string>("");
 
-  // ✅ FIX: Remove unused parameter or prefix with underscore
   const handleCreated = () => {
     setShowForm(false);
     refetch();
@@ -30,13 +37,11 @@ const TrabajadoresPage: React.FC = () => {
     if (confirm(`¿Estás seguro de eliminar a ${nombre}?`)) {
       try {
         await trabajadoresService.delete(id);
-        // Si el trabajador eliminado estaba seleccionado, deseleccionar
         if (selectedTrabajadorId === id) {
           setSelectedTrabajadorId(null);
         }
         refetch();
       } catch (error) {
-        // ✅ FIX: Use the error properly or remove parameter
         console.error("Error al eliminar el trabajador:", error);
         alert("Error al eliminar el trabajador");
       }
@@ -44,24 +49,45 @@ const TrabajadoresPage: React.FC = () => {
   };
 
   const handleSelectTrabajador = (id: number) => {
-    // Si ya está seleccionado, deseleccionar; si no, seleccionar
     setSelectedTrabajadorId(selectedTrabajadorId === id ? null : id);
+    // 🆕 Limpiar resumen cuando se selecciona otro trabajador
+    if (selectedTrabajadorId !== id) {
+      setResumenAusencias(null);
+    }
+  };
+
+  // 🆕 Función para navegar a la página de ausencias
+  const handleVerAusencias = async () => {
+    if (!selectedTrabajadorId) return;
+
+    // Cargar resumen rápido primero
+    setLoadingResumen(true);
+    try {
+      const resumen = await ausenciasService.getResumenTrabajador(selectedTrabajadorId);
+      setResumenAusencias(resumen);
+      
+      // Navegar a la página de ausencias
+      navigate(`/trabajadores/${selectedTrabajadorId}/ausencias`);
+    } catch (error) {
+      console.error("Error al cargar resumen de ausencias:", error);
+      // Aún así navegar a la página, que manejará el error
+      navigate(`/trabajadores/${selectedTrabajadorId}/ausencias`);
+    } finally {
+      setLoadingResumen(false);
+    }
   };
 
   // Función para filtrar trabajadores
   const trabajadoresFiltrados = useMemo(() => {
     let filtrados = trabajadores;
 
-    // Filtro por estado
     if (filtroEstado !== "todos") {
       filtrados = filtrados.filter(t => t.estado === filtroEstado);
     }
 
-    // Filtro por trabajador específico (buscador)
     if (trabajadorSeleccionadoId > 0) {
       filtrados = filtrados.filter(t => t.id === trabajadorSeleccionadoId);
     } else if (terminoBusqueda.trim()) {
-      // Filtro por término de búsqueda
       const termino = terminoBusqueda.toLowerCase();
       filtrados = filtrados.filter(t => 
         t.nombre.toLowerCase().includes(termino) ||
@@ -69,7 +95,6 @@ const TrabajadoresPage: React.FC = () => {
       );
     }
 
-    // Filtro legacy para no vigentes
     if (mostrarSoloNoVigentes) {
       filtrados = filtrados.filter(t => t.estado === "No Vigente");
     }
@@ -90,7 +115,6 @@ const TrabajadoresPage: React.FC = () => {
     setTrabajadorSeleccionadoId(id);
     if (trabajador) {
       setTerminoBusqueda(trabajador.nombre);
-      // Seleccionar automáticamente el trabajador buscado
       setSelectedTrabajadorId(trabajador.id);
     } else {
       setTerminoBusqueda("");
@@ -104,10 +128,16 @@ const TrabajadoresPage: React.FC = () => {
     setFiltroEstado("todos");
     setMostrarSoloNoVigentes(false);
     setSelectedTrabajadorId(null);
+    setResumenAusencias(null); // 🆕 Limpiar resumen
   };
 
   const hayFiltrosActivos = trabajadorSeleccionadoId > 0 || terminoBusqueda.trim() || 
                           filtroEstado !== "todos" || mostrarSoloNoVigentes;
+
+  // 🆕 Obtener trabajador seleccionado
+  const trabajadorSeleccionado = selectedTrabajadorId 
+    ? trabajadores.find(t => t.id === selectedTrabajadorId)
+    : null;
 
   return (
     <div className="trabajadores-page">
@@ -132,17 +162,54 @@ const TrabajadoresPage: React.FC = () => {
                 >
                   {mostrarSoloNoVigentes ? "👀 Ver Todos" : "🚫 Ver No Vigentes"}
                 </button>
+                
+                {/* 🆕 Sección de acciones para trabajador seleccionado */}
                 {selectedTrabajadorId && (
                   <div className="selection-info">
-                    <span className="selection-text">
-                      ✨ Trabajador seleccionado - Haz clic en las acciones que aparecieron
-                    </span>
-                    <button 
-                      className="btn-deselect"
-                      onClick={() => setSelectedTrabajadorId(null)}
-                    >
-                      ✕ Deseleccionar
-                    </button>
+                    <div className="selection-header">
+                      <span className="selection-text">
+                        ✨ Trabajador seleccionado: <strong>{trabajadorSeleccionado?.nombre}</strong>
+                      </span>
+                      <button 
+                        className="btn-deselect"
+                        onClick={() => setSelectedTrabajadorId(null)}
+                      >
+                        ✕ Deseleccionar
+                      </button>
+                    </div>
+                    
+                    {/* 🆕 Botones de acciones */}
+                    <div className="selection-actions">
+                      <button 
+                        className={`btn-action ${loadingResumen ? 'loading' : ''}`}
+                        onClick={handleVerAusencias}
+                        disabled={loadingResumen}
+                      >
+                        {loadingResumen ? (
+                          <>🔄 Cargando...</>
+                        ) : (
+                          <>📊 Ver Estadísticas de Ausencias</>
+                        )}
+                      </button>
+                      
+                      {/* 🆕 Mostrar resumen rápido si está disponible */}
+                      {resumenAusencias && (
+                        <div className="quick-resume">
+                          <span className="resume-item">
+                            📈 Total ausencias: <strong>{resumenAusencias.totalAusencias}</strong>
+                          </span>
+                          <span className="resume-item">
+                            📅 Este año: <strong>{resumenAusencias.ausenciasEsteAño}</strong>
+                          </span>
+                          {resumenAusencias.ultimaAusencia && (
+                            <span className="resume-item">
+                              🕒 Última: <strong>{new Date(resumenAusencias.ultimaAusencia.fecha).toLocaleDateString()}</strong>
+                              ({resumenAusencias.ultimaAusencia.tipo})
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </>

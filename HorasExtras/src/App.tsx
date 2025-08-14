@@ -20,6 +20,7 @@ import { EstadisticaAusenciaPage } from "./pages/EstadisticaAusenciaPage";
 import EditarRegistrosLotePage from "./pages/EditarRegistrosLotePage";
 import EditarRegistroPage from "./pages/EditarRegistroPage";
 import { EditarAusenciaPage } from "./pages/EditarAusenciaPage";
+import TrabajadorAusenciasPage from "./pages/TrabajadorAusenciasPage";
 
 // 🆕 CACHE MANAGER - AGREGAR ESTA FUNCIÓN
 const useCacheManager = () => {
@@ -76,10 +77,12 @@ export default function App() {
         <Navbar />
         <div style={{ minHeight: 'calc(100vh - 70px)' }}>
           <Routes>
+
             <Route path="/" element={<DashboardPage />} />
             <Route path="/trabajadores" element={<TrabajadoresPage />} />
             <Route path="/trabajadores/editar/:id" element={<TrabajadorEditPage />} />
             <Route path="/trabajadores/:id/intensidad" element={<TrabajadorIntensidad />} />
+            <Route path="/trabajadores/:id/ausencias" element={<TrabajadorAusenciasPage />} />
             <Route path="clientes" element={<ClientesPage/>} />
             <Route path="/registros" element={<RegistrosPage />} />
             <Route path="/registros/editar-lote" element={<EditarRegistrosLotePage />} />

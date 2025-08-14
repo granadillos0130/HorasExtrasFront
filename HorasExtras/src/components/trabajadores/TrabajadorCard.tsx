@@ -36,6 +36,11 @@ const TrabajadorCard: React.FC<Props> = ({
     navigate(`/trabajadores/editar/${trabajador.id}`);
   };
 
+  // 🆕 Función para navegar a las estadísticas de ausencias
+  const handleVerAusencias = () => {
+    navigate(`/trabajadores/${trabajador.id}/ausencias`);
+  };
+
   const cambiarEstado = async (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevenir que se active la selección
     const nuevoEstado = trabajador.estado === "Vigente" ? "No Vigente" : "Vigente";
@@ -98,12 +103,22 @@ const TrabajadorCard: React.FC<Props> = ({
               <span className="btn-text">Ver Detalles</span>
             </button>
 
+            {/* 🆕 Botón de Estadísticas de Ausencias */}
+            <button 
+              className="btn-action btn-ausencias" 
+              onClick={(e) => handleActionClick(e, handleVerAusencias)}
+              title="Ver estadísticas de ausencias"
+            >
+              <span className="btn-icon">📊</span>
+              <span className="btn-text">Ausencias</span>
+            </button>
+
             <button 
               className="btn-action btn-intensidad" 
               onClick={(e) => handleActionClick(e, () => navigate(`/trabajadores/${trabajador.id}/intensidad`))}
               title="Ver intensidad horaria"
             >
-              <span className="btn-icon">📊</span>
+              <span className="btn-icon">📈</span>
               <span className="btn-text">Intensidad</span>
             </button>
 
