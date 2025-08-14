@@ -36,6 +36,22 @@ const getCurrentWeekRange = () => {
   };
 };
 
+// ✅ NUEVA FUNCIÓN HELPER para fechas seguras
+const formatFechaSafe = (fechaStr: string | null | undefined, options?: Intl.DateTimeFormatOptions): string => {
+  if (!fechaStr) return 'N/A';
+  
+  // ✅ Agregar T00:00:00 para evitar problemas de zona horaria
+  const fecha = new Date(fechaStr + 'T00:00:00');
+  
+  const defaultOptions: Intl.DateTimeFormatOptions = {
+    day: '2-digit',
+    month: '2-digit',
+    year: '2-digit'
+  };
+  
+  return fecha.toLocaleDateString('es-CO', options || defaultOptions);
+};
+
 const TrabajadorIntensidad: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -81,7 +97,7 @@ const TrabajadorIntensidad: React.FC = () => {
     };
 
     cargarTrabajadores();
-  }, [id, fechaInicio, fechaFin]); // Added missing dependencies
+  }, [id, fechaInicio, fechaFin]);
 
   // Cargar registros cuando cambien las fechas
   useEffect(() => {
@@ -249,7 +265,7 @@ const TrabajadorIntensidad: React.FC = () => {
     // Agregar datos de registros
     registros.forEach((registro, index) => {
       const rowData = [
-        registro.fecha ? new Date(registro.fecha).toLocaleDateString('es-CO') : 'N/A',
+        formatFechaSafe(registro.fecha, { day: '2-digit', month: '2-digit', year: 'numeric' }), // ✅ CORREGIDO
         registro.diaSemana?.substring(0, 3) || 'N/A',
         registro.nombreCentro || 'Sin centro',
         registro.horaIngreso || 'N/A',
@@ -812,11 +828,7 @@ const TrabajadorIntensidad: React.FC = () => {
                           {registros.map((registro, index) => (
                             <tr key={registro.id} style={{ animationDelay: `${index * 0.05}s` }}>
                               <td className="col-fecha">
-                                {registro.fecha ? new Date(registro.fecha).toLocaleDateString('es-CO', {
-                                  day: '2-digit',
-                                  month: '2-digit',
-                                  year: '2-digit'
-                                }) : 'N/A'}
+                                {formatFechaSafe(registro.fecha)} {/* ✅ CORREGIDO */}
                               </td>
                               <td className="col-dia">
                                 {safeSubstring(registro.diaSemana, 0, 3) || 'N/A'}
