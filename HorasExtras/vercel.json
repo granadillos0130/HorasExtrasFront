@@ -75,10 +75,5 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "functions": {
-    "app/api/**": {
-      "maxDuration": 10
-    }
-  }
+  ]
 }
