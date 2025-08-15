@@ -15,12 +15,11 @@ interface Props {
   fechaInicial?: string;
 }
 
-// 🆕 TIPO ESPECÍFICO PARA REGISTROS EXISTENTES (corrige el error ESLint)
+// TIPO ESPECÍFICO PARA REGISTROS EXISTENTES
 interface RegistroExistente {
   id: number;
   trabajadorId: number;
   fecha: string;
-  // Propiedades mínimas necesarias - el resto se maneja dinámicamente
 }
 
 const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
@@ -30,15 +29,14 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
   const [loading, setLoading] = useState(false);
   const [analistas, setAnalistas] = useState<{ id: number; nombreCompleto: string }[]>([]);
   
-  // 🆕 TIPOS ESPECÍFICOS PARA REGISTROS EXISTENTES
+  // TIPOS ESPECÍFICOS PARA REGISTROS EXISTENTES
   const [registrosExistentes, setRegistrosExistentes] = useState<RegistroExistente[]>([]);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
   
-  // 🆕 NUEVOS ESTADOS PARA CONTROL DE VERIFICACIÓN
+  // NUEVOS ESTADOS PARA CONTROL DE VERIFICACIÓN
   const [verificandoRegistros, setVerificandoRegistros] = useState(false);
-  const [componenteMontado, setComponenteMontado] = useState(false);
   
-  // 🆕 REFS PARA CONTROL DE MONTAJE Y TIMEOUTS
+  // REFS PARA CONTROL DE MONTAJE Y TIMEOUTS
   const isMountedRef = useRef(true);
   const verificacionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -56,9 +54,8 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     EsConductor: false,
   });
 
-  // 🆕 CONTROL DE MONTAJE DEL COMPONENTE
+  // CONTROL DE MONTAJE DEL COMPONENTE
   useEffect(() => {
-    setComponenteMontado(true);
     return () => {
       isMountedRef.current = false;
       if (verificacionTimeoutRef.current) {
@@ -87,11 +84,15 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           trabajadoresService.getAnalistas(),
         ]);
         
-        if (isMountedRef.current) {
-          setTrabajadores(trabajadoresData);
-          setCentros(centrosData);
-          setAnalistas(analistasData);
-        }
+        // Verificar que cada trabajador tenga las propiedades necesarias
+        const trabajadoresValidos = trabajadoresData.filter(t => 
+          t && t.id && t.nombre && t.cedula
+        );
+        
+        setTrabajadores(trabajadoresValidos);
+        setCentros(centrosData);
+        setAnalistas(analistasData);
+        
       } catch (error) {
         console.error("Error al cargar datos:", error);
       }
@@ -100,7 +101,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     cargarDatos();
   }, []);
 
-  // 🆕 FUNCIÓN MEMOIZADA PARA VERIFICAR REGISTROS EXISTENTES
+  // FUNCIÓN MEMOIZADA PARA VERIFICAR REGISTROS EXISTENTES
   const verificarRegistrosExistentes = useCallback(async (trabajadorId: number, fecha: string) => {
     if (!isMountedRef.current || !trabajadorId || !fecha) return;
     
@@ -108,10 +109,8 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
       setVerificandoRegistros(true);
       try {
         const registros = await registrosService.obtenerTodosPorFecha(fecha);
-        // 🆕 FILTRAR Y MAPEAR CON TYPE ASSERTION SEGURA
         const registrosDelTrabajador = registros
           .filter((r: unknown) => {
-            // Type guard para verificar que el objeto tiene las propiedades necesarias
             return r && 
                    typeof r === 'object' && 
                    'trabajadorId' in r && 
@@ -119,7 +118,6 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           })
           .map((r: unknown) => r as RegistroExistente);
         
-        // Solo actualizar si el componente sigue montado
         if (isMountedRef.current) {
           setRegistrosExistentes(registrosDelTrabajador);
           setShowDuplicateWarning(registrosDelTrabajador.length > 0);
@@ -144,18 +142,16 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     }
   }, []);
 
-  // 🆕 USEEFFECT MEJORADO CON DEBOUNCING Y CONTROL DE MONTAJE
+  // USEEFFECT MEJORADO CON DEBOUNCING Y CONTROL DE MONTAJE
   useEffect(() => {
-    // Limpiar timeout anterior
     if (verificacionTimeoutRef.current) {
       clearTimeout(verificacionTimeoutRef.current);
     }
 
-    // Solo verificar si el componente está montado
-    if (componenteMontado && isMountedRef.current) {
+    if (formData.Trabajador_ID > 0 && formData.Fecha && isMountedRef.current) {
       verificacionTimeoutRef.current = setTimeout(() => {
         verificarRegistrosExistentes(formData.Trabajador_ID, formData.Fecha);
-      }, 300); // Debounce de 300ms
+      }, 300);
     }
 
     return () => {
@@ -163,7 +159,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
         clearTimeout(verificacionTimeoutRef.current);
       }
     };
-  }, [formData.Trabajador_ID, formData.Fecha, componenteMontado, verificarRegistrosExistentes]);
+  }, [formData.Trabajador_ID, formData.Fecha, verificarRegistrosExistentes]);
 
   const convertirATimeSpan = (valor: string): string => {
     const parts = valor.trim().split(":");
@@ -185,7 +181,6 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
       return;
     }
 
-    // Advertencia adicional si hay registros duplicados
     if (showDuplicateWarning) {
       const trabajadorNombre = trabajadores.find(t => t.id === formData.Trabajador_ID)?.nombre || "este trabajador";
       const tipoTrabajador = formData.EsConductor ? "conductor" : "trabajador";
@@ -251,18 +246,19 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     }));
   };
 
-  // 🆕 HANDLER MEMOIZADO PARA CAMBIO DE TRABAJADOR
-  const handleTrabajadorChange = useCallback((trabajadorId: number) => {
+  // HANDLER PARA TRABAJADOR
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleTrabajadorChange = (trabajadorId: number, _trabajador?: Trabajador) => {
     if (!isMountedRef.current) return;
     
     setFormData((prev) => ({
       ...prev,
       Trabajador_ID: trabajadorId,
     }));
-  }, []);
+  };
 
-  // 🆕 HANDLER MEMOIZADO PARA CAMBIO DE CENTRO
-  const handleCentroChange = useCallback((centroId: string) => {
+  // HANDLER PARA CENTRO
+  const handleCentroChange = (centroId: string) => {
     if (!isMountedRef.current) return;
     
     const centroSeleccionado = centros.find((c) => c.id === centroId);
@@ -271,7 +267,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
       Centro_ID: centroId,
       Nombr_Centro: centroSeleccionado?.nombreCentro || "",
     }));
-  }, [centros]);
+  };
 
   // Función para mostrar información sobre el cálculo de horas
   const mostrarInfoCalculoHoras = () => {
@@ -334,7 +330,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
         </div>
       )}
 
-      {/* 🆕 INDICADOR DE VERIFICACIÓN */}
+      {/* INDICADOR DE VERIFICACIÓN */}
       {verificandoRegistros && (
         <div style={{
           background: '#f0f9ff',
@@ -390,36 +386,49 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
       <form onSubmit={handleSubmit} className="registros-form">
         <div className="form-row">
           <div className="form-group">
-            {/* 🆕 RENDERIZADO CONDICIONAL CON KEY ÚNICA */}
-            {componenteMontado && !verificandoRegistros ? (
-              <TrabajadorBuscador
-                key={`trabajador-${formData.Fecha}-${Date.now()}`}
-                trabajadores={trabajadores}
-                value={formData.Trabajador_ID}
-                onChange={handleTrabajadorChange}
-                label="Trabajador *"
-                required
-              />
-            ) : (
-              <div style={{ height: '40px', background: '#f5f5f5', borderRadius: '4px', marginBottom: '10px' }}>
-                <label className="form-label">Trabajador *</label>
+            <TrabajadorBuscador
+              trabajadores={trabajadores}
+              value={formData.Trabajador_ID}
+              onChange={handleTrabajadorChange}
+              label="Trabajador *"
+              required
+              disabled={verificandoRegistros}
+              placeholder={verificandoRegistros ? 
+                "Verificando registros existentes..." : 
+                "Buscar por nombre o cédula..."
+              }
+            />
+            
+            {verificandoRegistros && (
+              <div style={{
+                fontSize: '0.8rem',
+                color: '#0369a1',
+                marginTop: '4px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px'
+              }}>
+                <div style={{ 
+                  width: '12px', 
+                  height: '12px', 
+                  border: '2px solid #0369a1',
+                  borderTop: '2px solid transparent',
+                  borderRadius: '50%',
+                  animation: 'spin 1s linear infinite'
+                }} />
+                Verificando registros...
               </div>
             )}
           </div>
 
           <div className="form-group">
             <label>Centro *</label>
-            {componenteMontado ? (
-              <CentroBuscador
-                key={`centro-${formData.Fecha}-${formData.Trabajador_ID}`}
-                centros={centros}
-                value={formData.Centro_ID}
-                onChange={handleCentroChange}
-                required
-              />
-            ) : (
-              <div style={{ height: '40px', background: '#f5f5f5', borderRadius: '4px' }} />
-            )}
+            <CentroBuscador
+              centros={centros}
+              value={formData.Centro_ID}
+              onChange={handleCentroChange}
+              required
+            />
           </div>
 
           <div className="form-group">
@@ -621,7 +630,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
         </button>
       </form>
 
-      {/* 🆕 CSS PARA ANIMACIÓN DE LOADING */}
+      {/* CSS PARA ANIMACIÓN DE LOADING */}
       <style>{`
         @keyframes spin {
           0% { transform: rotate(0deg); }
