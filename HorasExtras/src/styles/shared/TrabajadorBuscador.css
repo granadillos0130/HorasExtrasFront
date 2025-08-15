@@ -1,62 +1,64 @@
-/* src/styles/shared/TrabajadorBuscador.css */
+
 .trabajador-buscador {
   position: relative;
   width: 100%;
 }
 
-.buscador-container {
+.trabajador-buscador .buscador-container {
   position: relative;
   width: 100%;
 }
 
-.buscador-input {
+.trabajador-buscador .buscador-input {
   width: 100%;
-  padding: 15px 50px 15px 20px;
-  border: 2px solid var(--border-color);
-  border-radius: var(--radius-lg);
+  padding: 15px 50px 15px 20px; /* Padding suficiente para el ícono derecho */
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
   font-size: 1rem;
   background: white;
-  transition: all var(--transition-normal);
-  color: var(--text-color);
+  transition: all 0.3s ease;
+  color: #1f2937;
+  box-sizing: border-box; /* IMPORTANTE: Asegurar box-sizing correcto */
 }
 
-.buscador-input:focus {
+.trabajador-buscador .buscador-input:focus {
   outline: none;
-  border-color: var(--primary-green);
+  border-color: #22c55e;
   box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
   background: white;
 }
 
-.buscador-input:disabled {
-  background: var(--background-secondary);
-  color: var(--text-light);
+.trabajador-buscador .buscador-input:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
   cursor: not-allowed;
-  border-color: var(--border-light);
+  border-color: #d1d5db;
 }
 
-.buscador-input.has-selection {
-  border-color: var(--primary-green);
-  background: var(--light-green);
-  padding-right: 80px;
+.trabajador-buscador .buscador-input.has-selection {
+  border-color: #22c55e;
+  background: #f0fdf4;
+  padding-right: 80px; /* Más espacio cuando hay botón de limpiar */
 }
 
-.search-icon {
+.trabajador-buscador .search-icon {
   position: absolute;
   right: 15px;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-secondary);
+  color: #6b7280;
   font-size: 1.2rem;
   pointer-events: none;
-  z-index: 1;
+  z-index: 1; /* Z-index bajo para que no tape el texto */
+  user-select: none; /* Prevenir selección accidental */
 }
 
-.clear-button {
+.trabajador-buscador .clear-button {
   position: absolute;
-  right: 45px;
+  right: 45px; /* Posicionado antes del ícono de búsqueda */
   top: 50%;
   transform: translateY(-50%);
-  background: var(--danger-color);
+  background: #ef4444;
   color: white;
   border: none;
   border-radius: 50%;
@@ -64,74 +66,74 @@
   height: 24px;
   font-size: 0.8rem;
   cursor: pointer;
-  transition: all var(--transition-fast);
+  transition: all 0.2s ease;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2;
+  z-index: 2; /* Z-index alto para que sea clickeable */
 }
 
-.clear-button:hover:not(:disabled) {
+.trabajador-buscador .clear-button:hover:not(:disabled) {
   background: #dc2626;
   transform: translateY(-50%) scale(1.1);
 }
 
-.clear-button:disabled {
+.trabajador-buscador .clear-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.resultados-dropdown {
+.trabajador-buscador .resultados-dropdown {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
   background: white;
-  border: 2px solid var(--border-color);
+  border: 2px solid #e5e7eb;
   border-top: none;
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
-  box-shadow: var(--shadow-lg);
+  border-radius: 0 0 12px 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   max-height: 280px;
   overflow-y: auto;
   z-index: 1000;
   animation: slideDown 0.2s ease;
 }
 
-.resultado-item {
+.trabajador-buscador .resultado-item {
   padding: 15px 18px;
   cursor: pointer;
-  transition: all var(--transition-fast);
-  border-bottom: 1px solid var(--border-light);
+  transition: all 0.2s ease;
+  border-bottom: 1px solid #f3f4f6;
   display: flex;
   align-items: center;
   gap: 15px;
 }
 
-.resultado-item:last-child {
+.trabajador-buscador .resultado-item:last-child {
   border-bottom: none;
 }
 
-.resultado-item:hover {
-  background: var(--light-green);
+.trabajador-buscador .resultado-item:hover {
+  background: #f0fdf4;
   transform: translateX(4px);
 }
 
-.resultado-item.selected {
-  background: var(--light-green);
-  border-left: 4px solid var(--primary-green);
+.trabajador-buscador .resultado-item.selected {
+  background: #f0fdf4;
+  border-left: 4px solid #22c55e;
 }
 
-.resultado-content {
+.trabajador-buscador .resultado-content {
   display: flex;
   align-items: center;
   gap: 15px;
   width: 100%;
 }
 
-.resultado-avatar {
+.trabajador-buscador .resultado-avatar {
   width: 45px;
   height: 45px;
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -144,14 +146,14 @@
   box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
 }
 
-.resultado-info {
+.trabajador-buscador .resultado-info {
   flex: 1;
   min-width: 0;
 }
 
-.resultado-nombre {
+.trabajador-buscador .resultado-nombre {
   font-weight: 600;
-  color: var(--text-color);
+  color: #1f2937;
   font-size: 1rem;
   white-space: nowrap;
   overflow: hidden;
@@ -159,60 +161,60 @@
   margin-bottom: 4px;
 }
 
-.resultado-cedula {
+.trabajador-buscador .resultado-cedula {
   font-size: 0.85rem;
-  color: var(--text-secondary);
+  color: #6b7280;
   font-weight: 500;
   margin-bottom: 2px;
 }
 
-.resultado-extra {
+.trabajador-buscador .resultado-extra {
   font-size: 0.75rem;
-  color: var(--text-light);
+  color: #9ca3af;
   font-weight: 500;
 }
 
-.no-resultados {
+.trabajador-buscador .no-resultados {
   padding: 25px 18px;
   text-align: center;
-  color: var(--text-secondary);
+  color: #6b7280;
   cursor: default;
   flex-direction: column;
   gap: 10px;
 }
 
-.no-resultados:hover {
+.trabajador-buscador .no-resultados:hover {
   background: none;
   transform: none;
 }
 
-.no-resultados-icon {
+.trabajador-buscador .no-resultados-icon {
   font-size: 1.8rem;
   opacity: 0.6;
 }
 
-.no-resultados-text {
+.trabajador-buscador .no-resultados-text {
   font-size: 0.9rem;
   font-style: italic;
   line-height: 1.4;
 }
 
-.selected-info {
+.trabajador-buscador .selected-info {
   margin-top: 12px;
   padding: 15px 18px;
-  background: var(--light-green);
-  border-radius: var(--radius-lg);
-  border: 2px solid var(--primary-green);
+  background: #f0fdf4;
+  border-radius: 12px;
+  border: 2px solid #22c55e;
   display: flex;
   align-items: center;
   gap: 15px;
   animation: slideInUp 0.3s ease;
 }
 
-.selected-avatar {
+.trabajador-buscador .selected-avatar {
   width: 50px;
   height: 50px;
-  background: var(--gradient-primary);
+  background: linear-gradient(135deg, #22c55e, #16a34a);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -225,26 +227,26 @@
   box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
 }
 
-.selected-text {
+.trabajador-buscador .selected-text {
   flex: 1;
-  color: var(--text-color);
+  color: #1f2937;
 }
 
-.selected-text strong {
-  color: var(--primary-green);
+.trabajador-buscador .selected-text strong {
+  color: #22c55e;
   font-size: 1.1rem;
   display: block;
   margin-bottom: 4px;
 }
 
-.selected-meta {
+.trabajador-buscador .selected-meta {
   font-size: 0.85rem;
-  color: var(--text-secondary);
+  color: #6b7280;
   font-weight: 500;
 }
 
-.required-asterisk {
-  color: var(--danger-color);
+.trabajador-buscador .required-asterisk {
+  color: #ef4444;
   margin-left: 4px;
   font-weight: bold;
 }
@@ -273,21 +275,21 @@
 }
 
 /* Scrollbar personalizado para el dropdown */
-.resultados-dropdown::-webkit-scrollbar {
+.trabajador-buscador .resultados-dropdown::-webkit-scrollbar {
   width: 8px;
 }
 
-.resultados-dropdown::-webkit-scrollbar-track {
-  background: var(--background-secondary);
+.trabajador-buscador .resultados-dropdown::-webkit-scrollbar-track {
+  background: #f3f4f6;
 }
 
-.resultados-dropdown::-webkit-scrollbar-thumb {
-  background: var(--primary-green);
+.trabajador-buscador .resultados-dropdown::-webkit-scrollbar-thumb {
+  background: #22c55e;
   border-radius: 4px;
 }
 
-.resultados-dropdown::-webkit-scrollbar-thumb:hover {
-  background: var(--secondary-green);
+.trabajador-buscador .resultados-dropdown::-webkit-scrollbar-thumb:hover {
+  background: #16a34a;
 }
 
 /* Variante compacta para formularios con poco espacio */
@@ -335,94 +337,116 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .buscador-input {
+  .trabajador-buscador .buscador-input {
     padding: 12px 45px 12px 15px;
     font-size: 0.9rem;
   }
   
-  .buscador-input.has-selection {
+  .trabajador-buscador .buscador-input.has-selection {
     padding-right: 70px;
   }
   
-  .search-icon {
+  .trabajador-buscador .search-icon {
     right: 12px;
     font-size: 1.1rem;
   }
   
-  .clear-button {
+  .trabajador-buscador .clear-button {
     right: 38px;
     width: 20px;
     height: 20px;
     font-size: 0.7rem;
   }
   
-  .resultado-item {
+  .trabajador-buscador .resultado-item {
     padding: 12px 15px;
   }
   
-  .resultado-avatar {
+  .trabajador-buscador .resultado-avatar {
     width: 40px;
     height: 40px;
     font-size: 0.8rem;
   }
   
-  .resultado-nombre {
+  .trabajador-buscador .resultado-nombre {
     font-size: 0.9rem;
   }
   
-  .resultado-cedula {
+  .trabajador-buscador .resultado-cedula {
     font-size: 0.8rem;
   }
   
-  .resultado-extra {
+  .trabajador-buscador .resultado-extra {
     font-size: 0.7rem;
   }
   
-  .selected-info {
+  .trabajador-buscador .selected-info {
     padding: 12px 15px;
   }
   
-  .selected-avatar {
+  .trabajador-buscador .selected-avatar {
     width: 45px;
     height: 45px;
     font-size: 0.9rem;
   }
   
-  .selected-text strong {
+  .trabajador-buscador .selected-text strong {
     font-size: 1rem;
   }
   
-  .selected-meta {
+  .trabajador-buscador .selected-meta {
     font-size: 0.8rem;
   }
 }
 
 @media (max-width: 480px) {
-  .resultados-dropdown {
+  .trabajador-buscador .resultados-dropdown {
     max-height: 240px;
   }
   
-  .resultado-item {
+  .trabajador-buscador .resultado-item {
     padding: 10px 12px;
   }
   
-  .resultado-content {
+  .trabajador-buscador .resultado-content {
     gap: 12px;
   }
   
-  .resultado-avatar {
+  .trabajador-buscador .resultado-avatar {
     width: 35px;
     height: 35px;
     font-size: 0.75rem;
   }
   
-  .selected-avatar {
+  .trabajador-buscador .selected-avatar {
     width: 40px;
     height: 40px;
     font-size: 0.85rem;
   }
   
-  .no-resultados {
+  .trabajador-buscador .no-resultados {
     padding: 20px 12px;
   }
+}
+
+/* Fix específico para prevenir superposición del ícono */
+.trabajador-buscador .buscador-input:focus + .search-icon,
+.trabajador-buscador .buscador-input:not(:placeholder-shown) + .search-icon {
+  opacity: 0.7; /* Hacer el ícono más transparente cuando hay texto */
+}
+
+/* Asegurar que el texto siempre tenga espacio suficiente */
+.trabajador-buscador .buscador-input::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+.trabajador-buscador .buscador-input::-webkit-input-placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+.trabajador-buscador .buscador-input::-moz-placeholder {
+  color: #9ca3af;
+  opacity: 1;
 }

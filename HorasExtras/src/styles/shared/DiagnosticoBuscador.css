@@ -1,56 +1,63 @@
-/* src/styles/shared/DiagnosticoBuscador.css */
 
 .diagnostico-buscador {
   position: relative;
   width: 100%;
 }
 
-.buscador-container {
+.diagnostico-buscador .buscador-container {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.buscador-input {
+.diagnostico-buscador .buscador-input {
   width: 100%;
-  padding: 12px 45px 12px 45px;
+  padding: 12px 50px 12px 45px; /* Suficiente padding izquierdo para el ícono */
   border: 2px solid #e5e7eb;
   border-radius: 8px;
   font-size: 1rem;
   transition: all 0.3s ease;
   background: white;
+  color: #1f2937;
+  box-sizing: border-box; /* IMPORTANTE: Asegurar box-sizing correcto */
 }
 
-.buscador-input:focus {
+.diagnostico-buscador .buscador-input:focus {
   outline: none;
   border-color: #3b82f6;
   box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
-.buscador-input.has-selection {
+.diagnostico-buscador .buscador-input.has-selection {
   background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
   border-color: #0ea5e9;
   font-weight: 500;
+  padding-right: 50px; /* Espacio para el botón de limpiar */
 }
 
-.buscador-input:disabled {
+.diagnostico-buscador .buscador-input:disabled {
   background-color: #f9fafb;
   cursor: not-allowed;
   opacity: 0.6;
 }
 
-.search-icon {
+.diagnostico-buscador .search-icon {
   position: absolute;
-  left: 12px;
+  left: 15px; /* Posicionado a la izquierda con suficiente margen */
+  top: 50%;
+  transform: translateY(-50%);
   font-size: 1.2rem;
   color: #6b7280;
   pointer-events: none;
-  z-index: 2;
+  z-index: 1; /* Z-index bajo para que no interfiera */
+  user-select: none; /* Prevenir selección accidental */
 }
 
-.clear-button {
+.diagnostico-buscador .clear-button {
   position: absolute;
-  right: 12px;
+  right: 15px; /* Posicionado a la derecha */
+  top: 50%;
+  transform: translateY(-50%);
   background: none;
   border: none;
   cursor: pointer;
@@ -59,7 +66,7 @@
   padding: 4px;
   border-radius: 4px;
   transition: all 0.2s ease;
-  z-index: 2;
+  z-index: 2; /* Z-index alto para que sea clickeable */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -67,17 +74,17 @@
   height: 24px;
 }
 
-.clear-button:hover {
+.diagnostico-buscador .clear-button:hover {
   background-color: rgba(239, 68, 68, 0.1);
-  transform: scale(1.1);
+  transform: translateY(-50%) scale(1.1);
 }
 
-.clear-button:disabled {
+.diagnostico-buscador .clear-button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
 
-.resultados-dropdown {
+.diagnostico-buscador .resultados-dropdown {
   position: absolute;
   top: 100%;
   left: 0;
@@ -92,7 +99,7 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.resultado-item {
+.diagnostico-buscador .resultado-item {
   padding: 12px 16px;
   border-bottom: 1px solid #f3f4f6;
   cursor: pointer;
@@ -101,32 +108,32 @@
   align-items: center;
 }
 
-.resultado-item:last-child {
+.diagnostico-buscador .resultado-item:last-child {
   border-bottom: none;
 }
 
-.resultado-item:hover {
+.diagnostico-buscador .resultado-item:hover {
   background: linear-gradient(135deg, #f8fafc, #f1f5f9);
   transform: translateX(4px);
 }
 
-.resultado-item.selected {
+.diagnostico-buscador .resultado-item.selected {
   background: linear-gradient(135deg, #dbeafe, #bfdbfe);
   border-left: 4px solid #3b82f6;
 }
 
-.resultado-item.loading {
+.diagnostico-buscador .resultado-item.loading {
   justify-content: center;
   padding: 20px;
   cursor: default;
 }
 
-.resultado-item.loading:hover {
+.diagnostico-buscador .resultado-item.loading:hover {
   background: white;
   transform: none;
 }
 
-.loading-content {
+.diagnostico-buscador .loading-content {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -134,7 +141,7 @@
   font-size: 0.9rem;
 }
 
-.loading-spinner {
+.diagnostico-buscador .loading-spinner {
   width: 20px;
   height: 20px;
   border: 2px solid #e5e7eb;
@@ -148,14 +155,14 @@
   100% { transform: rotate(360deg); }
 }
 
-.resultado-content {
+.diagnostico-buscador .resultado-content {
   display: flex;
   align-items: center;
   gap: 12px;
   width: 100%;
 }
 
-.resultado-avatar {
+.diagnostico-buscador .resultado-avatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -167,19 +174,19 @@
   flex-shrink: 0;
 }
 
-.resultado-info {
+.diagnostico-buscador .resultado-info {
   flex-grow: 1;
   min-width: 0;
 }
 
-.resultado-codigo {
+.diagnostico-buscador .resultado-codigo {
   font-weight: 600;
   color: #1f2937;
   font-size: 0.95rem;
   margin-bottom: 2px;
 }
 
-.resultado-descripcion {
+.diagnostico-buscador .resultado-descripcion {
   color: #6b7280;
   font-size: 0.85rem;
   line-height: 1.4;
@@ -189,7 +196,7 @@
   overflow: hidden;
 }
 
-.no-resultados {
+.diagnostico-buscador .no-resultados {
   text-align: center;
   padding: 24px 16px;
   color: #6b7280;
@@ -199,29 +206,29 @@
   gap: 8px;
 }
 
-.no-resultados:hover {
+.diagnostico-buscador .no-resultados:hover {
   background: white;
   transform: none;
 }
 
-.no-resultados-icon {
+.diagnostico-buscador .no-resultados-icon {
   font-size: 2rem;
   margin-bottom: 8px;
 }
 
-.no-resultados-text {
+.diagnostico-buscador .no-resultados-text {
   font-size: 0.9rem;
   line-height: 1.5;
 }
 
-.no-resultados-text small {
+.diagnostico-buscador .no-resultados-text small {
   color: #9ca3af;
   font-size: 0.8rem;
   display: block;
   margin-top: 4px;
 }
 
-.selected-info {
+.diagnostico-buscador .selected-info {
   background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
   border: 2px solid #0ea5e9;
   border-radius: 8px;
@@ -233,18 +240,7 @@
   animation: slideInUp 0.3s ease-out;
 }
 
-@keyframes slideInUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.selected-avatar {
+.diagnostico-buscador .selected-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -256,19 +252,19 @@
   flex-shrink: 0;
 }
 
-.selected-text {
+.diagnostico-buscador .selected-text {
   flex-grow: 1;
   min-width: 0;
 }
 
-.selected-text strong {
+.diagnostico-buscador .selected-text strong {
   color: #0c4a6e;
   font-size: 0.95rem;
   display: block;
   margin-bottom: 2px;
 }
 
-.selected-meta {
+.diagnostico-buscador .selected-meta {
   color: #0369a1;
   font-size: 0.8rem;
   line-height: 1.4;
@@ -278,56 +274,99 @@
   overflow: hidden;
 }
 
-.required-asterisk {
+.diagnostico-buscador .required-asterisk {
   color: #ef4444;
   margin-left: 4px;
 }
 
 /* Responsive */
 @media (max-width: 640px) {
-  .resultado-content {
+  .diagnostico-buscador .resultado-content {
     gap: 8px;
   }
   
-  .resultado-avatar {
+  .diagnostico-buscador .resultado-avatar {
     width: 32px;
     height: 32px;
     font-size: 1rem;
   }
   
-  .buscador-input {
-    padding: 10px 40px 10px 40px;
+  .diagnostico-buscador .buscador-input {
+    padding: 10px 45px 10px 40px; /* Ajuste para móvil */
     font-size: 0.9rem;
   }
   
-  .resultados-dropdown {
+  .diagnostico-buscador .search-icon {
+    left: 12px;
+    font-size: 1rem;
+  }
+  
+  .diagnostico-buscador .clear-button {
+    right: 12px;
+    width: 20px;
+    height: 20px;
+    font-size: 1rem;
+  }
+  
+  .diagnostico-buscador .resultados-dropdown {
     max-height: 250px;
   }
   
-  .resultado-codigo {
+  .diagnostico-buscador .resultado-codigo {
     font-size: 0.9rem;
   }
   
-  .resultado-descripcion {
+  .diagnostico-buscador .resultado-descripcion {
     font-size: 0.8rem;
   }
 }
 
 /* Scroll personalizado para el dropdown */
-.resultados-dropdown::-webkit-scrollbar {
+.diagnostico-buscador .resultados-dropdown::-webkit-scrollbar {
   width: 8px;
 }
 
-.resultados-dropdown::-webkit-scrollbar-track {
+.diagnostico-buscador .resultados-dropdown::-webkit-scrollbar-track {
   background: #f1f5f9;
   border-radius: 4px;
 }
 
-.resultados-dropdown::-webkit-scrollbar-thumb {
+.diagnostico-buscador .resultados-dropdown::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 4px;
 }
 
-.resultados-dropdown::-webkit-scrollbar-thumb:hover {
+.diagnostico-buscador .resultados-dropdown::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
+}
+
+/* Fix específico para prevenir superposición del ícono */
+.diagnostico-buscador .buscador-input:focus + .search-icon,
+.diagnostico-buscador .buscador-input:not(:placeholder-shown) + .search-icon {
+  opacity: 0.7; /* Hacer el ícono más transparente cuando hay texto */
+}
+
+/* Asegurar que el texto siempre tenga espacio suficiente */
+.diagnostico-buscador .buscador-input::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+.diagnostico-buscador .buscador-input::-webkit-input-placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+.diagnostico-buscador .buscador-input::-moz-placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
+/* Ajuste específico para evitar que el texto se superponga con el ícono izquierdo */
+.diagnostico-buscador .buscador-input[value]:not([value=""]) {
+  text-indent: 0; /* Asegurar que no hay indentación extra */
+}
+
+.diagnostico-buscador .buscador-input:not(:placeholder-shown) {
+  padding-left: 45px; /* Mantener padding consistente cuando hay texto */
 }
