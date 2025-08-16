@@ -201,10 +201,16 @@ const AusenciaForm = () => {
   const [loadingTrabajadores, setLoadingTrabajadores] = useState(true);
   const [mostrarInfo, setMostrarInfo] = useState(false);
 
-  // 🆕 Función para determinar si mostrar el campo diagnóstico
+  // 🆕 Función actualizada para determinar si mostrar el campo diagnóstico
   const mostrarCampoDiagnostico = () => {
-    return formData.tipoAusencia === "Cita médica general" || 
-           formData.tipoAusencia === "Cita Seguimiento EO";
+    const tiposConDiagnostico = [
+      "Cita médica general",
+      "Cita Seguimiento EO", 
+      "Enfermedad común",
+      "Enfermedad Laboral"
+    ];
+    
+    return tiposConDiagnostico.includes(formData.tipoAusencia);
   };
 
   // Cargar trabajadores al montar el componente
@@ -413,7 +419,7 @@ ${formData.remunerado
             <li>Las ausencias aparecen junto con los registros normales de trabajo</li>
             <li>Si es <strong>remunerada</strong>: cuenta como horas normales trabajadas</li>
             <li>Si <strong>no es remunerada</strong>: se marca como horas ausentes</li>
-            <li><strong>Para citas médicas</strong>: puedes agregar el diagnóstico CIE-10 correspondiente</li>
+            <li><strong>Para citas médicas y enfermedades</strong>: puedes agregar el diagnóstico CIE-10 correspondiente</li>
           </ul>
           
           <p>
@@ -551,7 +557,7 @@ ${formData.remunerado
               />
             </div>
 
-            {/* 🆕 CAMPO DIAGNÓSTICO CON BUSCADOR */}
+            {/* 🆕 CAMPO DIAGNÓSTICO CON BUSCADOR - AHORA PARA MÁS TIPOS */}
             {mostrarCampoDiagnostico() && (
               <div className="form-group full-width">
                 <div className="diagnostico-section">
@@ -571,7 +577,11 @@ ${formData.remunerado
                   
                   <small className="diagnostico-help">
                     💡 <strong>Ayuda:</strong> Puedes buscar por código CIE-10 (ejemplo: "A09") o por descripción (ejemplo: "diarrea", "cefalea"). 
-                    Este campo es opcional pero recomendado para citas médicas ya que permite un mejor seguimiento estadístico.
+                    Este campo es opcional pero recomendado para {
+                      formData.tipoAusencia === "Cita médica general" || formData.tipoAusencia === "Cita Seguimiento EO" 
+                        ? "citas médicas" 
+                        : "casos de enfermedad"
+                    } ya que permite un mejor seguimiento estadístico.
                   </small>
                 </div>
               </div>
