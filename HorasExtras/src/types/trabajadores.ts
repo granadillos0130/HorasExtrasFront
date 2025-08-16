@@ -66,7 +66,7 @@ export interface Trabajador {
   };
 }
 
-// ✅ DTO ACTUALIZADO para enviar todo en una sola llamada
+// ✅ DTO ACTUALIZADO - valorHora ahora es OPCIONAL porque el backend lo calcula automáticamente
 export interface CrearTrabajadorDto {
   // ===== INFORMACIÓN BÁSICA DEL TRABAJADOR =====
   nombre: string;
@@ -80,7 +80,7 @@ export interface CrearTrabajadorDto {
   nivelEscolaridad: string;
   salario: number;
   auxilioTransporte: number;
-  valorHora: number;
+  valorHora?: number; // ✅ OPCIONAL - el backend lo calcula automáticamente
   fechaContratacion: string;
   correo: string;
   personaContacto: string;

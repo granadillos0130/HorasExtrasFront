@@ -24,7 +24,7 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
     nivelEscolaridad: "",
     salario: 0,
     auxilioTransporte: 0,
-    valorHora: 0,
+    // ❌ ELIMINADO: valorHora - ahora lo calcula el backend
     fechaContratacion: "",
     correo: "",
     personaContacto: "",
@@ -62,21 +62,6 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
     return numeroLimpio.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
 
-  // ✅ Función para formatear valor hora con decimales (ej: 14.573,91)
-  const formatearValorHora = (valor: number): string => {
-    if (!valor || valor === 0) return '0,00';
-    
-    // Separar parte entera y decimal
-    const parteEntera = Math.floor(valor);
-    const parteDecimal = Math.round((valor - parteEntera) * 100);
-    
-    // Formatear parte entera con puntos de miles
-    const enteroFormateado = parteEntera.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    
-    // Agregar parte decimal con coma
-    return `${enteroFormateado},${parteDecimal.toString().padStart(2, '0')}`;
-  };
-
   // ✅ Función para obtener el valor numérico sin formato
   const obtenerValorNumerico = (valorFormateado: string): number => {
     return parseInt(valorFormateado.replace(/\./g, '')) || 0;
@@ -96,15 +81,8 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
     }
   }, [form.fechaNacimiento]);
 
-  // Auto-calcular valor hora cuando cambia el salario o auxilio de transporte
-  useEffect(() => {
-    if (form.salario && form.salario > 0) {
-      const auxilioTransporte = form.auxilioTransporte || 0;
-      const parafiscales = (form.salario * 0.6544) + form.salario + auxilioTransporte;
-      const valorHora = parafiscales / 184;
-      setForm(prev => ({ ...prev, valorHora: Math.round(valorHora * 100) / 100 }));
-    }
-  }, [form.salario, form.auxilioTransporte]);
+  // ❌ ELIMINADO: useEffect que calculaba valor hora automáticamente
+  // El backend ahora se encarga de calcular el valor hora
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -120,7 +98,7 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
       setForm((prev) => ({
         ...prev,
         [name]:
-          ["edad", "cantidadHijos", "valorHora"].includes(name)
+          ["edad", "cantidadHijos"].includes(name) // ❌ ELIMINADO: valorHora
             ? Number(value)
             : value
       }));
@@ -542,19 +520,24 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                 {errors.auxilioTransporte && <span className="error-text">{errors.auxilioTransporte}</span>}
               </div>
 
+              {/* ✅ CAMPO DE VALOR HORA ACTUALIZADO */}
               <div className="form-group">
                 <label className="form-label">Valor Hora</label>
                 <input
                   type="text"
                   name="valorHora"
-                  value={formatearValorHora(form.valorHora || 0)}
-                  onChange={handleChange}
+                  value="Se calculará automáticamente al crear el trabajador"
                   className="form-input"
                   disabled={true}
-                  placeholder="Se calcula automáticamente"
+                  placeholder="El backend calculará según la fecha actual"
+                  style={{ 
+                    fontStyle: 'italic', 
+                    color: 'var(--text-secondary)',
+                    backgroundColor: 'var(--background-secondary)' 
+                  }}
                 />
                 <small style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                  Fórmula: (Salario × 0.6544 + Salario + Auxilio) ÷ 184
+                  📊 Fórmula: (Salario × 1.6544 + Auxilio) ÷ {new Date() >= new Date(2025, 7, 1) ? '176' : '184'}
                 </small>
               </div>
 
@@ -925,7 +908,7 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                   <p><strong>Correo:</strong> {form.correo}</p>
                   <p><strong>Salario:</strong> ${form.salario ? formatearNumero(form.salario.toString()) : '0'}</p>
                   <p><strong>Auxilio Transporte:</strong> ${form.auxilioTransporte ? formatearNumero(form.auxilioTransporte.toString()) : '0'}</p>
-                  <p><strong>Valor Hora:</strong> ${formatearValorHora(form.valorHora || 0)}</p>
+                  <p><strong>Valor Hora:</strong> Se calculará automáticamente</p>
                   <p><strong>Tipo:</strong> {form.tipoContratacion}</p>
                 </div>
 
