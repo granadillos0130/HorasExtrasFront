@@ -237,30 +237,24 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     }
   };
 
+  // 🔧 HANDLER CORREGIDO - SIN verificación isMountedRef que bloquea actualizaciones
   const handleInputChange = (field: keyof RegistroInputDto, value: string | number | boolean) => {
-    if (!isMountedRef.current) return;
-    
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
   };
 
-  // HANDLER PARA TRABAJADOR
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleTrabajadorChange = (trabajadorId: number, _trabajador?: Trabajador) => {
-    if (!isMountedRef.current) return;
-    
+  // 🔧 HANDLER CORREGIDO PARA TRABAJADOR - SIN verificación isMountedRef
+  const handleTrabajadorChange = (trabajadorId: number) => {
     setFormData((prev) => ({
       ...prev,
       Trabajador_ID: trabajadorId,
     }));
   };
 
-  // HANDLER PARA CENTRO
+  // 🔧 HANDLER CORREGIDO PARA CENTRO - SIN verificación isMountedRef
   const handleCentroChange = (centroId: string) => {
-    if (!isMountedRef.current) return;
-    
     const centroSeleccionado = centros.find((c) => c.id === centroId);
     setFormData((prev) => ({
       ...prev,
