@@ -25,7 +25,7 @@ import TrabajadorAusenciasPage from "./pages/TrabajadorAusenciasPage";
 // 🆕 CACHE MANAGER - AGREGAR ESTA FUNCIÓN
 const useCacheManager = () => {
   useEffect(() => {
-    const CURRENT_VERSION = '2025-08-14-v1'; // 🎯 CAMBIA ESTO cuando tengas bugs importantes
+    const CURRENT_VERSION = '2025-08-19-v1'; // 🎯 CAMBIA ESTO cuando tengas bugs importantes
     const lastVersion = localStorage.getItem('app_version');
     
     if (lastVersion !== CURRENT_VERSION) {
