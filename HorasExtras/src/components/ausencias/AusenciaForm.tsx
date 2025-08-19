@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { crearAusencia } from "../../api/ausenciasService";
 import { trabajadoresService } from "../../api/trabajadoresService";
+import { crearDiagnostico } from "../../api/ausenciasService"; // Importar la función
 import TrabajadorBuscador from "../shared/TrabajadorBuscador";
 import DiagnosticoBuscador from "../shared/DiagnosticoBuscador";
 import type { AusenciaDto } from "../../types/ausencia";
@@ -8,7 +9,7 @@ import type { Trabajador } from "../../types/trabajadores";
 import type { Diagnostico } from "../../types/diagnostico";
 import "../../styles/components/ausencias/AusenciaForm.css";
 
-// Estilos adicionales para el loading (mantenemos los mismos del original)
+// Estilos adicionales para el loading y modal
 const loadingStyles = `
 .loading-container {
   display: flex;
@@ -123,7 +124,6 @@ const loadingStyles = `
   margin: 5px 0;
 }
 
-/* 🆕 Estilos mejorados para el área de diagnóstico */
 .diagnostico-section {
   background: linear-gradient(135deg, #f0f9ff, #e0f2fe);
   border: 2px solid #0ea5e9;
@@ -165,6 +165,224 @@ const loadingStyles = `
   border-radius: 6px;
   border-left: 3px solid #0ea5e9;
 }
+
+/* 🆕 Estilos para la modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.modal-container {
+  background: white;
+  border-radius: 16px;
+  padding: 0;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: modalSlideIn 0.3s ease-out;
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-50px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-header {
+  background: linear-gradient(135deg, #1e40af, #3b82f6);
+  color: white;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 16px 16px 0 0;
+}
+
+.modal-title {
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-close {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  font-size: 1.2rem;
+  font-weight: bold;
+  transition: background 0.2s;
+}
+
+.modal-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.modal-body {
+  padding: 30px;
+  overflow-y: auto;
+  max-height: calc(90vh - 140px);
+}
+
+.modal-form-group {
+  margin-bottom: 20px;
+}
+
+.modal-form-label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #374151;
+  font-size: 0.95rem;
+}
+
+.modal-form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.modal-form-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modal-form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  font-size: 1rem;
+  min-height: 80px;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.modal-form-textarea:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.modal-btn {
+  padding: 12px 24px;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.modal-btn-secondary {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.modal-btn-secondary:hover:not(:disabled) {
+  background: #e5e7eb;
+}
+
+.modal-btn-primary {
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  color: white;
+}
+
+.modal-btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.modal-help-text {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  color: #92400e;
+}
+
+.modal-help-text strong {
+  color: #78350f;
+}
+
+.required {
+  color: #ef4444;
+}
+
+/* Crear diagnóstico button */
+.crear-diagnostico-btn {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  border: none;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  transition: all 0.2s;
+}
+
+.crear-diagnostico-btn:hover {
+  background: linear-gradient(135deg, #059669, #047857);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
 `;
 
 // Inyectar estilos
@@ -186,10 +404,178 @@ const initialState: AusenciaDto = {
   horaInicio: "08:00",
   horaFin: "10:00",
   remunerado: false,
-  // 🆕 Campos de diagnóstico actualizados
   diagnosticoId: undefined,
   diagnosticoCodigo: "",
   diagnosticoDescripcion: "",
+};
+
+// 🆕 Interface para el nuevo diagnóstico
+interface NuevoDiagnostico {
+  codigo: string;
+  descripcion: string;
+}
+
+const initialDiagnosticoState: NuevoDiagnostico = {
+  codigo: "",
+  descripcion: ""
+};
+
+// 🆕 Componente Modal para crear diagnóstico
+const CrearDiagnosticoModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  onDiagnosticoCreated: (diagnostico: Diagnostico) => void;
+}> = ({ isOpen, onClose, onDiagnosticoCreated }) => {
+  const [formData, setFormData] = useState<NuevoDiagnostico>(initialDiagnosticoState);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const nuevoDiagnostico = await crearDiagnostico(formData);
+      onDiagnosticoCreated(nuevoDiagnostico);
+      setFormData(initialDiagnosticoState);
+      onClose();
+    } catch (error) {
+      console.error("Error al crear diagnóstico:", error);
+      setError("Error al crear el diagnóstico. Verifique que el código no exista ya.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleClose = () => {
+    setFormData(initialDiagnosticoState);
+    setError("");
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="modal-overlay" onClick={handleClose}>
+      <div className="modal-container" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3 className="modal-title">
+            <span>🏥</span>
+            Crear Nuevo Diagnóstico
+          </h3>
+          <button 
+            type="button" 
+            className="modal-close" 
+            onClick={handleClose}
+            disabled={isLoading}
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="modal-body">
+          <div className="modal-help-text">
+            <strong>💡 Información importante:</strong><br/>
+            Estás creando un nuevo diagnóstico CIE-10. Asegúrate de que el código sea correcto 
+            y que no exista ya en el sistema. Una vez creado, estará disponible para todos los usuarios.
+          </div>
+
+          <form onSubmit={handleSubmit}>
+            <div className="modal-form-group">
+              <label className="modal-form-label">
+                Código CIE-10 <span className="required">*</span>
+              </label>
+              <input
+                type="text"
+                name="codigo"
+                value={formData.codigo}
+                onChange={handleChange}
+                className="modal-form-input"
+                placeholder="Ej: A09, M79.1, K59.0"
+                required
+                maxLength={10}
+                style={{ textTransform: 'uppercase' }}
+              />
+              <small style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>
+                Formato típico: 1 letra + 2-3 números + opcional punto y más números
+              </small>
+            </div>
+
+            <div className="modal-form-group">
+              <label className="modal-form-label">
+                Descripción <span className="required">*</span>
+              </label>
+              <textarea
+                name="descripcion"
+                value={formData.descripcion}
+                onChange={handleChange}
+                className="modal-form-textarea"
+                placeholder="Descripción detallada del diagnóstico..."
+                required
+                maxLength={500}
+              />
+              <small style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>
+                {formData.descripcion.length}/500 caracteres
+              </small>
+            </div>
+
+            {error && (
+              <div style={{
+                background: '#fee2e2',
+                border: '1px solid #ef4444',
+                borderRadius: '8px',
+                padding: '12px',
+                color: '#7f1d1d',
+                fontSize: '0.9rem',
+                marginBottom: '20px'
+              }}>
+                <strong>❌ Error:</strong> {error}
+              </div>
+            )}
+
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="modal-btn modal-btn-secondary"
+                onClick={handleClose}
+                disabled={isLoading}
+              >
+                <span>❌</span>
+                Cancelar
+              </button>
+              
+              <button
+                type="submit"
+                className="modal-btn modal-btn-primary"
+                disabled={isLoading || !formData.codigo.trim() || !formData.descripcion.trim()}
+              >
+                {isLoading ? (
+                  <>
+                    <span className="loading-spinner" style={{ width: '16px', height: '16px' }}></span>
+                    Creando...
+                  </>
+                ) : (
+                  <>
+                    <span>💾</span>
+                    Crear Diagnóstico
+                  </>
+                )}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const AusenciaForm = () => {
@@ -200,8 +586,11 @@ const AusenciaForm = () => {
   const [trabajadorSeleccionadoId, setTrabajadorSeleccionadoId] = useState<number>(0);
   const [loadingTrabajadores, setLoadingTrabajadores] = useState(true);
   const [mostrarInfo, setMostrarInfo] = useState(false);
+  
+  // 🆕 Estados para la modal de crear diagnóstico
+  const [showCrearDiagnosticoModal, setShowCrearDiagnosticoModal] = useState(false);
+  const [diagnosticoBuscadorKey, setDiagnosticoBuscadorKey] = useState(0); // Para forzar refresh
 
-  // 🆕 Función actualizada para determinar si mostrar el campo diagnóstico
   const mostrarCampoDiagnostico = () => {
     const tiposConDiagnostico = [
       "Cita médica general",
@@ -249,12 +638,10 @@ const AusenciaForm = () => {
       newValue = new Date(value);
     }
 
-    // 🆕 Limpiar diagnóstico cuando cambia el tipo de ausencia
     if (name === "tipoAusencia") {
       setFormData((prev) => ({
         ...prev,
         tipoAusencia: value as string,
-        // Limpiar diagnóstico cuando cambia el tipo
         diagnosticoId: undefined,
         diagnosticoCodigo: "",
         diagnosticoDescripcion: ""
@@ -268,7 +655,6 @@ const AusenciaForm = () => {
     }));
   };
 
-  // Manejar selección de trabajador
   const handleTrabajadorSelect = (trabajadorId: number, trabajador?: Trabajador) => {
     setTrabajadorSeleccionadoId(trabajadorId);
     
@@ -287,7 +673,6 @@ const AusenciaForm = () => {
     }
   };
 
-  // 🆕 Manejar selección de diagnóstico
   const handleDiagnosticoSelect = (diagnosticoId: number | undefined, diagnostico?: Diagnostico) => {
     setFormData(prev => ({
       ...prev,
@@ -295,6 +680,28 @@ const AusenciaForm = () => {
       diagnosticoCodigo: diagnostico?.codigo || "",
       diagnosticoDescripcion: diagnostico?.descripcion || ""
     }));
+  };
+
+  // 🆕 Manejar cuando se crea un nuevo diagnóstico
+  const handleDiagnosticoCreated = (nuevoDiagnostico: Diagnostico) => {
+    // Seleccionar automáticamente el nuevo diagnóstico
+    setFormData(prev => ({
+      ...prev,
+      diagnosticoId: nuevoDiagnostico.id,
+      diagnosticoCodigo: nuevoDiagnostico.codigo,
+      diagnosticoDescripcion: nuevoDiagnostico.descripcion
+    }));
+    
+    // Forzar refresh del buscador para que aparezca el nuevo diagnóstico
+    setDiagnosticoBuscadorKey(prev => prev + 1);
+    
+    // Mostrar mensaje de éxito
+    setMensaje("success:🎉 ¡Diagnóstico creado exitosamente!\n\nSe ha seleccionado automáticamente en el formulario.");
+    
+    // Limpiar mensaje después de unos segundos
+    setTimeout(() => {
+      setMensaje("");
+    }, 5000);
   };
 
   const calcularDiasAusencia = (fechaInicio: Date, fechaFin: Date): number => {
@@ -365,6 +772,7 @@ ${formData.remunerado
       // Reiniciar el formulario
       setFormData(initialState);
       setTrabajadorSeleccionadoId(0);
+      setDiagnosticoBuscadorKey(prev => prev + 1); // Refresh del buscador
       
       // Scroll hacia el mensaje
       setTimeout(() => {
@@ -386,6 +794,7 @@ ${formData.remunerado
     setFormData(initialState);
     setTrabajadorSeleccionadoId(0);
     setMensaje("");
+    setDiagnosticoBuscadorKey(prev => prev + 1); // Refresh del buscador
   };
 
   // Componente de información sobre integración
@@ -557,7 +966,7 @@ ${formData.remunerado
               />
             </div>
 
-            {/* 🆕 CAMPO DIAGNÓSTICO CON BUSCADOR - AHORA PARA MÁS TIPOS */}
+            {/* 🆕 CAMPO DIAGNÓSTICO CON BUSCADOR Y OPCIÓN DE CREAR */}
             {mostrarCampoDiagnostico() && (
               <div className="form-group full-width">
                 <div className="diagnostico-section">
@@ -567,6 +976,7 @@ ${formData.remunerado
                   </div>
                   
                   <DiagnosticoBuscador
+                    key={diagnosticoBuscadorKey} // 🆕 Key para forzar refresh
                     value={formData.diagnosticoId}
                     onChange={handleDiagnosticoSelect}
                     placeholder="Buscar por código (ej: A09) o descripción (ej: diarrea)..."
@@ -575,8 +985,19 @@ ${formData.remunerado
                     showSelectedInfo={true}
                   />
                   
+                  {/* 🆕 Botón para crear nuevo diagnóstico */}
+                  <button
+                    type="button"
+                    className="crear-diagnostico-btn"
+                    onClick={() => setShowCrearDiagnosticoModal(true)}
+                  >
+                    <span>➕</span>
+                    Crear Nuevo Diagnóstico
+                  </button>
+                  
                   <small className="diagnostico-help">
                     💡 <strong>Ayuda:</strong> Puedes buscar por código CIE-10 (ejemplo: "A09") o por descripción (ejemplo: "diarrea", "cefalea"). 
+                    Si no encuentras el diagnóstico que necesitas, puedes crear uno nuevo haciendo clic en el botón de arriba.
                     Este campo es opcional pero recomendado para {
                       formData.tipoAusencia === "Cita médica general" || formData.tipoAusencia === "Cita Seguimiento EO" 
                         ? "citas médicas" 
@@ -761,6 +1182,13 @@ ${formData.remunerado
           </div>
         )}
       </form>
+
+      {/* 🆕 Modal para crear diagnóstico */}
+      <CrearDiagnosticoModal
+        isOpen={showCrearDiagnosticoModal}
+        onClose={() => setShowCrearDiagnosticoModal(false)}
+        onDiagnosticoCreated={handleDiagnosticoCreated}
+      />
     </div>
   );
 };

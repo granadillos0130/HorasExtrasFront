@@ -197,7 +197,10 @@ export async function getAllDiagnosticos() {
   const response = await api.get<Diagnostico[]>("/ausencias/diagnosticos");
   return response.data;
 }
-
+export async function crearDiagnostico(diagnostico: Omit<Diagnostico, "id">) {
+  const response = await api.post<Diagnostico>(`/ausencias/CrearDiagnostico`, diagnostico);
+  return response.data;
+}
 export async function buscarDiagnosticos(termino: string) {
   const response = await api.get<Diagnostico[]>(`/ausencias/diagnosticos/buscar/${termino}`);
   return response.data;
