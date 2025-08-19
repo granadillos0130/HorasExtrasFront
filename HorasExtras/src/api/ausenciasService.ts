@@ -412,6 +412,7 @@ export const ausenciasService = {
   getEstadisticasHoras,
   getEstadisticasHorasPorArea,
   getAllDiagnosticos,
+  crearDiagnostico,
   buscarDiagnosticos,
   getEstadisticasPorDiagnostico,
   getEstadisticasMensuales,

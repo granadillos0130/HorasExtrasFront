@@ -223,6 +223,7 @@ const DiagnosticoBuscador: React.FC<Props> = ({
   // Sincronizar con el valor externo
   useEffect(() => {
     if (value && value > 0) {
+      // Si tenemos un ID, buscar el diagnóstico completo
       cargarDiagnosticoPorId(value);
     } else {
       setDiagnosticoSeleccionado(null);
@@ -524,7 +525,7 @@ const DiagnosticoBuscador: React.FC<Props> = ({
       />
 
       {/* 🆕 Estilos adicionales para la modal */}
-      <style jsx>{`
+      <style>{`
         /* Estilos para la modal */
         .modal-overlay {
           position: fixed;
