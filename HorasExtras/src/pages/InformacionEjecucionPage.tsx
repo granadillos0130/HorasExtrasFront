@@ -248,12 +248,30 @@ const InformacionEjecucionPage: React.FC<Props> = ({ centroId, centroNombre, onV
     }).format(valor);
   };
 
+  // ✅ FUNCIÓN DE FECHA CORREGIDA
   const formatearFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+    try {
+      // Extraer solo la parte de la fecha (YYYY-MM-DD) sin hora
+      const fechaSolo = fecha.includes('T') ? fecha.split('T')[0] : fecha;
+      const [year, month, day] = fechaSolo.split('-');
+      
+      // Crear fecha local explícitamente para evitar problemas de zona horaria
+      const fechaObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+      
+      // Verificar que la fecha es válida
+      if (isNaN(fechaObj.getTime())) {
+        return fecha; // Retornar string original si no se puede parsear
+      }
+      
+      return fechaObj.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error al formatear fecha:', error);
+      return fecha; // Retornar string original en caso de error
+    }
   };
 
   const formatearHoras = (hours: number) => {
@@ -263,10 +281,28 @@ const InformacionEjecucionPage: React.FC<Props> = ({ centroId, centroNombre, onV
     return `${h}:${m.toString().padStart(2, "0")}`;
   };
 
+  // ✅ FUNCIÓN DE PERÍODO CORREGIDA
   const formatearFechaPeriodo = (fechaInicio: string, fechaFin: string) => {
-    const inicio = new Date(fechaInicio).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-    const fin = new Date(fechaFin).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
-    return `${inicio} - ${fin}`;
+    try {
+      // Extraer solo las partes de fecha sin hora
+      const fechaInicioSolo = fechaInicio.includes('T') ? fechaInicio.split('T')[0] : fechaInicio;
+      const fechaFinSolo = fechaFin.includes('T') ? fechaFin.split('T')[0] : fechaFin;
+      
+      const [yearI, monthI, dayI] = fechaInicioSolo.split('-');
+      const [yearF, monthF, dayF] = fechaFinSolo.split('-');
+      
+      // Crear fechas locales explícitamente
+      const inicio = new Date(parseInt(yearI), parseInt(monthI) - 1, parseInt(dayI));
+      const fin = new Date(parseInt(yearF), parseInt(monthF) - 1, parseInt(dayF));
+      
+      const inicioStr = inicio.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+      const finStr = fin.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+      
+      return `${inicioStr} - ${finStr}`;
+    } catch (error) {
+      console.error('Error al formatear período:', error);
+      return `${fechaInicio} - ${fechaFin}`;
+    }
   };
 
   // Función para obtener el nombre del mes seleccionado
