@@ -140,7 +140,7 @@ const TrabajadorIntensidad: React.FC = () => {
     worksheet.columns = [
       { width: 12 }, // Fecha
       { width: 10 }, // Día
-      { width: 20 }, // Centro
+      { width: 25 }, // Centro (aumentado para nombres completos)
       { width: 10 }, // Ingreso
       { width: 10 }, // Salida
       { width: 10 }, // Almuerzo
@@ -198,9 +198,22 @@ const TrabajadorIntensidad: React.FC = () => {
     };
     periodoCell.alignment = { horizontal: 'center' };
 
+    // Agregar centros visitados
+    const centrosVisitados = getCentrosVisitados();
+    if (centrosVisitados.length > 0) {
+      worksheet.mergeCells('A5:L5');
+      const centrosCell = worksheet.getCell('A5');
+      centrosCell.value = `Centros visitados: ${centrosVisitados.join(', ')}`;
+      centrosCell.font = { 
+        size: 11, 
+        color: { argb: 'FF4A5568' } 
+      };
+      centrosCell.alignment = { horizontal: 'center' };
+    }
+
     // Agregar fecha de generación
-    worksheet.mergeCells('A5:L5');
-    const fechaCell = worksheet.getCell('A5');
+    worksheet.mergeCells('A6:L6');
+    const fechaCell = worksheet.getCell('A6');
     fechaCell.value = `Generado el: ${new Date().toLocaleDateString('es-ES', { 
       year: 'numeric', 
       month: 'long', 
@@ -215,7 +228,7 @@ const TrabajadorIntensidad: React.FC = () => {
     fechaCell.alignment = { horizontal: 'center' };
 
     // Espacio antes de la tabla
-    const startRow = 7;
+    const startRow = 8;
 
     // Encabezados de la tabla
     const headers = [
@@ -265,9 +278,9 @@ const TrabajadorIntensidad: React.FC = () => {
     // Agregar datos de registros
     registros.forEach((registro, index) => {
       const rowData = [
-        formatFechaSafe(registro.fecha, { day: '2-digit', month: '2-digit', year: 'numeric' }), // ✅ CORREGIDO
+        formatFechaSafe(registro.fecha, { day: '2-digit', month: '2-digit', year: 'numeric' }),
         registro.diaSemana?.substring(0, 3) || 'N/A',
-        registro.nombreCentro || 'Sin centro',
+        registro.nombreCentro || 'Sin centro', // Nombre completo del centro
         registro.horaIngreso || 'N/A',
         registro.horaSalida || 'N/A',
         registro.tiempoAlmuerzo || 'N/A',
@@ -522,9 +535,20 @@ const TrabajadorIntensidad: React.FC = () => {
     return str.substring(start, end);
   };
 
+  // ✅ FUNCIÓN MEJORADA PARA MOSTRAR NOMBRES COMPLETOS DE CENTROS
   const formatCentroName = (nombreCentro: string | null | undefined): string => {
     const nombre = nombreCentro || 'Sin centro';
-    return nombre.length > 15 ? `${nombre.substring(0, 15)}...` : nombre;
+    return nombre; // Mostrar nombre completo sin limitaciones
+  };
+
+  // ✅ NUEVA FUNCIÓN PARA OBTENER CENTROS VISITADOS
+  const getCentrosVisitados = () => {
+    const centrosUnicos = [...new Set(
+      registros
+        .filter(r => r.nombreCentro && r.nombreCentro !== 'Sin centro')
+        .map(r => r.nombreCentro)
+    )];
+    return centrosUnicos;
   };
 
   const getDiasEnRango = () => {
@@ -793,6 +817,28 @@ const TrabajadorIntensidad: React.FC = () => {
                   </div>
                 </div>
 
+                {/* ✅ NUEVA SECCIÓN: Centros visitados */}
+                {getCentrosVisitados().length > 0 && (
+                  <div className="centros-visitados-card">
+                    <div className="centros-header">
+                      <div className="centros-icon">🏢</div>
+                      <h3>Centros visitados en este período</h3>
+                    </div>
+                    <div className="centros-lista">
+                      {getCentrosVisitados().map((centro, index) => (
+                        <span key={index} className="centro-badge">
+                          {centro}
+                        </span>
+                      ))}
+                    </div>
+                    <div className="centros-stats">
+                      <span className="centros-count">
+                        {getCentrosVisitados().length} centro{getCentrosVisitados().length !== 1 ? 's' : ''} diferente{getCentrosVisitados().length !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Tabla de registros detallados */}
                 <div className="registros-card">
                   <div className="registros-header">
@@ -828,7 +874,7 @@ const TrabajadorIntensidad: React.FC = () => {
                           {registros.map((registro, index) => (
                             <tr key={registro.id} style={{ animationDelay: `${index * 0.05}s` }}>
                               <td className="col-fecha">
-                                {formatFechaSafe(registro.fecha)} {/* ✅ CORREGIDO */}
+                                {formatFechaSafe(registro.fecha)}
                               </td>
                               <td className="col-dia">
                                 {safeSubstring(registro.diaSemana, 0, 3) || 'N/A'}
