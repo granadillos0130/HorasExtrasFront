@@ -1,31 +1,25 @@
 import React, { useState, useMemo } from "react";
-import { useNavigate } from "react-router-dom"; // 🆕 Para navegación
+import { useNavigate } from "react-router-dom";
 import { useTrabajadores } from "../hooks/useTrabajadores";
 import TrabajadorForm from "../components/trabajadores/TrabajadorForm";
 import TrabajadorCard from "../components/trabajadores/TrabajadorCard";
-// 🚨 REMOVER ESTA LÍNEA - Ya no necesitamos el modal
-// import TrabajadorDetail from "../components/trabajadores/TrabajadorDetailPage";
 import TrabajadorBuscador from "../components/shared/TrabajadorBuscador";
 import { trabajadoresService } from "../api/trabajadoresService";
-import { ausenciasService } from "../api/ausenciasService"; // 🆕 Importar servicio
-import type { ResumenTrabajador } from "../types/ausencia"; // 🆕 Importar tipo
+import { ausenciasService } from "../api/ausenciasService";
+import type { ResumenTrabajador } from "../types/ausencia";
 import "../styles/pages/TrabajadoresPage.css";
 import type { Trabajador } from "../types/trabajadores";
 
 const TrabajadoresPage: React.FC = () => {
-  const navigate = useNavigate(); // 🆕 Hook de navegación
+  const navigate = useNavigate();
   const { trabajadores, loading, error, refetch } = useTrabajadores();
   const [showForm, setShowForm] = useState(false);
-  // 🚨 REMOVER ESTA LÍNEA - Ya no necesitamos detalleId para modal
-  // const [detalleId, setDetalleId] = useState<number | null>(null);
   const [mostrarSoloNoVigentes, setMostrarSoloNoVigentes] = useState(false);
   const [selectedTrabajadorId, setSelectedTrabajadorId] = useState<number | null>(null);
   
-  // 🆕 Estados para el resumen de ausencias
   const [resumenAusencias, setResumenAusencias] = useState<ResumenTrabajador | null>(null);
   const [loadingResumen, setLoadingResumen] = useState(false);
   
-  // Estados para el buscador
   const [trabajadorSeleccionadoId, setTrabajadorSeleccionadoId] = useState<number>(0);
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [terminoBusqueda, setTerminoBusqueda] = useState<string>("");
@@ -44,7 +38,6 @@ const TrabajadoresPage: React.FC = () => {
         }
         refetch();
       } catch (error) {
-        console.error("Error al eliminar el trabajador:", error);
         alert("Error al eliminar el trabajador");
       }
     }
@@ -52,39 +45,31 @@ const TrabajadoresPage: React.FC = () => {
 
   const handleSelectTrabajador = (id: number) => {
     setSelectedTrabajadorId(selectedTrabajadorId === id ? null : id);
-    // 🆕 Limpiar resumen cuando se selecciona otro trabajador
     if (selectedTrabajadorId !== id) {
       setResumenAusencias(null);
     }
   };
 
-  // 🆕 Función para navegar a la página de detalle del trabajador
   const handleVerDetalle = (id: number) => {
     navigate(`/trabajadores/${id}`);
   };
 
-  // 🆕 Función para navegar a la página de ausencias
   const handleVerAusencias = async () => {
     if (!selectedTrabajadorId) return;
 
-    // Cargar resumen rápido primero
     setLoadingResumen(true);
     try {
       const resumen = await ausenciasService.getResumenTrabajador(selectedTrabajadorId);
       setResumenAusencias(resumen);
       
-      // Navegar a la página de ausencias
       navigate(`/trabajadores/${selectedTrabajadorId}/ausencias`);
     } catch (error) {
-      console.error("Error al cargar resumen de ausencias:", error);
-      // Aún así navegar a la página, que manejará el error
       navigate(`/trabajadores/${selectedTrabajadorId}/ausencias`);
     } finally {
       setLoadingResumen(false);
     }
   };
 
-  // Función para filtrar trabajadores
   const trabajadoresFiltrados = useMemo(() => {
     let filtrados = trabajadores;
 
@@ -109,7 +94,6 @@ const TrabajadoresPage: React.FC = () => {
     return filtrados;
   }, [trabajadores, filtroEstado, trabajadorSeleccionadoId, terminoBusqueda, mostrarSoloNoVigentes]);
 
-  // Estadísticas de trabajadores
   const estadisticas = useMemo(() => {
     const vigentes = trabajadores.filter(t => t.estado === "Vigente").length;
     const noVigentes = trabajadores.filter(t => t.estado === "No Vigente").length;
@@ -135,13 +119,12 @@ const TrabajadoresPage: React.FC = () => {
     setFiltroEstado("todos");
     setMostrarSoloNoVigentes(false);
     setSelectedTrabajadorId(null);
-    setResumenAusencias(null); // 🆕 Limpiar resumen
+    setResumenAusencias(null);
   };
 
   const hayFiltrosActivos = trabajadorSeleccionadoId > 0 || terminoBusqueda.trim() || 
                           filtroEstado !== "todos" || mostrarSoloNoVigentes;
 
-  // 🆕 Obtener trabajador seleccionado
   const trabajadorSeleccionado = selectedTrabajadorId 
     ? trabajadores.find(t => t.id === selectedTrabajadorId)
     : null;
@@ -170,7 +153,6 @@ const TrabajadoresPage: React.FC = () => {
                   {mostrarSoloNoVigentes ? "👀 Ver Todos" : "🚫 Ver No Vigentes"}
                 </button>
                 
-                {/* 🆕 Sección de acciones para trabajador seleccionado */}
                 {selectedTrabajadorId && (
                   <div className="selection-info">
                     <div className="selection-header">
@@ -185,7 +167,6 @@ const TrabajadoresPage: React.FC = () => {
                       </button>
                     </div>
                     
-                    {/* 🆕 Botones de acciones */}
                     <div className="selection-actions">
                       <button 
                         className="btn-action"
@@ -206,7 +187,6 @@ const TrabajadoresPage: React.FC = () => {
                         )}
                       </button>
                       
-                      {/* 🆕 Mostrar resumen rápido si está disponible */}
                       {resumenAusencias && (
                         <div className="quick-resume">
                           <span className="resume-item">
@@ -238,7 +218,6 @@ const TrabajadoresPage: React.FC = () => {
             />
           )}
 
-          {/* Estadísticas */}
           {!loading && trabajadores.length > 0 && (
             <div className="trabajadores-stats">
               <div className="stat-card">
@@ -256,7 +235,6 @@ const TrabajadoresPage: React.FC = () => {
             </div>
           )}
 
-          {/* Sección de búsqueda */}
           {!loading && trabajadores.length > 0 && (
             <div className="search-section">
               <div className="search-header">
@@ -388,7 +366,7 @@ const TrabajadoresPage: React.FC = () => {
                     <TrabajadorCard
                       trabajador={trabajador}
                       onDelete={(id) => handleDelete(id, trabajador.nombre)}
-                      onView={handleVerDetalle} // 🆕 Cambiado para usar navegación
+                      onView={handleVerDetalle}
                       onEstadoChange={refetch}
                       isSelected={selectedTrabajadorId === trabajador.id}
                       onSelect={handleSelectTrabajador}
@@ -398,7 +376,6 @@ const TrabajadoresPage: React.FC = () => {
               </div>
             )}
           </div>
-
         </div>
       </div>
     </div>

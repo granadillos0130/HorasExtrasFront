@@ -36,19 +36,18 @@ const TrabajadorCard: React.FC<Props> = ({
     navigate(`/trabajadores/editar/${trabajador.id}`);
   };
 
-  // 🆕 Función para navegar a las estadísticas de ausencias
   const handleVerAusencias = () => {
     navigate(`/trabajadores/${trabajador.id}/ausencias`);
   };
 
   const cambiarEstado = async (e: React.MouseEvent) => {
-    e.stopPropagation(); // Prevenir que se active la selección
+    e.stopPropagation();
     const nuevoEstado = trabajador.estado === "Vigente" ? "No Vigente" : "Vigente";
     try {
       await trabajadoresService.cambiarEstado(trabajador.id, nuevoEstado);
       if (onEstadoChange) onEstadoChange();
     } catch (error) {
-      console.error("Error al cambiar el estado", error);
+      // Silently handle error in production
     }
   };
 
@@ -103,7 +102,6 @@ const TrabajadorCard: React.FC<Props> = ({
               <span className="btn-text">Ver Detalles</span>
             </button>
 
-            {/* 🆕 Botón de Estadísticas de Ausencias */}
             <button 
               className="btn-action btn-ausencias" 
               onClick={(e) => handleActionClick(e, handleVerAusencias)}
