@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { useEffect } from "react"; // 🆕 AGREGAR ESTA LÍNEA
+import { useEffect } from "react";
 import Navbar from "./components/shared/Navbar";
 import DashboardPage from "./pages/DashboardPage";
 import TrabajadoresPage from "./pages/TrabajadoresPage";
@@ -21,20 +21,19 @@ import EditarRegistrosLotePage from "./pages/EditarRegistrosLotePage";
 import EditarRegistroPage from "./pages/EditarRegistroPage";
 import { EditarAusenciaPage } from "./pages/EditarAusenciaPage";
 import TrabajadorAusenciasPage from "./pages/TrabajadorAusenciasPage";
+import TrabajadorDetailPage from "./components/trabajadores/TrabajadorDetailPage";
 
-// 🆕 CACHE MANAGER - AGREGAR ESTA FUNCIÓN
+// CACHE MANAGER
 const useCacheManager = () => {
   useEffect(() => {
-    const CURRENT_VERSION = '2025-08-19-v1'; // 🎯 CAMBIA ESTO cuando tengas bugs importantes
+    const CURRENT_VERSION = '2025-08-19-v1'; 
     const lastVersion = localStorage.getItem('app_version');
     
     if (lastVersion !== CURRENT_VERSION) {
       console.log('🔄 Nueva versión detectada, actualizando cache...');
       
-      // Guardar nueva versión
       localStorage.setItem('app_version', CURRENT_VERSION);
       
-      // Si la URL no tiene parámetros de cache busting, redirigir con parámetros únicos
       if (!window.location.search.includes('v=') && 
           !window.location.search.includes('fix=') && 
           !window.location.search.includes('cache=')) {
@@ -42,12 +41,10 @@ const useCacheManager = () => {
         const separator = window.location.search ? '&' : '?';
         const cleanUrl = `${window.location.href}${separator}v=${CURRENT_VERSION}&updated=true`;
         
-        // Redirigir para forzar descarga de nueva versión
         window.location.href = cleanUrl;
         return;
       }
       
-      // Limpiar service workers y cache si existen
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.getRegistrations().then(registrations => {
           registrations.forEach(registration => {
@@ -68,7 +65,6 @@ const useCacheManager = () => {
 };
 
 export default function App() {
-  // 🆕 AGREGAR ESTA LÍNEA
   useCacheManager();
 
   return (
@@ -77,9 +73,10 @@ export default function App() {
         <Navbar />
         <div style={{ minHeight: 'calc(100vh - 70px)' }}>
           <Routes>
-
             <Route path="/" element={<DashboardPage />} />
             <Route path="/trabajadores" element={<TrabajadoresPage />} />
+            {/* 🆕 AGREGAR ESTA LÍNEA - Nueva ruta para ver detalle del trabajador */}
+            <Route path="/trabajadores/:id" element={<TrabajadorDetailPage />} />
             <Route path="/trabajadores/editar/:id" element={<TrabajadorEditPage />} />
             <Route path="/trabajadores/:id/intensidad" element={<TrabajadorIntensidad />} />
             <Route path="/trabajadores/:id/ausencias" element={<TrabajadorAusenciasPage />} />

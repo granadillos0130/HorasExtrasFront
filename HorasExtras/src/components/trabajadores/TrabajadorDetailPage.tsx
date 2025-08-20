@@ -1,25 +1,29 @@
-// src/components/trabajadores/TrabajadorDetailModal.tsx
+// src/pages/TrabajadorDetailPage.tsx
 import React, { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import type { Trabajador } from "../../types/trabajadores";
 import { trabajadoresService } from "../../api/trabajadoresService";
-import "../../styles/components/trabajador/TrabajadorDetail.css";
+import "../../styles/components/trabajador/TrabajadorDetailPage.css";
 
-interface Props {
-  trabajadorId: number;
-  onClose: () => void;
-}
-
-const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
+const TrabajadorDetailPage: React.FC = () => {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const [trabajador, setTrabajador] = useState<Trabajador | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
+      if (!id) {
+        setError("ID de trabajador no válido");
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
-        const data = await trabajadoresService.getById(trabajadorId);
+        const data = await trabajadoresService.getById(parseInt(id));
         setTrabajador(data);
       } catch (err) {
         setError("Error al cargar la información del trabajador");
@@ -29,7 +33,7 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
       }
     };
     fetchData();
-  }, [trabajadorId]);
+  }, [id]);
 
   const getInitials = (name: string) => {
     return name
@@ -40,7 +44,8 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
       .substring(0, 2);
   };
 
-  const formatSalary = (salary: number) => {
+  const formatSalary = (salary?: number) => {
+    if (!salary) return 'No especificado';
     return new Intl.NumberFormat('es-CO', {
       style: 'currency',
       currency: 'COP',
@@ -48,15 +53,26 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
     }).format(salary);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-CO', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return 'No especificado';
+    
+    try {
+      // Handle both DateTime and DateOnly formats
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return 'Fecha inválida';
+      
+      return date.toLocaleDateString('es-CO', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch {
+      return 'Fecha inválida';
+    }
   };
 
-  const getContractTypeColor = (type: string) => {
+  const getContractTypeColor = (type?: string) => {
+    if (!type) return '#64748B';
     const colors: { [key: string]: string } = {
       'Tiempo Completo': '#22C55E',
       'Medio Tiempo': '#F97316',
@@ -67,10 +83,27 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
     return colors[type] || '#64748B';
   };
 
+  const handleGoBack = () => {
+    navigate(-1); // Volver a la página anterior
+  };
+
+  const handleGoToList = () => {
+    navigate('/trabajadores'); // Ir a la lista de trabajadores
+  };
+
+  const handleEdit = () => {
+    navigate(`/trabajadores/editar/${id}`); // Ir a editar trabajador
+  };
+
+  const handleGenerateReport = () => {
+    // TODO: Implementar generación de reporte
+    alert('Funcionalidad de generar reporte en desarrollo');
+  };
+
   if (loading) {
     return (
-      <div className="modal-overlay">
-        <div className="modal-content">
+      <div className="page-container">
+        <div className="page-content">
           <div className="loading-state">
             <div className="loading-spinner-large"></div>
             <h3>Cargando información del trabajador...</h3>
@@ -83,15 +116,20 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
 
   if (error) {
     return (
-      <div className="modal-overlay">
-        <div className="modal-content">
+      <div className="page-container">
+        <div className="page-content">
           <div className="error-state">
             <div className="error-icon">❌</div>
             <h3>Error al cargar datos</h3>
             <p>{error}</p>
-            <button className="btn-primary" onClick={onClose}>
-              Cerrar
-            </button>
+            <div className="error-actions">
+              <button className="btn-secondary" onClick={handleGoBack}>
+                ← Volver
+              </button>
+              <button className="btn-primary" onClick={handleGoToList}>
+                Ir a Trabajadores
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -101,36 +139,55 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
   if (!trabajador) return null;
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        {/* Header del modal */}
-        <div className="modal-header">
+    <div className="page-container">
+      <div className="page-content">
+        {/* Header de la página */}
+        <div className="page-header">
+          <div className="header-navigation">
+            <button className="btn-back" onClick={handleGoBack}>
+              ← Volver
+            </button>
+            <div className="breadcrumb">
+              <span onClick={handleGoToList} className="breadcrumb-link">Trabajadores</span>
+              <span className="breadcrumb-separator">/</span>
+              <span className="breadcrumb-current">{trabajador.nombre}</span>
+            </div>
+          </div>
+          
           <div className="header-content">
             <div className="worker-avatar-large">
               <span className="avatar-initials-large">{getInitials(trabajador.nombre)}</span>
               <div className="avatar-status-large"></div>
             </div>
             <div className="worker-header-info">
-              <h2 className="worker-name-large">{trabajador.nombre}</h2>
+              <h1 className="worker-name-large">{trabajador.nombre}</h1>
               <div className="worker-details-header">
                 <span className="worker-id-badge">ID: {trabajador.id}</span>
                 <span className="worker-cedula-badge">CC: {trabajador.cedula}</span>
-                <span 
-                  className="contract-type-badge"
-                  style={{ backgroundColor: getContractTypeColor(trabajador.tipoContratacion) }}
-                >
-                  {trabajador.tipoContratacion}
-                </span>
+                {trabajador.tipoContratacion && (
+                  <span 
+                    className="contract-type-badge"
+                    style={{ backgroundColor: getContractTypeColor(trabajador.tipoContratacion) }}
+                  >
+                    {trabajador.tipoContratacion}
+                  </span>
+                )}
               </div>
             </div>
           </div>
-          <button className="btn-close-modal" onClick={onClose}>
-            ✕
-          </button>
+
+          <div className="header-actions">
+            <button className="btn-secondary" onClick={handleEdit}>
+              ✏️ Editar
+            </button>
+            <button className="btn-primary" onClick={handleGenerateReport}>
+              📄 Generar Reporte
+            </button>
+          </div>
         </div>
 
-        {/* Contenido del modal */}
-        <div className="modal-body">
+        {/* Contenido principal de la página */}
+        <div className="page-body">
           {/* Información Personal */}
           <div className="info-section">
             <div className="section-header">
@@ -143,7 +200,7 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
                 <div className="info-card-content">
                   <div className="info-card-label">Fecha de Nacimiento</div>
                   <div className="info-card-value">{formatDate(trabajador.fechaNacimiento)}</div>
-                  <div className="info-card-extra">{trabajador.edad} años</div>
+                  <div className="info-card-extra">{trabajador.edad ? `${trabajador.edad} años` : ''}</div>
                 </div>
               </div>
               
@@ -159,7 +216,7 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
                 <div className="info-card-icon">👥</div>
                 <div className="info-card-content">
                   <div className="info-card-label">Estado Civil</div>
-                  <div className="info-card-value">{trabajador.estadoCivil}</div>
+                  <div className="info-card-value">{trabajador.estadoCivil || 'No especificado'}</div>
                 </div>
               </div>
               
@@ -167,7 +224,7 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
                 <div className="info-card-icon">🚻</div>
                 <div className="info-card-content">
                   <div className="info-card-label">Género</div>
-                  <div className="info-card-value">{trabajador.genero}</div>
+                  <div className="info-card-value">{trabajador.genero || 'No especificado'}</div>
                 </div>
               </div>
               
@@ -175,7 +232,7 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
                 <div className="info-card-icon">👶</div>
                 <div className="info-card-content">
                   <div className="info-card-label">Hijos</div>
-                  <div className="info-card-value">{trabajador.cantidadHijos}</div>
+                  <div className="info-card-value">{trabajador.cantidadHijos ?? 'No especificado'}</div>
                 </div>
               </div>
               
@@ -183,7 +240,7 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
                 <div className="info-card-icon">🎓</div>
                 <div className="info-card-content">
                   <div className="info-card-label">Escolaridad</div>
-                  <div className="info-card-value">{trabajador.nivelEscolaridad}</div>
+                  <div className="info-card-value">{trabajador.nivelEscolaridad || 'No especificado'}</div>
                 </div>
               </div>
             </div>
@@ -200,7 +257,9 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
                 <div className="info-card-icon">💰</div>
                 <div className="info-card-content">
                   <div className="info-card-label">Salario</div>
-                  <div className="info-card-value salary-value">{formatSalary(trabajador.salario)}</div>
+                  <div className="info-card-value salary-value">
+                    {formatSalary(trabajador.salario)}
+                  </div>
                 </div>
               </div>
               
@@ -216,7 +275,7 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
                 <div className="info-card-icon">📧</div>
                 <div className="info-card-content">
                   <div className="info-card-label">Correo Electrónico</div>
-                  <div className="info-card-value email-value">{trabajador.correo}</div>
+                  <div className="info-card-value email-value">{trabajador.correo || 'No especificado'}</div>
                 </div>
               </div>
             </div>
@@ -364,8 +423,8 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
           </div>
         </div>
 
-        {/* Footer del modal */}
-        <div className="modal-footer">
+        {/* Footer de la página */}
+        <div className="page-footer">
           <div className="creation-info">
             <div className="creation-item">
               <span className="creation-icon">📅</span>
@@ -373,16 +432,21 @@ const TrabajadorDetail: React.FC<Props> = ({ trabajadorId, onClose }) => {
             </div>
             <div className="creation-item">
               <span className="creation-icon">✏️</span>
-              <span>Actualizado: {formatDate(trabajador.fechaActualizacion)}</span>
+              <span>Actualizado: {trabajador.fechaActualizacion ? formatDate(trabajador.fechaActualizacion) : 'Nunca actualizado'}</span>
             </div>
           </div>
-          <button className="btn-close-footer" onClick={onClose}>
-            ✅ Cerrar
-          </button>
+          <div className="footer-actions">
+            <button className="btn-secondary" onClick={handleGoBack}>
+              ← Volver
+            </button>
+            <button className="btn-primary" onClick={handleGoToList}>
+              📋 Ver Todos los Trabajadores
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-export default TrabajadorDetail;
+export default TrabajadorDetailPage;

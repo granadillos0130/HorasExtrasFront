@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom"; // 🆕 Para navegación
 import { useTrabajadores } from "../hooks/useTrabajadores";
 import TrabajadorForm from "../components/trabajadores/TrabajadorForm";
 import TrabajadorCard from "../components/trabajadores/TrabajadorCard";
-import TrabajadorDetail from "../components/trabajadores/TrabajadorDetailModal";
+// 🚨 REMOVER ESTA LÍNEA - Ya no necesitamos el modal
+// import TrabajadorDetail from "../components/trabajadores/TrabajadorDetailPage";
 import TrabajadorBuscador from "../components/shared/TrabajadorBuscador";
 import { trabajadoresService } from "../api/trabajadoresService";
 import { ausenciasService } from "../api/ausenciasService"; // 🆕 Importar servicio
@@ -15,7 +16,8 @@ const TrabajadoresPage: React.FC = () => {
   const navigate = useNavigate(); // 🆕 Hook de navegación
   const { trabajadores, loading, error, refetch } = useTrabajadores();
   const [showForm, setShowForm] = useState(false);
-  const [detalleId, setDetalleId] = useState<number | null>(null);
+  // 🚨 REMOVER ESTA LÍNEA - Ya no necesitamos detalleId para modal
+  // const [detalleId, setDetalleId] = useState<number | null>(null);
   const [mostrarSoloNoVigentes, setMostrarSoloNoVigentes] = useState(false);
   const [selectedTrabajadorId, setSelectedTrabajadorId] = useState<number | null>(null);
   
@@ -54,6 +56,11 @@ const TrabajadoresPage: React.FC = () => {
     if (selectedTrabajadorId !== id) {
       setResumenAusencias(null);
     }
+  };
+
+  // 🆕 Función para navegar a la página de detalle del trabajador
+  const handleVerDetalle = (id: number) => {
+    navigate(`/trabajadores/${id}`);
   };
 
   // 🆕 Función para navegar a la página de ausencias
@@ -180,6 +187,13 @@ const TrabajadoresPage: React.FC = () => {
                     
                     {/* 🆕 Botones de acciones */}
                     <div className="selection-actions">
+                      <button 
+                        className="btn-action"
+                        onClick={() => handleVerDetalle(selectedTrabajadorId)}
+                      >
+                        👁️ Ver Detalles Completos
+                      </button>
+                      
                       <button 
                         className={`btn-action ${loadingResumen ? 'loading' : ''}`}
                         onClick={handleVerAusencias}
@@ -374,7 +388,7 @@ const TrabajadoresPage: React.FC = () => {
                     <TrabajadorCard
                       trabajador={trabajador}
                       onDelete={(id) => handleDelete(id, trabajador.nombre)}
-                      onView={(id) => setDetalleId(id)}
+                      onView={handleVerDetalle} // 🆕 Cambiado para usar navegación
                       onEstadoChange={refetch}
                       isSelected={selectedTrabajadorId === trabajador.id}
                       onSelect={handleSelectTrabajador}
@@ -385,12 +399,6 @@ const TrabajadoresPage: React.FC = () => {
             )}
           </div>
 
-          {detalleId && (
-            <TrabajadorDetail
-              trabajadorId={detalleId}
-              onClose={() => setDetalleId(null)}
-            />
-          )}
         </div>
       </div>
     </div>
