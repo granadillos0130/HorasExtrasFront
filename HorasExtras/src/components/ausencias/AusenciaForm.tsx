@@ -942,6 +942,7 @@ ${formData.remunerado
                 required
               >
                 <option value="">Seleccionar tipo</option>
+                <option value="Vacaciones">Vacaciones</option>
                 <option value="Cita médica general">Cita médica general</option>
                 <option value="Accidente laboral">Accidente laboral</option>
                 <option value="Enfermedad común">Enfermedad común</option>
