@@ -387,6 +387,9 @@ const RegistrosPage: React.FC = () => {
   const [mostrarEstadisticas, setMostrarEstadisticas] = useState(false);
   const [estadisticasDia, setEstadisticasDia] = useState<EstadisticasDia | null>(null);
   
+  // 🆕 Estados para festivos
+  const [creandoFestivos, setCreandoFestivos] = useState(false);
+  
   // Estados para mensajes de éxito
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successType, setSuccessType] = useState<string>('');
@@ -442,6 +445,60 @@ const RegistrosPage: React.FC = () => {
   const filtrarRegistrosPorTipo = (registros: RegistroConTipo[]): RegistroConTipo[] => {
     if (filtroTipo === 'TODOS') return registros;
     return registros.filter(r => r.tipoRegistro === filtroTipo);
+  };
+
+  // 🆕 NUEVA FUNCIÓN: Crear registros festivos
+  const crearRegistrosFestivos = async () => {
+    if (mesSeleccionado === null) return;
+
+    // Primero mostrar información sobre lo que se va a crear
+    const mesNombre = meses[mesSeleccionado - 1];
+    const confirmMessage = `¿Crear registros festivos para TODOS los trabajadores activos en ${mesNombre} ${añoSeleccionado}?\n\nEsto creará registros automáticos para los días festivos del mes según el calendario oficial.\n\nTrabajadores activos: ${trabajadoresActivos.length}`;
+    
+    if (!confirm(confirmMessage)) return;
+
+    setCreandoFestivos(true);
+    try {
+      // Primero hacer una consulta de prueba sin confirmar
+      const preview = await registrosService.crearRegistrosFestivosTodosTrabajadores(
+        añoSeleccionado,
+        mesSeleccionado,
+        false
+      );
+
+      // Mostrar la información del preview
+      const previewMessage = `Se encontraron ${preview.diasFestivos?.length || 0} día(s) festivo(s) en ${mesNombre}:\n\n${preview.diasFestivos?.map((dia: any) => `• ${dia.fecha} - ${dia.nombre}`).join('\n') || 'No se encontraron días festivos'}\n\nSe crearán aproximadamente ${preview.registrosACrear || 0} registros.\n\n¿Confirmar creación?`;
+      
+      if (!confirm(previewMessage)) {
+        setCreandoFestivos(false);
+        return;
+      }
+
+      // Ahora sí crear los registros confirmando
+      const result = await registrosService.crearRegistrosFestivosTodosTrabajadores(
+        añoSeleccionado,
+        mesSeleccionado,
+        true
+      );
+
+      // Mostrar resultado
+      alert(`✅ Registros festivos creados exitosamente!\n\nResumen:\n• Días festivos: ${result.diasFestivos?.length || 0}\n• Registros creados: ${result.registrosCreados || 0}\n• Trabajadores afectados: ${result.trabajadoresAfectados || 0}`);
+
+      // Recargar estadísticas y datos
+      if (mesSeleccionado !== null) {
+        await cargarEstadisticasDelMes();
+      }
+      if (diaSeleccionado) {
+        await obtenerRegistrosDelDia(diaSeleccionado);
+      }
+
+    } catch (error: any) {
+      console.error("Error al crear registros festivos:", error);
+      const errorMessage = error?.response?.data?.message || error?.message || "Error desconocido";
+      alert(`❌ Error al crear registros festivos:\n\n${errorMessage}`);
+    } finally {
+      setCreandoFestivos(false);
+    }
   };
 
   // ✅ FIX: Wrap in useCallback to avoid dependency issues + Added missing dependency
@@ -1458,6 +1515,29 @@ const RegistrosPage: React.FC = () => {
                   }}
                 >
                   {exportandoExcel ? '⏳ Exportando...' : '📤 Exportar Excel Mes'}
+                </button>
+                
+                {/* 🆕 NUEVO: Botón para crear registros festivos */}
+                <button
+                  onClick={crearRegistrosFestivos}
+                  disabled={creandoFestivos}
+                  style={{
+                    background: creandoFestivos 
+                      ? 'linear-gradient(135deg, #94a3b8, #64748b)' 
+                      : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                    color: 'white',
+                    border: 'none',
+                    padding: '12px 20px',
+                    borderRadius: '10px',
+                    cursor: creandoFestivos ? 'not-allowed' : 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.95rem',
+                    opacity: creandoFestivos ? 0.7 : 1,
+                    transition: 'all 0.3s ease'
+                  }}
+                  title="Crear registros automáticos para días festivos del mes"
+                >
+                  {creandoFestivos ? '⏳ Creando...' : '🎉 Crear Festivos'}
                 </button>
                 
                 {/* 🆕 NUEVO: Botón para edición masiva del mes */}

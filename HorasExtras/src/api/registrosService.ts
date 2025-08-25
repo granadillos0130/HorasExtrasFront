@@ -215,4 +215,20 @@ export const registrosService = {
       throw error;
     }
   },
+  // 🆕 NUEVO: Crear registros festivos para TODOS los trabajadores
+async crearRegistrosFestivosTodosTrabajadores(
+  año: number,
+  mes?: number,
+  confirmar: boolean = false
+): Promise<any> {
+  try {
+    const res = await api.post("/registros/crear-registros-festivos-todos-trabajadores", null, {
+      params: { año, mes, confirmar },
+    });
+    return res.data;
+  } catch (error) {
+    console.error("Error al crear registros festivos para todos los trabajadores:", error);
+    throw error;
+  }
+},
 };
