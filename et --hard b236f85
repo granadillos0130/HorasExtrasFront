@@ -1,0 +1,81 @@
+[33mfc03555[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Arreglar el codigo y quitar los any
+[33m4a210e8[m Organizar el codigo
+[33mb236f85[m Borrar cache
+[33m200d151[m Arreglar modal para buscar por centros y que se quedara
+[33ma96b0e5[m Quitar el logs paraa produccion
+[33m82a8b41[m Modificar el detalles trabajador para una page en vez de una modal
+[33mf032857[m Añadir el de vacaciones
+[33mb0052a6[m Añadir que centros estuvo el trabajador
+[33m2a70a0f[m Arreglar las fechas de informacion ejecuccuion
+[33m9742d7a[m Arrreglo de errores
+[33md98a7e6[m Agregar el de crear dx por si no existe
+[33m748e266[m Hacer lo del cache
+[33m04e5aca[m Arreglar el registrosform para que aparezcan bien los datos
+[33m14b452a[m Mejorar el tema de valor por hora
+[33mfa36fcc[m Añadir lo de que salga mas dx en el de ausencias
+[33m508b82b[m arreglar el icono de los buscadores
+[33m81d9e1c[m Arreglar el buscador del trabajador
+[33mcbeb18d[m Añadir el de ver ausencias para los trabajadores
+[33m26513d5[m Arreglar las fechas para que esten bien
+[33mbf084b6[m Añadir lo del cache que se borre
+[33m9dae834[m arreglos para que funcione en vercel
+[33m245416c[m Agregar el vercel.json para el cache
+[33m5f99d00[m Añadir arreglos en el dom
+[33m38487c2[m añadir mejoras en estadisticas page
+[33m8c14142[m Agregar el de diagnostico en el ausencias form y meter mas datos
+[33m0de566d[m Arreglar errores
+[33mc43e698[m Agregar lo del conductor
+[33me746817[m Agregar el de actualizar ausencias
+[33m8ddfc1b[m Agregar el de actualizar registro
+[33mebde046[m añadir mejoras en el centros page para que salga la mano de obra total
+[33m1d128a3[m Añadir las estadisticas por area
+[33mc3520f0[m añadir lo de dx para la ausencia
+[33me9bb7d5[m Añadir cosas faltantes en el navbar y pageindicator
+[33m2ec9846[m arreglo de errores
+[33m31b456e[m Añadir las cosas faltantes para que salga
+[33m557a66c[m Agregar el estadisticasausencia
+[33m956b7bb[m Arreglar para que salga los datos
+[33m601e18b[m añadir lo de buscar trabajador
+[33mf0e2bf1[m meterle diseño a Ausencias formulario
+[33mcdedd6b[m Añadir  todo de ausencias
+[33maf7b7b0[m añadir el navbar bien bonito
+[33m9f04d36[m añadir mas informacion para la ejecucion
+[33m224ea4b[m Arreglo de errores
+[33mc8f9c38[m Añadir datos faltantes en la informacion de centro
+[33me338af1[m agregar meses mas intuitivos
+[33md1dc8ac[m cambiarle el nombre de id a orden de compra
+[33m5614053[m Agregar el buscador por nombre o por meses
+[33me7c5469[m Cambiar el tipo de centro
+[33m58012d5[m autorizacion  ngrok
+[33m02ec847[m depuracion
+[33m72aabad[m Eliminacion de codigo innecesario
+[33m2788dbc[m prueba
+[33m0385752[m subir lo de ngrok
+[33mb9a1c32[m Cambio de ruta del css
+[33m284a8b2[m arreglo de errores
+[33mb98185e[m añadir las paginas para registro y registro lote
+[33m1d037f6[m Arreglo de errores
+[33m2ff6cd3[m Agregar el excel de trabajador intensidad horaria y ejeucionpage
+[33m9cca59b[m Añadir campos faltantes al de actualizar trabajador
+[33mc7e21ed[m añadir mas años en la seleccion
+[33m327ac76[m Mejoras en los trabajadores cards y en la intensidad del trabajador
+[33m12b5ad6[m arreglos para que traiga datos vacios
+[33m3bab400[m Mejoras en el registros lote
+[33mffebc03[m Mejoras faltantes
+[33m7abd517[m Mejoras en el centro form
+[33ma40f24e[m Agregar el de valor de horas en el formulario de trabajador
+[33mc920e6c[m Mejoras en centros
+[33mf16b16d[m Añadir cosas faltantes
+[33mce66f58[m cambios en el registrosloteform para modificar los campos de desplazamiento
+[33m4fa6695[m modificacion de la modal de registros page
+[33mada8801[m añadir analista en el form
+[33mf3dfc9d[m Poner los colores si no hay registros
+[33mb25d111[m añadir lo de excel
+[33md3cd475[m añadir css a clientes form
+[33m6f9d3c2[m arreglos al diseño
+[33m8eb96aa[m añadir el buscador de trabajador en los horarios
+[33me073369[m eliminacion de css innecesario
+[33m34ba55c[m Eliminacion de archvios innecesarios
+[33m2162abd[m arreglos en el trabajador page
+[33mc7fc24a[m Añadir el buscador del trabajador
+[33mc3bb92a[m arreglos css en trabjador edit page
