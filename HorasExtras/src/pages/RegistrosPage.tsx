@@ -381,6 +381,8 @@ const RegistrosPage: React.FC = () => {
   const [trabajadoresActivos, setTrabajadoresActivos] = useState<Trabajador[]>([]);
   const [estadisticasMes, setEstadisticasMes] = useState<Map<string, EstadisticaDia>>(new Map());
   const [cargandoEstadisticas, setCargandoEstadisticas] = useState(false);
+  const [registrosDelMesCompleto, setRegistrosDelMesCompleto] = useState<Map<string, Registro[]>>(new Map());
+
   
   // 🆕 Estados para ausencias integradas
   const [filtroTipo, setFiltroTipo] = useState<FiltroTipoRegistro>('TODOS');
@@ -503,72 +505,83 @@ const RegistrosPage: React.FC = () => {
 
   // ✅ FIX: Wrap in useCallback to avoid dependency issues + Added missing dependency
   const cargarEstadisticasDelMes = useCallback(async () => {
-    if (mesSeleccionado === null) return;
+  if (mesSeleccionado === null) return;
+
 
     setCargandoEstadisticas(true);
-    try {
-      const diasEnMes = new Date(añoSeleccionado, mesSeleccionado, 0).getDate();
-      const estadisticas = new Map<string, EstadisticaDia>();
-      
-      for (let dia = 1; dia <= diasEnMes; dia++) {
-        const fechaString = `${añoSeleccionado}-${mesSeleccionado.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
-        
-        try {
-          const registrosDia = await registrosService.obtenerTodosPorFecha(fechaString);
-          
-          // Obtener IDs únicos de trabajadores que tienen registro ese día
-          const trabajadoresConRegistro = new Set(registrosDia.map(r => r.trabajadorId));
-          const cantidadConRegistro = trabajadoresConRegistro.size;
-          const totalTrabajadores = trabajadoresActivos.length;
-          const porcentaje = totalTrabajadores > 0 ? (cantidadConRegistro / totalTrabajadores) * 100 : 0;
-
-          estadisticas.set(fechaString, {
-            fecha: fechaString,
-            totalTrabajadores,
-            trabajadoresConRegistro: cantidadConRegistro,
-            porcentaje,
-            registros: registrosDia
-          });
-        } catch {
-          // Si no hay registros para ese día, porcentaje = 0
-          estadisticas.set(fechaString, {
-            fecha: fechaString,
-            totalTrabajadores: trabajadoresActivos.length,
-            trabajadoresConRegistro: 0,
-            porcentaje: 0,
-            registros: []
-          });
-        }
-      }
-      
-      setEstadisticasMes(estadisticas);
-    } catch (error) {
-      console.error("Error al cargar estadísticas del mes:", error);
-    } finally {
-      setCargandoEstadisticas(false);
+  try {
+    // UNA SOLA PETICIÓN para todo el mes
+    const response = await registrosService.obtenerRegistrosMesCompleto(añoSeleccionado, mesSeleccionado);
+    
+    // Agrupar registros por fecha en el frontend
+    const registrosPorFecha = new Map<string, Registro[]>();
+    const estadisticas = new Map<string, EstadisticaDia>();
+    
+    // Inicializar todos los días del mes
+    const diasEnMes = new Date(añoSeleccionado, mesSeleccionado, 0).getDate();
+    for (let dia = 1; dia <= diasEnMes; dia++) {
+      const fechaString = `${añoSeleccionado}-${mesSeleccionado.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
+      registrosPorFecha.set(fechaString, []);
     }
-  }, [mesSeleccionado, añoSeleccionado, trabajadoresActivos]);
+    
+    // Agrupar registros por fecha
+    response.registros.forEach(registro => {
+      const fecha = registro.fecha;
+      const registrosDelDia = registrosPorFecha.get(fecha) || [];
+      registrosDelDia.push(registro);
+      registrosPorFecha.set(fecha, registrosDelDia);
+    });
+    
+    // Calcular estadísticas localmente
+    registrosPorFecha.forEach((registros, fecha) => {
+      // Obtener IDs únicos de trabajadores que tienen registro ese día
+      const trabajadoresConRegistro = new Set(registros.map(r => r.trabajadorId));
+      const cantidadConRegistro = trabajadoresConRegistro.size;
+      const totalTrabajadores = trabajadoresActivos.length;
+      const porcentaje = totalTrabajadores > 0 ? (cantidadConRegistro / totalTrabajadores) * 100 : 0;
+
+      estadisticas.set(fecha, {
+        fecha,
+        totalTrabajadores,
+        trabajadoresConRegistro: cantidadConRegistro,
+        porcentaje,
+        registros // Ya tenemos los registros aquí
+      });
+    });
+    
+    // Guardar tanto las estadísticas como los registros agrupados
+    setEstadisticasMes(estadisticas);
+    setRegistrosDelMesCompleto(registrosPorFecha);
+    
+  } catch (error) {
+    console.error("Error al cargar estadísticas del mes:", error);
+  } finally {
+    setCargandoEstadisticas(false);
+  }
+}, [mesSeleccionado, añoSeleccionado, trabajadoresActivos]);
+
 
   // 🆕 ACTUALIZAR la función obtenerRegistrosDelDia
   const obtenerRegistrosDelDia = useCallback(async (fecha: string) => {
-    try {
-      setLoading(true);
-      const registros = await registrosService.obtenerTodosPorFecha(fecha);
-      const registrosConTipo = procesarRegistrosConTipo(registros);
-      setRegistrosDelDia(registrosConTipo);
-      
-      // Calcular estadísticas
-      const estadisticas = calcularEstadisticasDia(registrosConTipo);
-      setEstadisticasDia(estadisticas);
-    } catch (error) {
-      console.error("Error al obtener registros:", error);
-      setRegistrosDelDia([]);
-      setEstadisticasDia(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [procesarRegistrosConTipo, calcularEstadisticasDia]);
-
+  try {
+    setLoading(true);
+    
+    // Usar los datos ya cargados en lugar de hacer otra petición
+    const registros = registrosDelMesCompleto.get(fecha) || [];
+    const registrosConTipo = procesarRegistrosConTipo(registros);
+    setRegistrosDelDia(registrosConTipo);
+    
+    // Calcular estadísticas
+    const estadisticas = calcularEstadisticasDia(registrosConTipo);
+    setEstadisticasDia(estadisticas);
+  } catch (error) {
+    console.error("Error al obtener registros:", error);
+    setRegistrosDelDia([]);
+    setEstadisticasDia(null);
+  } finally {
+    setLoading(false);
+  }
+}, [registrosDelMesCompleto, procesarRegistrosConTipo, calcularEstadisticasDia]);
   // 🆕 NUEVAS: Funciones para navegación de edición
   const navigateToEdit = (id: number) => {
     const searchParams = new URLSearchParams();

@@ -231,4 +231,20 @@ async crearRegistrosFestivosTodosTrabajadores(
     throw error;
   }
 },
+async obtenerRegistrosMesCompleto(año: number, mes: number): Promise<{
+  año: number;
+  mes: number;
+  registros: Registro[];
+  totalRegistros: number;
+}> {
+  try {
+    const res = await api.get("/registros/registros-mes", {
+      params: { año, mes }
+    });
+    return res.data;
+  } catch (error) {
+    console.error('Error al obtener registros del mes completo:', error);
+    throw error;
+  }
+},
 };
