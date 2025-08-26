@@ -1,4 +1,4 @@
-// HorasExtras/src/pages/EditarRegistrosLotePage.tsx - VERSIÓN CORREGIDA
+// EditarRegistrosLotePage.tsx - VERSION CORREGIDA COMPLETA
 import React, { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { registrosService } from "../api/registrosService";
@@ -6,13 +6,46 @@ import { trabajadoresService } from "../api/trabajadoresService";
 import { centrosService } from "../api/centrosService";
 import type { 
   Registro, 
-  RegistroActualizacionDto, 
-  EstadoEdicionRegistro,
-  ConfiguracionEdicionLote, 
   RegistroInputDto
 } from "../types/registros";
 import type { Trabajador } from "../types/trabajadores";
 import type { Centro } from "../types/centros";
+
+// Tipos específicos para edición en lote
+interface RegistroActualizacionDto {
+  Id: number;
+  Trabajador_ID: number;
+  Centro_ID: string;
+  Nombr_Centro: string;
+  Fecha: string;
+  Hora_Ingreso: string;
+  Hora_Salida: string;
+  Tiempo_Almuerzo: string;
+  desplazamientoIda?: string;
+  desplazamientoRegreso?: string;
+  EsConductor: boolean;
+  AnalistaId: number;
+}
+
+interface EstadoEdicionRegistro {
+  id: number;
+  editando: boolean;
+  guardando: boolean;
+  errores: string[];
+  datosOriginales: Registro;
+  datosEditados: Partial<RegistroActualizacionDto>;
+}
+
+interface RespuestaLote {
+  registrosActualizados: number;
+  totalProcesados: number;
+  errores: string[];
+  detalleResultados: Array<{
+    id: number;
+    exito: boolean;
+    mensaje: string;
+  }>;
+}
 
 const EditarRegistrosLotePage: React.FC = () => {
   const navigate = useNavigate();
@@ -33,17 +66,29 @@ const EditarRegistrosLotePage: React.FC = () => {
   const [analistas, setAnalistas] = useState<{ id: number; nombreCompleto: string }[]>([]);
   
   // Estados para filtros y configuración
-  const [configuracion, setConfiguracion] = useState<ConfiguracionEdicionLote>({
-    mostrarSoloSeleccionados: false,
-    aplicarATodos: false,
-    camposAEditar: [],
-    filtros: {}
-  });
+  const [mostrarSoloSeleccionados, setMostrarSoloSeleccionados] = useState(false);
 
   // Estados para edición en lote
   const [editandoEnLote, setEditandoEnLote] = useState(false);
   const [valoresLote, setValoresLote] = useState<Partial<RegistroActualizacionDto>>({});
   const [camposLoteSeleccionados, setCamposLoteSeleccionados] = useState<Set<string>>(new Set());
+
+  // Función para convertir tiempo a formato correcto
+  const convertirTiempoATimeSpan = (tiempo: string): string => {
+    if (!tiempo) return "00:00:00";
+    
+    // Si ya tiene el formato correcto (HH:mm:ss)
+    if (tiempo.match(/^\d{2}:\d{2}:\d{2}$/)) {
+      return tiempo;
+    }
+    
+    // Si tiene formato HH:mm, agregar :00
+    if (tiempo.match(/^\d{2}:\d{2}$/)) {
+      return `${tiempo}:00`;
+    }
+    
+    return "00:00:00";
+  };
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -59,34 +104,46 @@ const EditarRegistrosLotePage: React.FC = () => {
         let registrosData: Registro[] = [];
 
         if (trabajadorId && fechaInicio && fechaFin) {
-          // Cargar registros por rango de fechas
-          registrosData = await registrosService.buscarPorTrabajadorRangoFechas(
-            parseInt(trabajadorId),
-            fechaInicio,
-            fechaFin
-          );
+          // Cargar registros por rango de fechas si hay filtros
+          try {
+            registrosData = await registrosService.obtenerPorRangoFechas(fechaInicio, fechaFin);
+            // Filtrar por trabajador específico
+            registrosData = registrosData.filter(r => r.trabajadorId === parseInt(trabajadorId));
+          } catch (err) {
+            // Si no existe el método, usar obtenerTodos y filtrar
+            console.warn("Método obtenerPorRangoFechas no disponible, usando obtenerTodos");
+            registrosData = await registrosService.obtenerTodos();
+            registrosData = registrosData.filter(r => {
+              const registroFecha = new Date(r.fecha);
+              const inicio = new Date(fechaInicio);
+              const fin = new Date(fechaFin);
+              return r.trabajadorId === parseInt(trabajadorId) && 
+                     registroFecha >= inicio && 
+                     registroFecha <= fin;
+            });
+          }
         } else {
-          // Cargar todos los registros (limitado)
+          // Cargar todos los registros (limitado para rendimiento)
           registrosData = await registrosService.obtenerTodos();
-          // Limitar a los últimos 100 registros para rendimiento
-          registrosData = registrosData.slice(0, 100);
+          // Limitar a los últimos 50 registros para mejor rendimiento
+          registrosData = registrosData.slice(-50);
         }
 
         // Filtrar solo registros de trabajo (no ausencias)
         const registrosTrabajo = registrosData.filter(r => 
-          r.centroId !== 'AUSENCIA' && r.tipoRegistro !== 'AUSENCIA'
+          r.centroId && !r.centroId.toString().startsWith('AUSENCIA')
         );
 
         setRegistros(registrosTrabajo);
 
-        // Cargar datos de referencia
+        // Cargar datos de referencia en paralelo
         const [trabajadoresData, centrosData, analistasData] = await Promise.all([
           trabajadoresService.getAll(),
           centrosService.getAll(),
-          trabajadoresService.getAnalistas()
+          trabajadoresService.getAnalistas().catch(() => []) // Si falla, usar array vacío
         ]);
 
-        setTrabajadores(trabajadoresData.filter(t => t.estado === "Vigente"));
+        setTrabajadores(trabajadoresData.filter(t => t.estado === "Vigente" || !t.estado));
         setCentros(centrosData);
         setAnalistas(analistasData);
 
@@ -128,10 +185,14 @@ const EditarRegistrosLotePage: React.FC = () => {
 
   // Seleccionar/deseleccionar todos
   const toggleSeleccionTodos = () => {
-    if (registrosSeleccionados.size === registros.length) {
+    const registrosFiltrados = mostrarSoloSeleccionados 
+      ? registros.filter(r => registrosSeleccionados.has(r.id))
+      : registros;
+
+    if (registrosSeleccionados.size === registrosFiltrados.length && registrosFiltrados.length > 0) {
       setRegistrosSeleccionados(new Set());
     } else {
-      setRegistrosSeleccionados(new Set(registros.map(r => r.id)));
+      setRegistrosSeleccionados(new Set(registrosFiltrados.map(r => r.id)));
     }
   };
 
@@ -168,6 +229,13 @@ const EditarRegistrosLotePage: React.FC = () => {
         ...estado.datosEditados,
         [campo]: valor
       };
+
+      // Si se cambia el centro, actualizar el nombre del centro
+      if (campo === 'Centro_ID') {
+        const centroSeleccionado = centros.find(c => c.id.toString() === valor.toString());
+        estado.datosEditados.Nombr_Centro = centroSeleccionado?.nombreCentro || "";
+      }
+
       nuevosEstados.set(id, estado);
       setEstadosEdicion(nuevosEstados);
     }
@@ -181,6 +249,7 @@ const EditarRegistrosLotePage: React.FC = () => {
     try {
       const nuevosEstados = new Map(estadosEdicion);
       estado.guardando = true;
+      estado.errores = [];
       nuevosEstados.set(id, estado);
       setEstadosEdicion(nuevosEstados);
 
@@ -192,17 +261,21 @@ const EditarRegistrosLotePage: React.FC = () => {
         Fecha: estado.datosEditados.Fecha || registro.fecha,
         Hora_Ingreso: estado.datosEditados.Hora_Ingreso || registro.horaIngreso.substring(0, 5),
         Hora_Salida: estado.datosEditados.Hora_Salida || registro.horaSalida.substring(0, 5),
-        Tiempo_Almuerzo: estado.datosEditados.Tiempo_Almuerzo || registro.tiempoAlmuerzo,
-        desplazamientoIda: estado.datosEditados.desplazamientoIda || registro.desplazamientoIda?.substring(0, 5),
-        desplazamientoRegreso: estado.datosEditados.desplazamientoRegreso || registro.desplazamientoRegreso?.substring(0, 5),
-        // 🆕 AGREGAR CAMPO CONDUCTOR
-        EsConductor: estado.datosEditados.EsConductor !== undefined ? Boolean(estado.datosEditados.EsConductor) : (registro.esConductor || false),
-        AnalistaId: estado.datosEditados.AnalistaId || analistas[0]?.id || 0
+        Tiempo_Almuerzo: convertirTiempoATimeSpan(estado.datosEditados.Tiempo_Almuerzo || registro.tiempoAlmuerzo),
+        desplazamientoIda: estado.datosEditados.desplazamientoIda ? 
+          convertirTiempoATimeSpan(estado.datosEditados.desplazamientoIda) : 
+          (registro.desplazamientoIda ? convertirTiempoATimeSpan(registro.desplazamientoIda.substring(0, 5)) : undefined),
+        desplazamientoRegreso: estado.datosEditados.desplazamientoRegreso ? 
+          convertirTiempoATimeSpan(estado.datosEditados.desplazamientoRegreso) : 
+          (registro.desplazamientoRegreso ? convertirTiempoATimeSpan(registro.desplazamientoRegreso.substring(0, 5)) : undefined),
+        EsConductor: estado.datosEditados.EsConductor !== undefined ? 
+          Boolean(estado.datosEditados.EsConductor) : (registro.esConductor || false),
+        AnalistaId: estado.datosEditados.AnalistaId || analistas[0]?.id || 1
       };
 
       await registrosService.actualizar(id, datosActualizados);
 
-      // Actualizar registro en la lista
+      // Recargar el registro actualizado
       const registroActualizado = await registrosService.obtenerPorId(id);
       setRegistros(prev => prev.map(r => r.id === id ? registroActualizado : r));
 
@@ -215,16 +288,17 @@ const EditarRegistrosLotePage: React.FC = () => {
       nuevosEstados.set(id, estado);
       setEstadosEdicion(nuevosEstados);
 
+      alert("Registro actualizado correctamente");
+
     } catch (err: unknown) {
       console.error("Error al guardar:", err);
       const nuevosEstados = new Map(estadosEdicion);
       const estado = nuevosEstados.get(id);
       if (estado) {
         estado.guardando = false;
-        // 🔧 Corregir el tipo any
         const errorMessage = err instanceof Error ? err.message : 
                            (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 
-                           'Error al guardar';
+                           'Error al guardar el registro';
         estado.errores = [errorMessage];
         nuevosEstados.set(id, estado);
         setEstadosEdicion(nuevosEstados);
@@ -244,6 +318,11 @@ const EditarRegistrosLotePage: React.FC = () => {
       return;
     }
 
+    const confirmMessage = `¿Está seguro de aplicar los cambios a ${registrosSeleccionados.size} registros?\n\nEsta acción no se puede deshacer.`;
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
     try {
       setGuardando(true);
       setError("");
@@ -254,67 +333,85 @@ const EditarRegistrosLotePage: React.FC = () => {
         const registro = registros.find(r => r.id === id);
         if (!registro) return;
 
+        // Determinar el nombre del centro si se está cambiando
+        let nombreCentro = registro.nombreCentro;
+        if (camposLoteSeleccionados.has('Centro_ID') && valoresLote.Centro_ID) {
+          const centroSeleccionado = centros.find(c => c.id.toString() === valoresLote.Centro_ID);
+          nombreCentro = centroSeleccionado?.nombreCentro || registro.nombreCentro;
+        }
+
         const datosActualizados: RegistroActualizacionDto = {
           Id: id,
-          Trabajador_ID: camposLoteSeleccionados.has('Trabajador_ID') ? 
-            (valoresLote.Trabajador_ID || registro.trabajadorId) : registro.trabajadorId,
-          Centro_ID: camposLoteSeleccionados.has('Centro_ID') ? 
-            (valoresLote.Centro_ID || registro.centroId.toString()) : registro.centroId.toString(),
-          Nombr_Centro: camposLoteSeleccionados.has('Nombr_Centro') ? 
-            (valoresLote.Nombr_Centro || registro.nombreCentro) : registro.nombreCentro,
-          Fecha: camposLoteSeleccionados.has('Fecha') ? 
-            (valoresLote.Fecha || registro.fecha) : registro.fecha,
-          Hora_Ingreso: camposLoteSeleccionados.has('Hora_Ingreso') ? 
-            (valoresLote.Hora_Ingreso || registro.horaIngreso.substring(0, 5)) : registro.horaIngreso.substring(0, 5),
-          Hora_Salida: camposLoteSeleccionados.has('Hora_Salida') ? 
-            (valoresLote.Hora_Salida || registro.horaSalida.substring(0, 5)) : registro.horaSalida.substring(0, 5),
-          Tiempo_Almuerzo: camposLoteSeleccionados.has('Tiempo_Almuerzo') ? 
-            (valoresLote.Tiempo_Almuerzo || registro.tiempoAlmuerzo) : registro.tiempoAlmuerzo,
+          Trabajador_ID: camposLoteSeleccionados.has('Trabajador_ID') && valoresLote.Trabajador_ID ? 
+            valoresLote.Trabajador_ID : registro.trabajadorId,
+          Centro_ID: camposLoteSeleccionados.has('Centro_ID') && valoresLote.Centro_ID ? 
+            valoresLote.Centro_ID : registro.centroId.toString(),
+          Nombr_Centro: nombreCentro,
+          Fecha: camposLoteSeleccionados.has('Fecha') && valoresLote.Fecha ? 
+            valoresLote.Fecha : registro.fecha,
+          Hora_Ingreso: camposLoteSeleccionados.has('Hora_Ingreso') && valoresLote.Hora_Ingreso ? 
+            valoresLote.Hora_Ingreso : registro.horaIngreso.substring(0, 5),
+          Hora_Salida: camposLoteSeleccionados.has('Hora_Salida') && valoresLote.Hora_Salida ? 
+            valoresLote.Hora_Salida : registro.horaSalida.substring(0, 5),
+          Tiempo_Almuerzo: camposLoteSeleccionados.has('Tiempo_Almuerzo') && valoresLote.Tiempo_Almuerzo ? 
+            convertirTiempoATimeSpan(valoresLote.Tiempo_Almuerzo) : convertirTiempoATimeSpan(registro.tiempoAlmuerzo),
           desplazamientoIda: camposLoteSeleccionados.has('desplazamientoIda') ? 
-            valoresLote.desplazamientoIda : registro.desplazamientoIda?.substring(0, 5),
+            (valoresLote.desplazamientoIda ? convertirTiempoATimeSpan(valoresLote.desplazamientoIda) : undefined) : 
+            (registro.desplazamientoIda ? convertirTiempoATimeSpan(registro.desplazamientoIda.substring(0, 5)) : undefined),
           desplazamientoRegreso: camposLoteSeleccionados.has('desplazamientoRegreso') ? 
-            valoresLote.desplazamientoRegreso : registro.desplazamientoRegreso?.substring(0, 5),
-          // 🆕 AGREGAR CAMPO CONDUCTOR
+            (valoresLote.desplazamientoRegreso ? convertirTiempoATimeSpan(valoresLote.desplazamientoRegreso) : undefined) : 
+            (registro.desplazamientoRegreso ? convertirTiempoATimeSpan(registro.desplazamientoRegreso.substring(0, 5)) : undefined),
           EsConductor: camposLoteSeleccionados.has('EsConductor') ? 
             Boolean(valoresLote.EsConductor) : (registro.esConductor || false),
-          AnalistaId: camposLoteSeleccionados.has('AnalistaId') ? 
-            (valoresLote.AnalistaId || analistas[0]?.id || 0) : analistas[0]?.id || 0
+          AnalistaId: camposLoteSeleccionados.has('AnalistaId') && valoresLote.AnalistaId ? 
+            valoresLote.AnalistaId : (analistas[0]?.id || 1)
         };
 
         registrosParaActualizar.push(datosActualizados);
       });
 
-      const respuesta = await registrosService.actualizarLote(registrosParaActualizar);
+      // Llamar al endpoint de actualización en lote
+      const response = await fetch('/api/registros/lote', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(registrosParaActualizar)
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error del servidor: ${response.status}`);
+      }
+
+      const respuesta: RespuestaLote = await response.json();
 
       // Mostrar resultados
       if (respuesta.errores.length > 0) {
-        setError(`Se actualizaron ${respuesta.registrosActualizados} de ${respuesta.totalProcesados} registros. Errores: ${respuesta.errores.join(', ')}`);
+        setError(`Se actualizaron ${respuesta.registrosActualizados} de ${respuesta.totalProcesados} registros.\n\nErrores:\n${respuesta.errores.join('\n')}`);
       } else {
-        // Recargar registros actualizados
-        const idsActualizados = Array.from(registrosSeleccionados);
-        const registrosActualizados = await registrosService.obtenerPorIds(idsActualizados);
-        
-        setRegistros(prev => prev.map(r => {
-          const actualizado = registrosActualizados.find(ra => ra.id === r.id);
-          return actualizado || r;
-        }));
-
-        // Limpiar selección y valores
-        setRegistrosSeleccionados(new Set());
-        setValoresLote({});
-        setCamposLoteSeleccionados(new Set());
-        setEditandoEnLote(false);
-
         alert(`✅ Se actualizaron ${respuesta.registrosActualizados} registros correctamente`);
       }
 
+      // Recargar registros desde el servidor
+      const registrosActualizados = await registrosService.obtenerTodos();
+      const registrosFiltrados = registrosActualizados.filter(r => 
+        r.centroId && !r.centroId.toString().startsWith('AUSENCIA')
+      );
+      
+      setRegistros(registrosFiltrados.slice(-50)); // Mantener los últimos 50
+
+      // Limpiar selección y valores
+      setRegistrosSeleccionados(new Set());
+      setValoresLote({});
+      setCamposLoteSeleccionados(new Set());
+      setEditandoEnLote(false);
+
     } catch (err: unknown) {
       console.error("Error al aplicar cambios en lote:", err);
-      // 🔧 Corregir el tipo any
       const errorMessage = err instanceof Error ? err.message : 
                          (err as { response?: { data?: { message?: string } } })?.response?.data?.message || 
                          'Error al aplicar cambios en lote';
-      setError(errorMessage);
+      setError(`Error: ${errorMessage}`);
     } finally {
       setGuardando(false);
     }
@@ -339,13 +436,19 @@ const EditarRegistrosLotePage: React.FC = () => {
       let valor = '';
       switch (campo) {
         case 'trabajadorNombre':
-          valor = registro.trabajadorNombre;
+          valor = registro.trabajadorNombre || 'Sin nombre';
           break;
         case 'nombreCentro':
-          valor = registro.nombreCentro;
+          // Buscar el nombre del centro por ID si no viene en el registro
+          if (registro.nombreCentro) {
+            valor = registro.nombreCentro;
+          } else {
+            const centro = centros.find(c => c.id.toString() === registro.centroId.toString());
+            valor = centro?.nombreCentro || `Centro ${registro.centroId}`;
+          }
           break;
         case 'fecha':
-          valor = registro.fecha;
+          valor = new Date(registro.fecha).toLocaleDateString('es-ES');
           break;
         case 'horaIngreso':
           valor = registro.horaIngreso.substring(0, 5);
@@ -354,7 +457,7 @@ const EditarRegistrosLotePage: React.FC = () => {
           valor = registro.horaSalida.substring(0, 5);
           break;
         case 'tiempoAlmuerzo':
-          valor = registro.tiempoAlmuerzo;
+          valor = registro.tiempoAlmuerzo ? registro.tiempoAlmuerzo.substring(0, 5) : '01:00';
           break;
         case 'desplazamientoIda':
           valor = registro.desplazamientoIda?.substring(0, 5) || '--:--';
@@ -363,12 +466,12 @@ const EditarRegistrosLotePage: React.FC = () => {
           valor = registro.desplazamientoRegreso?.substring(0, 5) || '--:--';
           break;
         case 'esConductor':
-          valor = registro.esConductor ? '🚛 Conductor' : '👷 No Conductor';
+          valor = registro.esConductor ? '🚛 Sí' : '👷 No';
           break;
         default:
           valor = '--';
       }
-      return <span>{valor}</span>;
+      return <span style={{ fontSize: '0.9rem' }}>{valor}</span>;
     }
 
     // Modo edición
@@ -377,13 +480,14 @@ const EditarRegistrosLotePage: React.FC = () => {
     if (tipo === 'checkbox') {
       const valorActual = valorEditado !== undefined ? Boolean(valorEditado) : (registro.esConductor || false);
       return (
-        <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}>
           <input
             type="checkbox"
             checked={valorActual}
             onChange={(e) => actualizarDatosEditados(registro.id, campo, e.target.checked)}
+            style={{ transform: 'scale(0.9)' }}
           />
-          <span>{valorActual ? '🚛 Conductor' : '👷 No Conductor'}</span>
+          <span>{valorActual ? '🚛 Sí' : '👷 No'}</span>
         </label>
       );
     }
@@ -395,7 +499,7 @@ const EditarRegistrosLotePage: React.FC = () => {
         case 'Fecha': return registro.fecha;
         case 'Hora_Ingreso': return registro.horaIngreso.substring(0, 5);
         case 'Hora_Salida': return registro.horaSalida.substring(0, 5);
-        case 'Tiempo_Almuerzo': return registro.tiempoAlmuerzo;
+        case 'Tiempo_Almuerzo': return registro.tiempoAlmuerzo ? registro.tiempoAlmuerzo.substring(0, 5) : '01:00';
         case 'desplazamientoIda': return registro.desplazamientoIda?.substring(0, 5) || '';
         case 'desplazamientoRegreso': return registro.desplazamientoRegreso?.substring(0, 5) || '';
         default: return '';
@@ -410,10 +514,10 @@ const EditarRegistrosLotePage: React.FC = () => {
             onChange={(e) => actualizarDatosEditados(registro.id, campo, Number(e.target.value))}
             style={{
               width: '100%',
-              padding: '6px',
+              padding: '4px',
               border: '1px solid #ddd',
               borderRadius: '4px',
-              fontSize: '0.9rem'
+              fontSize: '0.8rem'
             }}
           >
             {trabajadores.map(t => (
@@ -428,15 +532,34 @@ const EditarRegistrosLotePage: React.FC = () => {
             onChange={(e) => actualizarDatosEditados(registro.id, campo, e.target.value)}
             style={{
               width: '100%',
-              padding: '6px',
+              padding: '4px',
               border: '1px solid #ddd',
               borderRadius: '4px',
-              fontSize: '0.9rem'
+              fontSize: '0.8rem'
             }}
           >
             {centros.map(c => (
               <option key={c.id} value={c.id}>{c.nombreCentro}</option>
             ))}
+          </select>
+        );
+      } else if (campo === 'Tiempo_Almuerzo') {
+        return (
+          <select
+            value={valorActual.toString()}
+            onChange={(e) => actualizarDatosEditados(registro.id, campo, e.target.value)}
+            style={{
+              width: '100%',
+              padding: '4px',
+              border: '1px solid #ddd',
+              borderRadius: '4px',
+              fontSize: '0.8rem'
+            }}
+          >
+            <option value="00:30">30 min</option>
+            <option value="01:00">1 hora</option>
+            <option value="01:30">1.5 hrs</option>
+            <option value="02:00">2 hrs</option>
           </select>
         );
       }
@@ -449,10 +572,10 @@ const EditarRegistrosLotePage: React.FC = () => {
         onChange={(e) => actualizarDatosEditados(registro.id, campo, e.target.value)}
         style={{
           width: '100%',
-          padding: '6px',
+          padding: '4px',
           border: '1px solid #ddd',
           borderRadius: '4px',
-          fontSize: '0.9rem'
+          fontSize: '0.8rem'
         }}
       />
     );
@@ -483,7 +606,7 @@ const EditarRegistrosLotePage: React.FC = () => {
     );
   }
 
-  const registrosFiltrados = configuracion.mostrarSoloSeleccionados 
+  const registrosFiltrados = mostrarSoloSeleccionados 
     ? registros.filter(r => registrosSeleccionados.has(r.id))
     : registros;
 
@@ -536,7 +659,7 @@ const EditarRegistrosLotePage: React.FC = () => {
               <button
                 onClick={toggleSeleccionTodos}
                 style={{
-                  background: registrosSeleccionados.size === registros.length 
+                  background: registrosSeleccionados.size === registrosFiltrados.length && registrosFiltrados.length > 0
                     ? 'linear-gradient(135deg, #ef4444, #dc2626)' 
                     : 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
                   color: 'white',
@@ -548,17 +671,16 @@ const EditarRegistrosLotePage: React.FC = () => {
                   fontSize: '0.9rem'
                 }}
               >
-                {registrosSeleccionados.size === registros.length ? '❌ Deseleccionar Todo' : '✅ Seleccionar Todo'}
+                {registrosSeleccionados.size === registrosFiltrados.length && registrosFiltrados.length > 0 
+                  ? '❌ Deseleccionar Todo' 
+                  : '✅ Seleccionar Todo'}
               </button>
 
               <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <input
                   type="checkbox"
-                  checked={configuracion.mostrarSoloSeleccionados}
-                  onChange={(e) => setConfiguracion(prev => ({
-                    ...prev,
-                    mostrarSoloSeleccionados: e.target.checked
-                  }))}
+                  checked={mostrarSoloSeleccionados}
+                  onChange={(e) => setMostrarSoloSeleccionados(e.target.checked)}
                 />
                 <span style={{ fontSize: '0.9rem' }}>Solo seleccionados</span>
               </label>
@@ -619,11 +741,12 @@ const EditarRegistrosLotePage: React.FC = () => {
                   background: '#fee2e2',
                   border: '1px solid #ef4444',
                   color: '#dc2626',
-                  padding: '10px',
+                  padding: '12px',
                   borderRadius: '6px',
-                  marginBottom: '15px'
+                  marginBottom: '15px',
+                  whiteSpace: 'pre-line'
                 }}>
-                  {error}
+                  ❌ {error}
                 </div>
               )}
 
@@ -741,7 +864,37 @@ const EditarRegistrosLotePage: React.FC = () => {
                   />
                 </div>
 
-                {/* 🆕 Campo Conductor */}
+                {/* Campo Tiempo Almuerzo */}
+                <div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                    <input
+                      type="checkbox"
+                      checked={camposLoteSeleccionados.has('Tiempo_Almuerzo')}
+                      onChange={() => toggleCampoLote('Tiempo_Almuerzo')}
+                    />
+                    <span style={{ fontWeight: '600' }}>🍽️ Tiempo Almuerzo</span>
+                  </label>
+                  <select
+                    disabled={!camposLoteSeleccionados.has('Tiempo_Almuerzo')}
+                    value={valoresLote.Tiempo_Almuerzo || ''}
+                    onChange={(e) => setValoresLote(prev => ({ ...prev, Tiempo_Almuerzo: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid #ccc',
+                      borderRadius: '6px',
+                      opacity: camposLoteSeleccionados.has('Tiempo_Almuerzo') ? 1 : 0.5
+                    }}
+                  >
+                    <option value="">Seleccionar...</option>
+                    <option value="00:30">30 minutos</option>
+                    <option value="01:00">1 hora</option>
+                    <option value="01:30">1 hora 30 min</option>
+                    <option value="02:00">2 horas</option>
+                  </select>
+                </div>
+
+                {/* Campo Conductor */}
                 <div>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                     <input
@@ -807,25 +960,27 @@ const EditarRegistrosLotePage: React.FC = () => {
           <table style={{
             width: '100%',
             borderCollapse: 'collapse',
-            fontSize: '0.9rem'
+            fontSize: '0.85rem'
           }}>
             <thead>
               <tr style={{ background: '#f8fafc' }}>
-                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>
+                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left', minWidth: '40px' }}>
                   <input
                     type="checkbox"
                     checked={registrosSeleccionados.size === registrosFiltrados.length && registrosFiltrados.length > 0}
                     onChange={toggleSeleccionTodos}
+                    style={{ transform: 'scale(1.1)' }}
                   />
                 </th>
-                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>Trabajador</th>
-                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>Centro</th>
-                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>Fecha</th>
-                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>Ingreso</th>
-                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>Salida</th>
-                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>Conductor</th>
-                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>H. Totales</th>
-                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left' }}>Acciones</th>
+                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left', minWidth: '150px' }}>Trabajador</th>
+                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left', minWidth: '120px' }}>Centro</th>
+                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left', minWidth: '100px' }}>Fecha</th>
+                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left', minWidth: '70px' }}>Ingreso</th>
+                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left', minWidth: '70px' }}>Salida</th>
+                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left', minWidth: '70px' }}>Almuerzo</th>
+                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left', minWidth: '90px' }}>Conductor</th>
+                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left', minWidth: '80px' }}>H. Totales</th>
+                <th style={{ padding: '12px 8px', borderBottom: '2px solid #e2e8f0', textAlign: 'left', minWidth: '100px' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -839,7 +994,8 @@ const EditarRegistrosLotePage: React.FC = () => {
                     style={{
                       backgroundColor: seleccionado ? '#eff6ff' : 
                                       estado?.editando ? '#fef3c7' : 'white',
-                      borderBottom: '1px solid #e2e8f0'
+                      borderBottom: '1px solid #e2e8f0',
+                      transition: 'background-color 0.2s'
                     }}
                   >
                     <td style={{ padding: '12px 8px' }}>
@@ -847,39 +1003,90 @@ const EditarRegistrosLotePage: React.FC = () => {
                         type="checkbox"
                         checked={seleccionado}
                         onChange={() => toggleSeleccionRegistro(registro.id)}
+                        style={{ transform: 'scale(1.1)' }}
                       />
                     </td>
                     <td style={{ padding: '12px 8px' }}>
-                      {renderizarCampoEditable(registro, 'Trabajador_ID', 'select')}
+                      {estado?.editando ? 
+                        renderizarCampoEditable(registro, 'Trabajador_ID', 'select') :
+                        <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>{registro.trabajadorNombre}</span>
+                      }
                     </td>
                     <td style={{ padding: '12px 8px' }}>
-                      {renderizarCampoEditable(registro, 'Centro_ID', 'select')}
+                      {estado?.editando ? 
+                        renderizarCampoEditable(registro, 'Centro_ID', 'select') :
+                        <span style={{ fontSize: '0.9rem' }}>
+                          {registro.nombreCentro || centros.find(c => c.id.toString() === registro.centroId.toString())?.nombreCentro || `Centro ${registro.centroId}`}
+                        </span>
+                      }
                     </td>
                     <td style={{ padding: '12px 8px' }}>
-                      {renderizarCampoEditable(registro, 'Fecha', 'date')}
+                      {estado?.editando ? 
+                        renderizarCampoEditable(registro, 'Fecha', 'date') :
+                        <span style={{ fontSize: '0.9rem' }}>{new Date(registro.fecha).toLocaleDateString('es-ES')}</span>
+                      }
                     </td>
                     <td style={{ padding: '12px 8px' }}>
-                      {renderizarCampoEditable(registro, 'Hora_Ingreso', 'time')}
+                      {estado?.editando ? 
+                        renderizarCampoEditable(registro, 'Hora_Ingreso', 'time') :
+                        <span style={{ fontSize: '0.9rem', fontFamily: 'monospace' }}>{registro.horaIngreso.substring(0, 5)}</span>
+                      }
                     </td>
                     <td style={{ padding: '12px 8px' }}>
-                      {renderizarCampoEditable(registro, 'Hora_Salida', 'time')}
+                      {estado?.editando ? 
+                        renderizarCampoEditable(registro, 'Hora_Salida', 'time') :
+                        <span style={{ fontSize: '0.9rem', fontFamily: 'monospace' }}>{registro.horaSalida.substring(0, 5)}</span>
+                      }
                     </td>
                     <td style={{ padding: '12px 8px' }}>
-                      {renderizarCampoEditable(registro, 'EsConductor', 'checkbox')}
-                    </td>
-                    <td style={{ padding: '12px 8px', fontWeight: '600' }}>
-                      {registro.totalHoras.toFixed(2)}h
+                      {estado?.editando ? 
+                        renderizarCampoEditable(registro, 'Tiempo_Almuerzo', 'select') :
+                        <span style={{ 
+                          fontSize: '0.9rem', 
+                          fontFamily: 'monospace',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          background: '#f3f4f6',
+                          color: '#6b7280'
+                        }}>
+                          {registro.tiempoAlmuerzo ? registro.tiempoAlmuerzo.substring(0, 5) : '01:00'}
+                        </span>
+                      }
                     </td>
                     <td style={{ padding: '12px 8px' }}>
-                      <div style={{ display: 'flex', gap: '5px' }}>
+                      {estado?.editando ? 
+                        renderizarCampoEditable(registro, 'EsConductor', 'checkbox') :
+                        <span style={{ 
+                          fontSize: '0.8rem',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          background: registro.esConductor ? '#dcfce7' : '#f3f4f6',
+                          color: registro.esConductor ? '#16a34a' : '#6b7280'
+                        }}>
+                          {registro.esConductor ? '🚛 Sí' : '👷 No'}
+                        </span>
+                      }
+                    </td>
+                    <td style={{ padding: '12px 8px' }}>
+                      <span style={{ 
+                        fontSize: '0.9rem', 
+                        fontWeight: '600',
+                        color: '#059669'
+                      }}>
+                        {registro.totalHoras.toFixed(2)}h
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 8px' }}>
+                      <div style={{ display: 'flex', gap: '4px' }}>
                         {!estado?.editando ? (
                           <button
                             onClick={() => activarEdicion(registro.id)}
+                            title="Editar registro"
                             style={{
                               background: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
                               color: 'white',
                               border: 'none',
-                              padding: '4px 8px',
+                              padding: '6px 8px',
                               borderRadius: '4px',
                               cursor: 'pointer',
                               fontSize: '0.8rem'
@@ -892,13 +1099,14 @@ const EditarRegistrosLotePage: React.FC = () => {
                             <button
                               onClick={() => guardarRegistro(registro.id)}
                               disabled={estado.guardando}
+                              title="Guardar cambios"
                               style={{
                                 background: estado.guardando 
                                   ? 'linear-gradient(135deg, #9ca3af, #6b7280)'
                                   : 'linear-gradient(135deg, #22c55e, #15803d)',
                                 color: 'white',
                                 border: 'none',
-                                padding: '4px 8px',
+                                padding: '6px 8px',
                                 borderRadius: '4px',
                                 cursor: estado.guardando ? 'not-allowed' : 'pointer',
                                 fontSize: '0.8rem'
@@ -909,11 +1117,12 @@ const EditarRegistrosLotePage: React.FC = () => {
                             <button
                               onClick={() => cancelarEdicion(registro.id)}
                               disabled={estado.guardando}
+                              title="Cancelar edición"
                               style={{
                                 background: 'linear-gradient(135deg, #ef4444, #dc2626)',
                                 color: 'white',
                                 border: 'none',
-                                padding: '4px 8px',
+                                padding: '6px 8px',
                                 borderRadius: '4px',
                                 cursor: estado.guardando ? 'not-allowed' : 'pointer',
                                 fontSize: '0.8rem'
@@ -924,6 +1133,17 @@ const EditarRegistrosLotePage: React.FC = () => {
                           </>
                         )}
                       </div>
+                      
+                      {/* Mostrar errores si los hay */}
+                      {estado?.errores && estado.errores.length > 0 && (
+                        <div style={{
+                          fontSize: '0.7rem',
+                          color: '#dc2626',
+                          marginTop: '2px'
+                        }}>
+                          {estado.errores[0]}
+                        </div>
+                      )}
                     </td>
                   </tr>
                 );
@@ -938,7 +1158,10 @@ const EditarRegistrosLotePage: React.FC = () => {
               color: '#6b7280'
             }}>
               <div style={{ fontSize: '2rem', marginBottom: '10px' }}>📝</div>
-              <div>No hay registros para mostrar</div>
+              <div style={{ fontSize: '1.1rem', marginBottom: '5px' }}>No hay registros para mostrar</div>
+              <div style={{ fontSize: '0.9rem' }}>
+                {mostrarSoloSeleccionados ? 'Selecciona algunos registros para verlos aquí' : 'No se encontraron registros'}
+              </div>
             </div>
           )}
         </div>
