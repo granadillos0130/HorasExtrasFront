@@ -4,22 +4,18 @@ import { clientesService } from "../api/clientesService";
 import CentroForm from "../components/centros/CentroForm";
 import CentroBuscador from "../components/shared/CentroBuscador";
 import InformacionEjecucionPage from "./InformacionEjecucionPage";
-import type { CentroPorMes, Centro, EstadisticaTrabajador } from "../types/centros";
+import type { Centro, EstadisticaTrabajador, CentroPorMesCompleto } from "../types/centros";
 import type { Cliente } from "../types/cliente";
-
-// Extender el tipo para incluir mano de obra
-interface CentroPorMesConManoObra extends CentroPorMes {
-  manoObraTotal?: number;
-}
 
 const CentrosPage: React.FC = () => {
   const [añoSeleccionado, setAñoSeleccionado] = useState<number>(new Date().getFullYear());
   const [mesSeleccionado, setMesSeleccionado] = useState<number | null>(null);
-  const [centrosDelMes, setCentrosDelMes] = useState<CentroPorMesConManoObra[]>([]);
-  const [centroSeleccionado, setCentroSeleccionado] = useState<CentroPorMesConManoObra | null>(null);
+  const [centrosDelMes, setCentrosDelMes] = useState<CentroPorMesCompleto[]>([]);
+  // ✅ Unificado para usar CentroPorMesCompleto
+  const [centroSeleccionado, setCentroSeleccionado] = useState<CentroPorMesCompleto | null>(null);
   const [vistaActual, setVistaActual] = useState<'info' | 'cargos' | 'crear' | 'ejecucion' | 'busqueda' | null>(null);
   
-  // NUEVO: Estado separado para el modal en la vista de búsqueda
+  // Estado separado para el modal en la vista de búsqueda
   const [modalBusqueda, setModalBusqueda] = useState<'info' | 'cargos' | null>(null);
   
   const [loading, setLoading] = useState(false);
@@ -55,33 +51,15 @@ const CentrosPage: React.FC = () => {
     }
   }, []);
 
+  // ✅ Función optimizada - UNA SOLA PETICIÓN
   const cargarCentrosDelMes = useCallback(async () => {
     if (mesSeleccionado === null) return;
 
     setLoading(true);
     try {
-      const data = await centrosService.obtenerPorMes(añoSeleccionado, mesSeleccionado);
-      
-      // Cargar mano de obra para cada centro
-      const centrosConManoObra = await Promise.all(
-        data.map(async (centro: CentroPorMes) => {
-          try {
-            const manoObra = await centrosService.obtenerManoObraTotal(centro.centroId);
-            return {
-              ...centro,
-              manoObraTotal: manoObra.manoObraTotal
-            };
-          } catch (error) {
-            console.warn(`Error al cargar mano de obra para centro ${centro.centroId}:`, error);
-            return {
-              ...centro,
-              manoObraTotal: 0
-            };
-          }
-        })
-      );
-      
-      setCentrosDelMes(centrosConManoObra);
+      // ✅ UNA SOLA PETICIÓN que ya trae toda la información (mano de obra, cargos, cliente, etc.)
+      const centrosCompletos = await centrosService.obtenerPorMes(añoSeleccionado, mesSeleccionado);
+      setCentrosDelMes(centrosCompletos);
     } catch (error) {
       console.error("Error al cargar centros del mes:", error);
       setCentrosDelMes([]);
@@ -102,8 +80,27 @@ const CentrosPage: React.FC = () => {
     }
   }, [mesSeleccionado, cargarCentrosDelMes]);
 
-  const cargarDatosCompletosCentro = async (centro: Centro, estadisticas: { trabajadores?: EstadisticaTrabajador[] } | null) => {
+  // ✅ Función optimizada para usar datos precargados cuando están disponibles
+  const cargarDatosCompletosCentro = async (
+    centro: Centro, 
+    estadisticas: { trabajadores?: EstadisticaTrabajador[] } | null,
+    centroCompleto?: CentroPorMesCompleto // ✅ Nuevo parámetro opcional
+  ) => {
     try {
+      // ✅ Si tenemos los datos completos del mes, usarlos directamente (evitar peticiones HTTP)
+      if (centroCompleto) {
+        setDatosCompletos({
+          cliente: centroCompleto.cliente ? {
+            id: centroCompleto.cliente.id,
+            nombreCliente: centroCompleto.cliente.nombre
+          } as Cliente : null,
+          manoObraTotal: centroCompleto.manoObraTotal,
+          cargosUnicos: centroCompleto.cargosUnicos
+        });
+        return;
+      }
+
+      // ✅ Solo hacer peticiones HTTP si NO tenemos los datos (caso de búsqueda)
       // Obtener datos del cliente
       let cliente = null;
       if (centro.clienteId) {
@@ -128,22 +125,13 @@ const CentrosPage: React.FC = () => {
       if (estadisticas && estadisticas.trabajadores) {
         const cargosSet = new Set<string>();
         
-        // Intentar obtener los cargos desde el endpoint por-mes si estamos en vista mensual
-        if (mesSeleccionado !== null) {
-          try {
-            const centrosPorMes = await centrosService.obtenerPorMes(añoSeleccionado, mesSeleccionado);
-            const centroMes = centrosPorMes.find(c => c.centroId === centro.id);
-            if (centroMes?.trabajadores && Array.isArray(centroMes.trabajadores)) {
-              centroMes.trabajadores.forEach((t: { cargo?: string }) => {
-                if (t.cargo && t.cargo !== 'No especificado') {
-                  cargosSet.add(t.cargo);
-                }
-              });
-            }
-          } catch (error) {
-            console.warn("No se pudieron obtener los cargos desde por-mes:", error);
+        // Intentar obtener los cargos desde las estadísticas
+        estadisticas.trabajadores.forEach((t: EstadisticaTrabajador) => {
+          // Asumiendo que EstadisticaTrabajador tiene un campo cargo
+          if ((t as any).cargo && (t as any).cargo !== 'No especificado') {
+            cargosSet.add((t as any).cargo);
           }
-        }
+        });
 
         // Si no se obtuvieron cargos, usar un valor por defecto
         if (cargosSet.size === 0) {
@@ -151,6 +139,9 @@ const CentrosPage: React.FC = () => {
         }
 
         cargosUnicos.push(...Array.from(cargosSet));
+      } else {
+        // Fallback: usar valor por defecto
+        cargosUnicos.push("Trabajador General");
       }
 
       setDatosCompletos({
@@ -169,84 +160,90 @@ const CentrosPage: React.FC = () => {
   };
 
   const handleBusquedaCentro = async (centroId: string, centro?: Centro) => {
-    setCentroBuscado(centroId);
+  setCentroBuscado(centroId);
+  
+  if (!centroId) {
+    setCentroEncontrado(null);
+    return;
+  }
+
+  setLoadingBusqueda(true);
+  try {
+    let centroData: Centro;
     
-    if (!centroId) {
-      setCentroEncontrado(null);
-      return;
+    if (centro) {
+      centroData = centro;
+    } else {
+      centroData = await centrosService.getById(centroId);
     }
-
-    setLoadingBusqueda(true);
+    
+    // Obtener las estadísticas completas del centro
+    const estadisticas = await centrosService.getEstadisticas({ centroId: centroData.id });
+    
+    // ✅ USAR BATCH EN LUGAR DE LLAMADA INDIVIDUAL
+    let manoObraTotal = 0;
     try {
-      let centroData: Centro;
-      
-      if (centro) {
-        centroData = centro;
-      } else {
-        centroData = await centrosService.getById(centroId);
+      const resultadoBatch = await centrosService.obtenerManoObraTotalBatch([centroData.id]);
+      if (resultadoBatch.length > 0 && resultadoBatch[0].success) {
+        manoObraTotal = resultadoBatch[0].manoObraTotal;
       }
-      
-      // Obtener las estadísticas completas del centro
-      const estadisticas = await centrosService.getEstadisticas({ centroId: centroData.id });
-      
-      // Obtener mano de obra total para la búsqueda
-      let manoObraTotal = 0;
-      try {
-        const manoObra = await centrosService.obtenerManoObraTotal(centroData.id);
-        manoObraTotal = manoObra.manoObraTotal;
-      } catch (error) {
-        console.warn("No se pudo cargar la mano de obra total:", error);
-      }
-      
-      setCentroEncontrado(centroData);
-      
-      // Si hay estadísticas, crear un objeto CentroPorMes con los datos completos
-      if (estadisticas && estadisticas.trabajadores) {
-        const centroCompleto: CentroPorMesConManoObra = {
-          centroId: centroData.id,
-          centroNombre: centroData.nombreCentro,
-          fechaInicio: centroData.fechaInicio,
-          fechaFinal: centroData.fechaFinal,
-          manoObraTotal,
-          trabajadores: estadisticas.trabajadores.map((t: EstadisticaTrabajador) => ({
-            trabajadorId: t.trabajadorId,
-            nombre: t.nombreTrabajador,
-            totalHoras: t.totalHoras,
-            horasNormales: t.horasNormales,
-            extrasDiurnas: t.horasExtrasDiurnas,
-            extrasNocturnas: t.horasExtrasNocturnas,
-            cargo: 'No especificado'
-          }))
-        };
-        setCentroSeleccionado(centroCompleto);
-        
-        // Cargar datos completos del centro
-        await cargarDatosCompletosCentro(centroData, estadisticas);
-      } else {
-        // Si no hay estadísticas, crear un objeto básico
-        setCentroSeleccionado({
-          centroId: centroData.id,
-          centroNombre: centroData.nombreCentro,
-          fechaInicio: centroData.fechaInicio,
-          fechaFinal: centroData.fechaFinal,
-          manoObraTotal,
-          trabajadores: []
-        });
-        
-        // Cargar datos completos del centro
-        await cargarDatosCompletosCentro(centroData, null);
-      }
-      
     } catch (error) {
-      console.error("Error al buscar centro:", error);
-      setCentroEncontrado(null);
-      setCentroSeleccionado(null);
-    } finally {
-      setLoadingBusqueda(false);
+      console.warn("No se pudo cargar la mano de obra total:", error);
     }
-  };
+    
+    setCentroEncontrado(centroData);
+    
+    // Si hay estadísticas, crear un objeto CentroPorMesCompleto con los datos completos
+    if (estadisticas && estadisticas.trabajadores) {
+      const centroCompleto: CentroPorMesCompleto = {
+        centroId: centroData.id,
+        centroNombre: centroData.nombreCentro,
+        fechaInicio: centroData.fechaInicio,
+        fechaFinal: centroData.fechaFinal,
+        manoObraTotal,
+        cargosUnicos: [], // Se llenará en cargarDatosCompletosCentro
+        trabajadores: estadisticas.trabajadores.map((t: EstadisticaTrabajador) => ({
+          trabajadorId: t.trabajadorId,
+          nombre: t.nombreTrabajador,
+          totalHoras: t.totalHoras,
+          horasNormales: t.horasNormales,
+          extrasDiurnas: t.horasExtrasDiurnas,
+          extrasNocturnas: t.horasExtrasNocturnas,
+          cargo: 'No especificado'
+        }))
+      };
+      setCentroSeleccionado(centroCompleto);
+      
+      // Cargar datos completos del centro
+      await cargarDatosCompletosCentro(centroData, estadisticas);
+    } else {
+      // Si no hay estadísticas, crear un objeto básico
+      const centroBasico: CentroPorMesCompleto = {
+        centroId: centroData.id,
+        centroNombre: centroData.nombreCentro,
+        fechaInicio: centroData.fechaInicio,
+        fechaFinal: centroData.fechaFinal,
+        manoObraTotal,
+        cargosUnicos: [],
+        trabajadores: []
+      };
+      setCentroSeleccionado(centroBasico);
+      
+      // Cargar datos completos del centro
+      await cargarDatosCompletosCentro(centroData, null);
+    }
+    
+  } catch (error) {
+    console.error("Error al buscar centro:", error);
+    setCentroEncontrado(null);
+    setCentroSeleccionado(null);
+  } finally {
+    setLoadingBusqueda(false);
+  }
+};
 
-  const handleSeleccionarCentroDelMes = async (centro: CentroPorMesConManoObra) => {
+  // ✅ Función optimizada para usar datos precargados
+  const handleSeleccionarCentroDelMes = async (centro: CentroPorMesCompleto) => {
     setCentroSeleccionado(centro);
     
     // Obtener datos completos del centro
@@ -254,9 +251,8 @@ const CentrosPage: React.FC = () => {
       const centroCompleto = await centrosService.getById(centro.centroId);
       setCentroEncontrado(centroCompleto);
       
-      // Obtener estadísticas para cargar datos completos
-      const estadisticas = await centrosService.getEstadisticas({ centroId: centro.centroId });
-      await cargarDatosCompletosCentro(centroCompleto, estadisticas);
+      // ✅ Usar los datos que ya vienen del endpoint optimizado
+      await cargarDatosCompletosCentro(centroCompleto, null, centro);
     } catch (error) {
       console.error("Error al cargar datos completos del centro:", error);
     }
@@ -265,7 +261,7 @@ const CentrosPage: React.FC = () => {
   const cerrarModal = () => {
     setCentroSeleccionado(null);
     setVistaActual(null);
-    // NUEVO: También cerrar el modal de búsqueda
+    // También cerrar el modal de búsqueda
     setModalBusqueda(null);
     setDatosCompletos({
       cliente: null,

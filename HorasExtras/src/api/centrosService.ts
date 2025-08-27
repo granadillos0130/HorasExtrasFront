@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { Centro, EstadisticasMes, TipoHora, TrabajadoresPorTipoHora } from "../types/centros";
+import type { Centro, CentroPorMesCompleto, EstadisticasMes, TipoHora, TrabajadoresPorTipoHora } from "../types/centros";
 
 export const centrosService = {
   async getAll(): Promise<Centro[]> {
@@ -37,11 +37,11 @@ export const centrosService = {
     return api.post("/centros/lote", data);
   },
    // Nuevo método para obtener centros por mes
-  obtenerPorMes(anio: number, mes: number): Promise<any[]> {
-    return api.get(`/centros/por-mes`, { 
-      params: { anio, mes } 
-    }).then(res => res.data);
-  },
+  obtenerPorMes(anio: number, mes: number): Promise<CentroPorMesCompleto[]> {
+  return api.get(`/centros/por-mes`, { 
+    params: { anio, mes } 
+  }).then(res => res.data);
+},
   obtenerManoObraTotal(centroId: string): Promise<{ centroId: string; manoObraTotal: number }> {
     return api.get(`/centros/${centroId}/mano-obra-total`).then(res => res.data);
   },
@@ -106,5 +106,16 @@ obtenerTrabajadoresPorTipoHora(
     params: { mes, anio, tipoHora } 
   }).then(res => res.data);
 },
+async obtenerManoObraTotalBatch(centroIds: string[]): Promise<{
+    centroId: string;
+    manoObraTotal: number;
+    success: boolean;
+    error?: string;
+    detalleCalculos?: any;
+  }[]> {
+    return api.post(`/centros/mano-obra-total/batch`, centroIds)
+      .then(res => res.data);
+  },
+
 
 };

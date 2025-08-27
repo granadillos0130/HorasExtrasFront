@@ -51,7 +51,21 @@ export interface CentroPorMes {
   fechaFinal?: string | null;
   trabajadores: TrabajadorCentro[];
 }
-
+export interface CentroPorMesCompleto extends CentroPorMes {
+  manoObraTotal: number;
+  cargosUnicos: string[];
+  cliente?: {
+    id: string;
+    nombre: string;
+  };
+  estado?: boolean;
+  tipo?: string;
+  valorOrden?: number;
+  fechaFactura?: string;
+  interventor?: string;
+  vendedor?: string;
+  clienteId?: string;
+}
 // Nuevos tipos para información de ejecución
 export interface ManoObraTotal {
   centroId: string;
