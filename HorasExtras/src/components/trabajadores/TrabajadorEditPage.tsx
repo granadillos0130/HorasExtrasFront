@@ -15,6 +15,10 @@ const TrabajadorEditPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
+  // Constantes para cálculos
+  const SALARIO_MINIMO_2025 = 1400000; // $1,400,000
+  const DOS_SALARIOS_MINIMOS = SALARIO_MINIMO_2025 * 2; // $2,800,000
+
   // Estados para todas las secciones
   const [formData, setFormData] = useState({
     // Información Personal
@@ -30,8 +34,8 @@ const TrabajadorEditPage: React.FC = () => {
     
     // Información Laboral
     salario: 0,
-    auxilioTransporte: 0, // 🆕 NUEVO CAMPO
-    valorHora: 0,         // 🆕 NUEVO CAMPO (calculado automáticamente)
+    auxilioTransporte: 0,
+    valorHora: 0,
     fechaContratacion: "",
     tipoContratacion: "",
     correo: "",
@@ -42,27 +46,18 @@ const TrabajadorEditPage: React.FC = () => {
     direccionContacto: "",
     parentescoContacto: "",
 
-    // ===== SERVICIOS DE SEGURIDAD SOCIAL =====
-    // EPS
+    // Servicios de seguridad social
     eps: "",
     epsFechaInicio: "",
     epsFechaFin: "",
-
-    // ARL
     arl: "",
     arlFechaInicio: "",
     arlFechaFin: "",
-
-    // PENSIÓN
     fondoPension: "",
     pensionFechaInicio: "",
     pensionFechaFin: "",
-
-    // BANCO
     banco: "",
     numeroCuenta: "",
-
-    // CLÍNICA
     nombreClinica: "",
     clinicaFechaInicio: "",
     clinicaFechaFin: ""
@@ -80,12 +75,35 @@ const TrabajadorEditPage: React.FC = () => {
     clinica: false
   });
 
-  // 🆕 FUNCIÓN PARA CALCULAR VALOR HORA
+  // Función para verificar si aplica auxilio de transporte
+  const verificarAplicaAuxilio = (salario: number): boolean => {
+    return salario <= DOS_SALARIOS_MINIMOS;
+  };
+
+  // Función para formatear números con puntos de miles
+  const formatearNumero = (valor: string | number): string => {
+    const numeroStr = valor.toString().replace(/\D/g, '');
+    return numeroStr.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  };
+
+  // Función para obtener el valor numérico sin formato
+  const obtenerValorNumerico = (valorFormateado: string): number => {
+    return parseInt(valorFormateado.replace(/\./g, '')) || 0;
+  };
+
+  // Función para calcular valor hora con nueva lógica
   const calcularValorHora = (salario: number, auxilioTransporte: number = 0): number => {
     if (salario <= 0) return 0;
     
-    const parafiscales = (salario * 0.6544) + salario + auxilioTransporte;
-    const valorHora = parafiscales / 184;
+    // Aplicar regla de dos salarios mínimos
+    const auxilioAUsar = verificarAplicaAuxilio(salario) ? auxilioTransporte : 0;
+    
+    const parafiscales = (salario * 0.6544) + salario + auxilioAUsar;
+    
+    // Usar divisor según fecha actual (agosto 2025 o posterior = 176, anterior = 184)
+    const divisor = new Date() >= new Date(2025, 7, 1) ? 176 : 184;
+    
+    const valorHora = parafiscales / divisor;
     return Math.round(valorHora * 100) / 100; // Redondear a 2 decimales
   };
 
@@ -113,8 +131,8 @@ const TrabajadorEditPage: React.FC = () => {
         cantidadHijos: trabajadorData.cantidadHijos || 0,
         nivelEscolaridad: trabajadorData.nivelEscolaridad || "",
         salario: trabajadorData.salario || 0,
-        auxilioTransporte: trabajadorData.auxilioTransporte || 0, // 🆕 CARGAR AUXILIO
-        valorHora: trabajadorData.valorHora || 0,                 // 🆕 CARGAR VALOR HORA
+        auxilioTransporte: trabajadorData.auxilioTransporte || 0,
+        valorHora: trabajadorData.valorHora || 0,
         fechaContratacion: trabajadorData.fechaContratacion ? trabajadorData.fechaContratacion.split('T')[0] : "",
         tipoContratacion: trabajadorData.tipoContratacion || "",
         correo: trabajadorData.correo || "",
@@ -123,27 +141,18 @@ const TrabajadorEditPage: React.FC = () => {
         direccionContacto: trabajadorData.direccionContacto || "",
         parentescoContacto: trabajadorData.parentescoContacto || "",
 
-        // ===== CARGAR SERVICIOS DE SEGURIDAD SOCIAL =====
-        // EPS
+        // Cargar servicios de seguridad social
         eps: trabajadorData.eps?.nombre || "",
         epsFechaInicio: trabajadorData.eps?.fechaInicio ? trabajadorData.eps.fechaInicio.split('T')[0] : "",
         epsFechaFin: trabajadorData.eps?.fechaFin ? trabajadorData.eps.fechaFin.split('T')[0] : "",
-
-        // ARL
         arl: trabajadorData.arl?.nombre || "",
         arlFechaInicio: trabajadorData.arl?.fechaInicio ? trabajadorData.arl.fechaInicio.split('T')[0] : "",
         arlFechaFin: trabajadorData.arl?.fechaFin ? trabajadorData.arl.fechaFin.split('T')[0] : "",
-
-        // PENSIÓN
         fondoPension: trabajadorData.pension?.nombre || "",
         pensionFechaInicio: trabajadorData.pension?.fechaInicio ? trabajadorData.pension.fechaInicio.split('T')[0] : "",
         pensionFechaFin: trabajadorData.pension?.fechaFin ? trabajadorData.pension.fechaFin.split('T')[0] : "",
-
-        // BANCO
         banco: trabajadorData.banco?.nombre || "",
         numeroCuenta: trabajadorData.banco?.numeroCuenta || "",
-
-        // CLÍNICA
         nombreClinica: trabajadorData.clinica?.nombre || "",
         clinicaFechaInicio: trabajadorData.clinica?.fechaInicio ? trabajadorData.clinica.fechaInicio.split('T')[0] : "",
         clinicaFechaFin: trabajadorData.clinica?.fechaFin ? trabajadorData.clinica.fechaFin.split('T')[0] : ""
@@ -176,23 +185,31 @@ const TrabajadorEditPage: React.FC = () => {
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    const numericValue = ["edad", "cantidadHijos", "salario", "auxilioTransporte"].includes(name) ? Number(value) : value;
     
-    setFormData(prev => {
-      const newFormData = {
+    // Manejo especial para campos de dinero (salario y auxilio de transporte)
+    if (name === 'salario' || name === 'auxilioTransporte') {
+      const valorNumerico = obtenerValorNumerico(value);
+      setFormData(prev => {
+        const newFormData = {
+          ...prev,
+          [name]: valorNumerico
+        };
+
+        // Recalcular valor hora cuando cambie salario o auxilio de transporte
+        const salario = name === 'salario' ? valorNumerico : prev.salario;
+        const auxilio = name === 'auxilioTransporte' ? valorNumerico : prev.auxilioTransporte;
+        newFormData.valorHora = calcularValorHora(salario, auxilio);
+
+        return newFormData;
+      });
+    } else {
+      const numericValue = ["edad", "cantidadHijos"].includes(name) ? Number(value) : value;
+      
+      setFormData(prev => ({
         ...prev,
         [name]: numericValue
-      };
-
-      // 🆕 RECALCULAR VALOR HORA cuando cambie salario o auxilio de transporte
-      if (name === "salario" || name === "auxilioTransporte") {
-        const salario = name === "salario" ? Number(value) : prev.salario;
-        const auxilio = name === "auxilioTransporte" ? Number(value) : prev.auxilioTransporte;
-        newFormData.valorHora = calcularValorHora(salario, auxilio);
-      }
-
-      return newFormData;
-    });
+      }));
+    }
     
     // Auto-calcular edad
     if (name === "fechaNacimiento" && value) {
@@ -248,7 +265,7 @@ const TrabajadorEditPage: React.FC = () => {
 
     setSaving(true);
     try {
-      // ===== ENVIAR TODO EN UNA SOLA LLAMADA =====
+      // Enviar todo en una sola llamada
       const updateDto = {
         // Información básica del trabajador
         nombre: formData.nombre,
@@ -261,8 +278,8 @@ const TrabajadorEditPage: React.FC = () => {
         cantidadHijos: formData.cantidadHijos,
         nivelEscolaridad: formData.nivelEscolaridad,
         salario: formData.salario,
-        auxilioTransporte: formData.auxilioTransporte, // 🆕 ENVIAR AUXILIO
-        valorHora: formData.valorHora,                 // 🆕 ENVIAR VALOR HORA
+        auxilioTransporte: formData.auxilioTransporte,
+        valorHora: formData.valorHora,
         fechaContratacion: formData.fechaContratacion,
         correo: formData.correo,
         personaContacto: formData.personaContacto,
@@ -271,27 +288,18 @@ const TrabajadorEditPage: React.FC = () => {
         parentescoContacto: formData.parentescoContacto,
         tipoContratacion: formData.tipoContratacion,
 
-        // ===== SERVICIOS DE SEGURIDAD SOCIAL =====
-        // EPS
+        // Servicios de seguridad social
         eps: formData.eps,
         epsFechaInicio: formData.epsFechaInicio,
         epsFechaFin: formData.epsFechaFin,
-
-        // ARL
         arl: formData.arl,
         arlFechaInicio: formData.arlFechaInicio,
         arlFechaFin: formData.arlFechaFin,
-
-        // PENSIÓN
         fondoPension: formData.fondoPension,
         pensionFechaInicio: formData.pensionFechaInicio,
         pensionFechaFin: formData.pensionFechaFin,
-
-        // BANCO
         banco: formData.banco,
         numeroCuenta: formData.numeroCuenta,
-
-        // CLÍNICA
         nombreClinica: formData.nombreClinica,
         clinicaFechaInicio: formData.clinicaFechaInicio,
         clinicaFechaFin: formData.clinicaFechaFin
@@ -632,50 +640,83 @@ const TrabajadorEditPage: React.FC = () => {
                       Salario <span className="required">*</span>
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       name="salario"
-                      placeholder="1500000"
-                      value={formData.salario || ''}
+                      placeholder="1.500.000"
+                      value={formData.salario ? formatearNumero(formData.salario.toString()) : ''}
                       onChange={handleFormChange}
                       className={`form-input ${errors.salario ? 'error' : ''}`}
-                      min="0"
                       disabled={saving}
                     />
                     {errors.salario && <span className="error-text">{errors.salario}</span>}
                   </div>
 
-                  {/* 🆕 NUEVO CAMPO: AUXILIO DE TRANSPORTE */}
                   <div className="form-group">
                     <label className="form-label">Auxilio de Transporte</label>
                     <input
-                      type="number"
+                      type="text"
                       name="auxilioTransporte"
-                      placeholder="140606"
-                      value={formData.auxilioTransporte || ''}
+                      placeholder="140.606"
+                      value={formData.auxilioTransporte ? formatearNumero(formData.auxilioTransporte.toString()) : ''}
                       onChange={handleFormChange}
                       className="form-input"
-                      min="0"
                       disabled={saving}
                     />
-                    <small className="form-help">
-                      Auxilio de transporte mensual (opcional)
-                    </small>
                   </div>
 
-                  {/* 🆕 NUEVO CAMPO: VALOR HORA (CALCULADO) */}
+                  {/* Campo de Valor Hora Actualizado */}
                   <div className="form-group">
                     <label className="form-label">Valor Hora</label>
                     <input
-                      type="number"
+                      type="text"
                       name="valorHora"
-                      value={formData.valorHora || ''}
+                      value={formData.valorHora ? formatearNumero(formData.valorHora.toString()) : ''}
                       className="form-input"
                       disabled={true}
-                      placeholder="Se calcula automáticamente"
+                      style={{ 
+                        fontStyle: 'italic', 
+                        color: 'var(--text-secondary)',
+                        backgroundColor: 'var(--background-secondary)' 
+                      }}
                     />
-                    <small className="form-help">
-                      Se calcula automáticamente: (Salario × 1.6544 + Salario + Auxilio) ÷ 184
-                    </small>
+                    
+                    {/* Información actualizada con nueva regla */}
+                    <div style={{ marginTop: '8px' }}>
+                      <small style={{ 
+                        color: 'var(--text-secondary)', 
+                        fontSize: '0.8rem',
+                        display: 'block',
+                        marginBottom: '4px'
+                      }}>
+                        📊 <strong>Fórmula:</strong> (Salario × 1.6544 + Auxilio*) ÷ {new Date() >= new Date(2025, 7, 1) ? '176' : '184'}
+                      </small>
+                      
+                      {/* Mostrar si aplica auxilio según el salario actual */}
+                      {formData.salario > 0 && (
+                        <small style={{ 
+                          color: verificarAplicaAuxilio(formData.salario) ? 'var(--success-color, #22c55e)' : 'var(--warning-color, #f59e0b)', 
+                          fontSize: '0.8rem',
+                          display: 'block',
+                          marginBottom: '4px',
+                          fontWeight: '500'
+                        }}>
+                          {verificarAplicaAuxilio(formData.salario) ? (
+                            <span>✅ <strong>Auxilio de transporte:</strong> SÍ aplica (salario ≤ ${formatearNumero(DOS_SALARIOS_MINIMOS.toString())})</span>
+                          ) : (
+                            <span>⚠️ <strong>Auxilio de transporte:</strong> NO aplica (salario {'>'} ${formatearNumero(DOS_SALARIOS_MINIMOS.toString())})</span>
+                          )}
+                        </small>
+                      )}
+                      
+                      <small style={{ 
+                        color: 'var(--text-secondary)', 
+                        fontSize: '0.75rem',
+                        display: 'block',
+                        fontStyle: 'italic'
+                      }}>
+                        * El auxilio de transporte solo se incluye si el salario no supera dos salarios mínimos (${formatearNumero(DOS_SALARIOS_MINIMOS.toString())} en 2025)
+                      </small>
+                    </div>
                   </div>
 
                   <div className="form-group">
@@ -694,7 +735,6 @@ const TrabajadorEditPage: React.FC = () => {
             )}
           </div>
 
-          {/* Las demás secciones permanecen igual... */}
           {/* Sección 3: Contacto de Emergencia */}
           <div className="form-section">
             <div 

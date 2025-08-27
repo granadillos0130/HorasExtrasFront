@@ -24,7 +24,6 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
     nivelEscolaridad: "",
     salario: 0,
     auxilioTransporte: 0,
-    // ❌ ELIMINADO: valorHora - ahora lo calcula el backend
     fechaContratacion: "",
     correo: "",
     personaContacto: "",
@@ -54,15 +53,22 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
 
-  // ✅ Función para formatear números con puntos de miles
+  // Constantes para cálculos
+  const SALARIO_MINIMO_2025 = 1400000; // $1,400,000
+  const DOS_SALARIOS_MINIMOS = SALARIO_MINIMO_2025 * 2; // $2,800,000
+
+  // Función para verificar si aplica auxilio de transporte
+  const verificarAplicaAuxilio = (salario: number): boolean => {
+    return salario <= DOS_SALARIOS_MINIMOS;
+  };
+
+  // Función para formatear números con puntos de miles
   const formatearNumero = (valor: string): string => {
-    // Remover caracteres no numéricos
     const numeroLimpio = valor.replace(/\D/g, '');
-    // Formatear con puntos de miles
     return numeroLimpio.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   };
 
-  // ✅ Función para obtener el valor numérico sin formato
+  // Función para obtener el valor numérico sin formato
   const obtenerValorNumerico = (valorFormateado: string): number => {
     return parseInt(valorFormateado.replace(/\./g, '')) || 0;
   };
@@ -81,13 +87,10 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
     }
   }, [form.fechaNacimiento]);
 
-  // ❌ ELIMINADO: useEffect que calculaba valor hora automáticamente
-  // El backend ahora se encarga de calcular el valor hora
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // ✅ Manejo especial para campos de dinero (salario y auxilio de transporte)
+    // Manejo especial para campos de dinero
     if (name === 'salario' || name === 'auxilioTransporte') {
       const valorNumerico = obtenerValorNumerico(value);
       setForm((prev) => ({
@@ -98,7 +101,7 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
       setForm((prev) => ({
         ...prev,
         [name]:
-          ["edad", "cantidadHijos"].includes(name) // ❌ ELIMINADO: valorHora
+          ["edad", "cantidadHijos"].includes(name)
             ? Number(value)
             : value
       }));
@@ -188,7 +191,6 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
 
     setLoading(true);
     try {
-      // ✅ UNA SOLA LLAMADA con todos los datos
       const resultado = await trabajadoresService.create(form);
       
       alert("Trabajador creado correctamente con todos sus servicios");
@@ -520,7 +522,7 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                 {errors.auxilioTransporte && <span className="error-text">{errors.auxilioTransporte}</span>}
               </div>
 
-              {/* ✅ CAMPO DE VALOR HORA ACTUALIZADO */}
+              {/* Campo de Valor Hora Actualizado */}
               <div className="form-group">
                 <label className="form-label">Valor Hora</label>
                 <input
@@ -536,9 +538,44 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                     backgroundColor: 'var(--background-secondary)' 
                   }}
                 />
-                <small style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                  📊 Fórmula: (Salario × 1.6544 + Auxilio) ÷ {new Date() >= new Date(2025, 7, 1) ? '176' : '184'}
-                </small>
+                
+                {/* Información actualizada con nueva regla */}
+                <div style={{ marginTop: '8px' }}>
+                  <small style={{ 
+                    color: 'var(--text-secondary)', 
+                    fontSize: '0.8rem',
+                    display: 'block',
+                    marginBottom: '4px'
+                  }}>
+                    📊 <strong>Fórmula:</strong> (Salario × 1.6544 + Auxilio*) ÷ {new Date() >= new Date(2025, 7, 1) ? '176' : '184'}
+                  </small>
+                  
+                  {/* Mostrar si aplica auxilio según el salario actual */}
+                  {form.salario > 0 && (
+                    <small style={{ 
+                      color: verificarAplicaAuxilio(form.salario) ? 'var(--success-color, #22c55e)' : 'var(--warning-color, #f59e0b)', 
+                      fontSize: '0.8rem',
+                      display: 'block',
+                      marginBottom: '4px',
+                      fontWeight: '500'
+                    }}>
+                      {verificarAplicaAuxilio(form.salario) ? (
+                        <span>✅ <strong>Auxilio de transporte:</strong> SÍ aplica (salario ≤ ${formatearNumero(DOS_SALARIOS_MINIMOS.toString())})</span>
+                      ) : (
+                        <span>⚠️ <strong>Auxilio de transporte:</strong> NO aplica (salario {'>'} ${formatearNumero(DOS_SALARIOS_MINIMOS.toString())})</span>
+                      )}
+                    </small>
+                  )}
+                  
+                  <small style={{ 
+                    color: 'var(--text-secondary)', 
+                    fontSize: '0.75rem',
+                    display: 'block',
+                    fontStyle: 'italic'
+                  }}>
+                    * El auxilio de transporte solo se incluye si el salario no supera dos salarios mínimos (${formatearNumero(DOS_SALARIOS_MINIMOS.toString())} en 2025)
+                  </small>
+                </div>
               </div>
 
               <div className="form-group">
@@ -908,6 +945,16 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
                   <p><strong>Correo:</strong> {form.correo}</p>
                   <p><strong>Salario:</strong> ${form.salario ? formatearNumero(form.salario.toString()) : '0'}</p>
                   <p><strong>Auxilio Transporte:</strong> ${form.auxilioTransporte ? formatearNumero(form.auxilioTransporte.toString()) : '0'}</p>
+                  {/* Mostrar si el auxilio aplicará en el cálculo */}
+                  {form.salario > 0 && (
+                    <p style={{ 
+                      color: verificarAplicaAuxilio(form.salario) ? 'var(--success-color, #22c55e)' : 'var(--warning-color, #f59e0b)',
+                      fontSize: '0.9rem',
+                      fontWeight: '500'
+                    }}>
+                      <strong>Auxilio en cálculo:</strong> {verificarAplicaAuxilio(form.salario) ? 'Sí aplica' : 'No aplica (>2SM)'}
+                    </p>
+                  )}
                   <p><strong>Valor Hora:</strong> Se calculará automáticamente</p>
                   <p><strong>Tipo:</strong> {form.tipoContratacion}</p>
                 </div>
