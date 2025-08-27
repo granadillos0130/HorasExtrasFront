@@ -26,7 +26,7 @@ import TrabajadorDetailPage from "./components/trabajadores/TrabajadorDetailPage
 // CACHE MANAGER
 const useCacheManager = () => {
   useEffect(() => {
-    const CURRENT_VERSION = '2025-08-25-v2'; 
+    const CURRENT_VERSION = '2025-08-27-v2'; 
     const lastVersion = localStorage.getItem('app_version');
     
     if (lastVersion !== CURRENT_VERSION) {
