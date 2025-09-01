@@ -3,7 +3,9 @@ import type {
   Ausencia, 
   AusenciaDto, 
   EstadisticasTrabajador, 
-  ResumenTrabajador 
+  ResumenTrabajador, 
+  ValidacionVacacionesResponse,
+  ValidarVacacionesDto
 } from "../types/ausencia";
 import type { Diagnostico } from "../types/diagnostico";
 
@@ -399,6 +401,30 @@ export function exportarEstadisticasTrabajadorCSV(estadisticas: EstadisticasTrab
     document.body.removeChild(link);
   }
 }
+export async function validarDiasVacaciones(validacionDto: ValidarVacacionesDto) {
+  const response = await api.post<ValidacionVacacionesResponse>("/ausencias/validar-dias-vacaciones", validacionDto);
+  return response.data;
+}
+
+// 🆕 Función para calcular fecha de regreso
+export function calcularFechaRegreso(fechaFin: Date): Date {
+  const fechaRegreso = new Date(fechaFin);
+  fechaRegreso.setDate(fechaRegreso.getDate() + 1);
+  return fechaRegreso;
+}
+
+// 🆕 Función para obtener el próximo día laboral
+export function obtenerProximoDiaLaboral(fecha: Date): Date {
+  const proximoDia = new Date(fecha);
+  proximoDia.setDate(proximoDia.getDate() + 1);
+  
+  // Si es sábado (6) o domingo (0), avanzar al lunes
+  while (proximoDia.getDay() === 0 || proximoDia.getDay() === 6) {
+    proximoDia.setDate(proximoDia.getDate() + 1);
+  }
+  
+  return proximoDia;
+}
 
 // ===== OBJETO EXPORTADO ACTUALIZADO =====
 export const ausenciasService = {
@@ -422,7 +448,9 @@ export const ausenciasService = {
   getResumenEjecutivo,
   calcularMetricasAusencias,
   exportarAusenciasCSV,
-
+validarDiasVacaciones,
+  calcularFechaRegreso,
+  obtenerProximoDiaLaboral,
   // 🆕 Nuevas funciones para trabajadores
   getEstadisticasTrabajador,
   getResumenTrabajador,

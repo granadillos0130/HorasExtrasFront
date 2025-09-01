@@ -132,3 +132,35 @@ export interface FormatHelper {
   formatearHoras: (horas: number) => string;
   formatearPorcentaje: (valor: number) => string;
 }
+// 🆕 Interface para validar vacaciones
+export interface ValidarVacacionesDto {
+  fechaInicio: Date;
+  fechaFin: Date;
+  tipoAusencia: string;
+  trabajadorId: number;
+}
+
+export interface DetalleDia {
+  fecha: string;
+  diaSemana: string;
+  esLaborable: boolean;
+  esFestivo: boolean;
+  tieneRegistros: boolean;
+  motivo: string;
+}
+
+export interface ValidacionVacacionesResponse {
+  fechaInicio: string;
+  fechaFin: string;
+  totalDias: number;
+  diasLaborables: number;
+  diasNoLaborables: number;
+  diasADescontar: number;
+  detalleDias: DetalleDia[];
+  mensaje: string;
+  explicacion: {
+    domingos: string;
+    sabados: string;
+    festivos: string;
+  };
+}
