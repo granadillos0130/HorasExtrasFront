@@ -57,8 +57,15 @@ const TrabajadorDetailPage: React.FC = () => {
     if (!dateString) return 'No especificado';
     
     try {
-      // Handle both DateTime and DateOnly formats
-      const date = new Date(dateString);
+      // Manejar fechas que vienen solo con fecha (sin hora)
+      let dateToFormat = dateString;
+      
+      // Si la fecha no tiene hora, agregamos hora del mediodía para evitar problemas de zona horaria
+      if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        dateToFormat = `${dateString}T12:00:00`;
+      }
+      
+      const date = new Date(dateToFormat);
       if (isNaN(date.getTime())) return 'Fecha inválida';
       
       return date.toLocaleDateString('es-CO', {
