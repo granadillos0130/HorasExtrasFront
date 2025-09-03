@@ -211,7 +211,7 @@ const RegistroCard: React.FC<{
               padding: '8px 12px',
               borderRadius: '8px'
             }}>
-              "{registro.ausenciaInfo.descripcion}"
+              "{registro.ausenciaInfo?.descripcion}"
             </p>
           )}
 
@@ -413,7 +413,13 @@ const RegistrosPage: React.FC = () => {
       return {
         ...registro,
         tipoRegistro: esAusencia ? 'AUSENCIA' as const : 'TRABAJO' as const,
-        ausenciaInfo: esAusencia ? registro.ausenciaInfo : undefined
+        ausenciaInfo: esAusencia ? {
+          id: Math.abs(registro.id),
+          tipoAusencia: registro.tipoAusencia || 'No especificado',
+          descripcion: registro.nombreCentro || '',
+          remunerado: registro.esRemunerada || false,
+          horasAusente: registro.horasAusente || registro.totalHoras
+        } : undefined
       } as RegistroConTipo;
     });
   }, []);
