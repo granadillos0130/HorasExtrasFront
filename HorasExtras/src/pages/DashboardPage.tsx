@@ -62,6 +62,14 @@ const DashboardPage: React.FC = () => {
   icon: "🚫",
   path:"/ausencias",
   className: "ausencias"  
+},
+{
+  id:"cursos",
+  title:"Cursos",
+  description:"Gestiona la informacion de todos los cursos registrados",
+  icon: "🎓",
+  path:"/cursos",
+  className: "cursos"  
 }
 
   ];

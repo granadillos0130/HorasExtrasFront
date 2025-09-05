@@ -65,6 +65,13 @@ const Navbar: React.FC = () => {
       description: "Gestión de clientes"
     },
     {
+      id: "cursos",
+      title: "Cursos",
+      path: "/cursos",
+      icon: "🎓",
+      description: "Gestión de cursos de capacitación"
+    },
+    {
       id: "ausencias",
       title: "Ausencias",
       path: "/ausencias",

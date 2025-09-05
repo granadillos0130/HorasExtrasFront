@@ -69,6 +69,12 @@ const PageIndicator: React.FC<PageIndicatorProps> = ({
       icon: '👔',
       color: '#6366f1'
     },
+    '/cursos': {
+      title: 'Gestión de Cursos',
+      subtitle: 'Administra los cursos de capacitación y formación del personal',
+      icon: '🎓',
+      color: '#059669'
+    },
     '/ausencias': {
       title: 'Gestión de Ausencias',
       subtitle: 'Consulta y administra las ausencias de los trabajadores',

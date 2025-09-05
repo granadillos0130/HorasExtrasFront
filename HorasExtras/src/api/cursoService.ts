@@ -93,5 +93,66 @@ export const cursosService = {
       console.error("Error al eliminar curso:", error);
       throw error;
     }
+  },
+  async getEstadisticasGenerales() {
+    try {
+      const res = await api.get("/cursos/estadisticas");
+      return res.data;
+    } catch (error) {
+      console.error("Error al obtener estadísticas generales:", error);
+      throw error;
+    }
+  },
+
+  // Obtener estadísticas específicas de un curso
+  async getEstadisticasCurso(idCurso: number) {
+    try {
+      const res = await api.get(`/cursos/${idCurso}/estadisticas`);
+      return res.data;
+    } catch (error) {
+      console.error("Error al obtener estadísticas del curso:", error);
+      throw error;
+    }
+  },
+
+  // Obtener resumen rápido de cursos
+  async getResumenRapido() {
+    try {
+      const res = await api.get("/cursos/estadisticas/resumen");
+      return res.data;
+    } catch (error) {
+      console.error("Error al obtener resumen rápido:", error);
+      throw error;
+    }
+  },
+
+  // Obtener total de horas de un curso
+  async getHorasCurso(idCurso: number, fechaInicio?: string, fechaFin?: string) {
+    try {
+      const params: any = {};
+      if (fechaInicio) params.fechaInicio = fechaInicio;
+      if (fechaFin) params.fechaFin = fechaFin;
+      
+      const res = await api.get(`/cursos/${idCurso}/horas`, { params });
+      return res.data;
+    } catch (error) {
+      console.error("Error al obtener horas del curso:", error);
+      throw error;
+    }
+  },
+
+  // Obtener todos los cursos para el selector
+  async getAllCursos() {
+    try {
+      const res = await api.get("/cursos");
+      return res.data.map((c: any) => ({
+        id: c.idCurso,
+        nombre: c.nombreCurso,
+        descripcion: c.descripcion
+      }));
+    } catch (error) {
+      console.error("Error al obtener cursos:", error);
+      throw error;
+    }
   }
 };

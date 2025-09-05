@@ -22,6 +22,7 @@ import EditarRegistroPage from "./pages/EditarRegistroPage";
 import { EditarAusenciaPage } from "./pages/EditarAusenciaPage";
 import TrabajadorAusenciasPage from "./pages/TrabajadorAusenciasPage";
 import TrabajadorDetailPage from "./components/trabajadores/TrabajadorDetailPage";
+import { CursosPage } from "./pages/CursosPage";
 
 // CACHE MANAGER
 const useCacheManager = () => {
@@ -75,7 +76,6 @@ export default function App() {
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/trabajadores" element={<TrabajadoresPage />} />
-            {/* 🆕 AGREGAR ESTA LÍNEA - Nueva ruta para ver detalle del trabajador */}
             <Route path="/trabajadores/:id" element={<TrabajadorDetailPage />} />
             <Route path="/trabajadores/editar/:id" element={<TrabajadorEditPage />} />
             <Route path="/trabajadores/:id/intensidad" element={<TrabajadorIntensidad />} />
@@ -96,6 +96,8 @@ export default function App() {
             <Route path="/ausencias/nueva" element={<AusenciasFormPage />} />
             <Route path="/ausencias/estadisticas" element={<EstadisticaAusenciaPage />} />
             <Route path="/ausencias/editar/:id" element={<EditarAusenciaPage />} />
+            {/* 🔥 RUTA CORREGIDA - Solo necesitas la página principal */}
+            <Route path="/cursos" element={<CursosPage />} />
           </Routes>
         </div>
       </div>

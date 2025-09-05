@@ -1,19 +1,9 @@
-// src/types/cursos.ts
-
-// ===============================
-// INTERFAZ PRINCIPAL DE CURSO
-// (Coincide exactamente con CursoDto del backend)
-// ===============================
-
 export interface Curso {
   id: number;
-  nombre: string;          // Coincide con "Nombre" del DTO
-  descripcion?: string;    // Coincide con "Descripcion?" del DTO
+  nombre: string;         
+  descripcion?: string;    
 }
 
-// ===============================
-// DTOs PARA CREAR Y ACTUALIZAR CURSOS
-// ===============================
 
 export interface CursoCreateDto {
   nombre: string;
@@ -57,4 +47,75 @@ export interface OpcionesCursos {
   incluirEstadisticas?: boolean;
   ordenarPor?: 'nombre' | 'id' | 'fechaCreacion';
   orden?: 'asc' | 'desc';
+}
+export interface Curso {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+}
+
+export interface CursoCompleto extends Curso {
+  trabajadores?: Trabajador[];
+}
+
+export interface Trabajador {
+  id: number;
+  nombre: string;
+  cedula: string;
+  cargoDesempenado: string;
+  estado: string;
+  area?: string;
+}
+
+export interface EstadisticasGeneralesCursos {
+  totalCursos: number;
+  totalTrabajadoresEnCursos: number;
+  promedioTrabajadoresPorCurso: number;
+  cursoConMasTrabajadores: {
+    idCurso: number;
+    nombreCurso: string;
+    cantidadTrabajadores: number;
+  } | null;
+  cursoConMenosTrabajadores: {
+    idCurso: number;
+    nombreCurso: string;
+    cantidadTrabajadores: number;
+  } | null;
+  detallesCursos: DetalleCurso[];
+}
+
+export interface DetalleCurso {
+  idCurso: number;
+  nombreCurso: string;
+  descripcion: string;
+  cantidadTrabajadores: number;
+}
+
+export interface EstadisticasCursoDetalle {
+  idCurso: number;
+  nombreCurso: string;
+  descripcion: string;
+  cantidadTrabajadores: number;
+  trabajadoresInscritos: Trabajador[];
+}
+
+export interface HorasCurso {
+  idCurso: number;
+  nombreCurso: string;
+  cantidadTrabajadores: number;
+  totalHorasCurso: number;
+  periodoConsultado: {
+    fechaInicio: string;
+    fechaFin: string;
+  };
+}
+
+export interface ResumenRapidoCursos {
+  totalCursos: number;
+  totalInscripciones: number;
+  cursoMasPopular: {
+    nombreCurso: string;
+    cantidadTrabajadores: number;
+  } | null;
+  fechaConsulta: string;
 }

@@ -29,6 +29,7 @@ import { estadisticasService } from "../api/estadisticasService";
 import { ausenciasService } from "../api/ausenciasService";
 import type { Centro, TrabajadorEstadistica } from "../types/estadisticas";
 import CentroBuscador from "../components/shared/CentroBuscador";
+import CursosEstadisticasPage from "./CursoEstadisticasPage";
 import "../styles/pages/EstadisticasPage.css";
 
 // Interfaces para las estadísticas de ausencias
@@ -62,7 +63,7 @@ interface EstadisticaDiagnostico {
 
 const EstadisticasPage: React.FC = () => {
   // Estados para la vista principal
-  const [vistaActiva, setVistaActiva] = useState<'inicio' | 'centros' | 'ausencias'>('inicio');
+  const [vistaActiva, setVistaActiva] = useState<'inicio' | 'centros' | 'ausencias' | 'cursos'>('inicio');
 
   // Estados para estadísticas de centros (original)
   const [centros, setCentros] = useState<Centro[]>([]);
@@ -292,6 +293,13 @@ const EstadisticasPage: React.FC = () => {
           <h3>Estadísticas de Ausencias</h3>
           <p>Analiza ausencias por diagnósticos, tipos y impacto en mano de obra</p>
           <button className="btn-menu">Ver Estadísticas de Ausencias</button>
+        </div>
+
+        <div className="menu-card" onClick={() => setVistaActiva('cursos')}>
+          <div className="menu-icon">🎓</div>
+          <h3>Estadísticas de Cursos</h3>
+          <p>Analiza la participación en cursos y total de horas por curso</p>
+          <button className="btn-menu">Ver Estadísticas de Cursos</button>
         </div>
       </div>
     </div>
@@ -579,6 +587,7 @@ const EstadisticasPage: React.FC = () => {
         {vistaActiva === 'inicio' && renderVistaInicio()}
         {vistaActiva === 'centros' && renderVistaCentros()}
         {vistaActiva === 'ausencias' && renderVistaAusencias()}
+        {vistaActiva === 'cursos' && <CursosEstadisticasPage onVolver={() => setVistaActiva('inicio')} />}
       </div>
     </div>
   );
