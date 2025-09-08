@@ -90,6 +90,23 @@ const TrabajadorDetailPage: React.FC = () => {
     return colors[type] || '#64748B';
   };
 
+  // Nueva función para estilos del estado
+  const getEstadoStyle = (estado: string) => {
+    if (estado === "Vigente") {
+      return {
+        backgroundColor: "#22C55E",
+        color: "white",
+        border: "2px solid #16A34A"
+      };
+    } else {
+      return {
+        backgroundColor: "#EF4444",
+        color: "white", 
+        border: "2px solid #DC2626"
+      };
+    }
+  };
+
   const handleGoBack = () => {
     navigate(-1); // Volver a la página anterior
   };
@@ -179,6 +196,13 @@ const TrabajadorDetailPage: React.FC = () => {
                     {trabajador.tipoContratacion}
                   </span>
                 )}
+                {/* Estado badge en el header */}
+                <span 
+                  className="estado-badge-header"
+                  style={getEstadoStyle(trabajador.estado)}
+                >
+                  {trabajador.estado}
+                </span>
               </div>
             </div>
           </div>
@@ -253,7 +277,7 @@ const TrabajadorDetailPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Información Laboral */}
+          {/* Información Laboral - ACTUALIZADA CON NUEVAS TARJETAS */}
           <div className="info-section">
             <div className="section-header">
               <div className="section-icon">💼</div>
@@ -285,6 +309,60 @@ const TrabajadorDetailPage: React.FC = () => {
                   <div className="info-card-value email-value">{trabajador.correo || 'No especificado'}</div>
                 </div>
               </div>
+
+              {/* NUEVA TARJETA DE ESTADO LABORAL */}
+              <div className="info-card estado-card">
+                <div className="info-card-icon">🏷️</div>
+                <div className="info-card-content">
+                  <div className="info-card-label">Estado Laboral</div>
+                  <div 
+                    className="info-card-value estado-badge"
+                    style={getEstadoStyle(trabajador.estado)}
+                  >
+                    {trabajador.estado}
+                  </div>
+                </div>
+              </div>
+
+              {/* MOSTRAR FECHA DE TERMINACIÓN SOLO SI ESTÁ NO VIGENTE */}
+              {trabajador.estado === "No Vigente" && trabajador.fechaTerminacion && (
+                <div className="info-card terminacion-card">
+                  <div className="info-card-icon">📅</div>
+                  <div className="info-card-content">
+                    <div className="info-card-label">Fecha de Terminación</div>
+                    <div className="info-card-value fecha-terminacion">
+                      {formatDate(trabajador.fechaTerminacion)}
+                    </div>
+                    <div className="info-card-extra">Contrato finalizado</div>
+                  </div>
+                </div>
+              )}
+
+              {/* MOSTRAR AUXILIO DE TRANSPORTE */}
+              {trabajador.auxilioTransporte && (
+                <div className="info-card">
+                  <div className="info-card-icon">🚌</div>
+                  <div className="info-card-content">
+                    <div className="info-card-label">Auxilio de Transporte</div>
+                    <div className="info-card-value">
+                      {formatSalary(trabajador.auxilioTransporte)}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* MOSTRAR VALOR HORA */}
+              {trabajador.valorHora && (
+                <div className="info-card">
+                  <div className="info-card-icon">⏰</div>
+                  <div className="info-card-content">
+                    <div className="info-card-label">Valor por Hora</div>
+                    <div className="info-card-value">
+                      {formatSalary(trabajador.valorHora)}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

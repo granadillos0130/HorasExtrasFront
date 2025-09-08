@@ -21,6 +21,7 @@ export interface Trabajador {
   estado: string; // "Vigente", "No Vigente"
   fechaCreacion?: string; // Cambiado de string a string optional para coincidir con DateTime? del backend
   fechaActualizacion?: string; // Cambiado de string a string optional para coincidir con DateTime? del backend
+  fechaTerminacion?: string;
   personaContacto?: string;
   telefonoContacto?: string;
   direccionContacto?: string;

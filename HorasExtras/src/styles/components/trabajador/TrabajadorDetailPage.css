@@ -673,6 +673,47 @@
   transform: translateY(-2px);
   box-shadow: 0 8px 20px rgba(34, 197, 94, 0.3);
 }
+/* Estado badge */
+.estado-badge {
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.estado-badge-header {
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Tarjeta de terminación */
+.terminacion-card {
+  border-left: 4px solid #EF4444;
+  background: linear-gradient(135deg, #FEF2F2 0%, #FFFFFF 100%);
+}
+
+.terminacion-card .info-card-icon {
+  color: #EF4444;
+}
+
+.fecha-terminacion {
+  color: #EF4444;
+  font-weight: 600;
+}
+
+.terminacion-card .info-card-extra {
+  color: #B91C1C;
+  font-size: 12px;
+  font-style: italic;
+  margin-top: 4px;
+}
 
 /* Animaciones */
 @keyframes fadeIn {
