@@ -22,6 +22,7 @@ export interface Trabajador {
   fechaCreacion?: string; // Cambiado de string a string optional para coincidir con DateTime? del backend
   fechaActualizacion?: string; // Cambiado de string a string optional para coincidir con DateTime? del backend
   fechaTerminacion?: string;
+  imagen_Url?: string;
   personaContacto?: string;
   telefonoContacto?: string;
   direccionContacto?: string;
@@ -81,6 +82,7 @@ export interface CrearTrabajadorDto {
   auxilioTransporte: number;
   valorHora?: number; // OPCIONAL - el backend lo calcula automáticamente
   fechaContratacion: string;
+  imagen_Url?: string;
   correo: string;
   personaContacto: string;
   telefonoContacto: string;
@@ -131,6 +133,7 @@ export interface CrearTrabajadorDto {
   auxilioTransporte: number;
   valorHora?: number; // ✅ OPCIONAL - el backend lo calcula automáticamente
   fechaContratacion: string;
+  imagen_Url?: string;
   correo: string;
   personaContacto: string;
   telefonoContacto: string;

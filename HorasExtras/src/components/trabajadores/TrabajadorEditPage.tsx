@@ -1,6 +1,8 @@
 // src/components/trabajadores/TrabajadorEditPage.tsx
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { getImageUrl, getImageValidationError, fileToBase64 } from "../../utils/imageUtils";
+
 import { trabajadoresService } from "../../api/trabajadoresService";
 import type { Trabajador } from "../../types/trabajadores";
 import "../../styles/components/trabajador/TrabajadorEditPage.css";
@@ -8,12 +10,15 @@ import "../../styles/components/trabajador/TrabajadorEditPage.css";
 const TrabajadorEditPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
+
   const [trabajador, setTrabajador] = useState<Trabajador | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
+  const [imageError, setImageError] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // Constantes para cálculos
   const SALARIO_MINIMO_2025 = 1400000; // $1,400,000
@@ -31,7 +36,7 @@ const TrabajadorEditPage: React.FC = () => {
     genero: "",
     cantidadHijos: 0,
     nivelEscolaridad: "",
-    
+
     // Información Laboral
     salario: 0,
     auxilioTransporte: 0,
@@ -39,7 +44,7 @@ const TrabajadorEditPage: React.FC = () => {
     fechaContratacion: "",
     tipoContratacion: "",
     correo: "",
-    
+
     // Contacto de Emergencia
     personaContacto: "",
     telefonoContacto: "",
@@ -62,10 +67,84 @@ const TrabajadorEditPage: React.FC = () => {
     clinicaFechaInicio: "",
     clinicaFechaFin: ""
   });
+  const handleImageUpload = async (file: File) => {
+  // Validar archivo
+  const validationError = getImageValidationError(file);
+  if (validationError) {
+    alert(validationError);
+    return;
+  }
+
+  try {
+    setUploadingImage(true);
+    
+    // Mostrar preview mientras se sube
+    const preview = await fileToBase64(file);
+    setImagePreview(preview);
+
+    // Subir imagen
+    const result = await trabajadoresService.subirImagen(trabajador!.id, file);
+    
+    // Actualizar el trabajador local - CORREGIDO: usar undefined en lugar de null
+    setTrabajador(prev => prev ? { ...prev, imagen_Url: result.imagenUrl } : null);
+    setImagePreview(null);
+    setImageError(false);
+    
+    alert("Imagen actualizada correctamente");
+  } catch (error) {
+    console.error("Error al subir imagen:", error);
+    // CORREGIDO: tipo más específico para error
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+    alert("Error al subir la imagen: " + errorMessage);
+    setImagePreview(null);
+  } finally {
+    setUploadingImage(false);
+  }
+};
+  const handleImageDelete = async () => {
+  if (!trabajador?.imagen_Url) return;
+  
+  if (!confirm("¿Estás seguro de que quieres eliminar la imagen?")) return;
+
+  try {
+    setUploadingImage(true);
+    await trabajadoresService.eliminarImagen(trabajador.id);
+    
+    // CORREGIDO: usar undefined en lugar de null para imagen_Url
+    setTrabajador(prev => prev ? { ...prev, imagen_Url: undefined } : null);
+    setImageError(false);
+    
+    alert("Imagen eliminada correctamente");
+  } catch (error) {
+    console.error("Error al eliminar imagen:", error);
+    // CORREGIDO: tipo más específico para error
+    const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+    alert("Error al eliminar la imagen: " + errorMessage);
+  } finally {
+    setUploadingImage(false);
+  }
+};
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+    // Limpiar input
+    e.target.value = '';
+  };
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .substring(0, 2);
+  };
 
   // Estados para manejar secciones colapsables
   const [expandedSections, setExpandedSections] = useState({
     personal: true,
+    imagen: false,
     laboral: true,
     contacto: true,
     eps: false,
@@ -94,15 +173,15 @@ const TrabajadorEditPage: React.FC = () => {
   // Función para calcular valor hora con nueva lógica
   const calcularValorHora = (salario: number, auxilioTransporte: number = 0): number => {
     if (salario <= 0) return 0;
-    
+
     // Aplicar regla de dos salarios mínimos
     const auxilioAUsar = verificarAplicaAuxilio(salario) ? auxilioTransporte : 0;
-    
+
     const parafiscales = (salario * 0.6544) + salario + auxilioAUsar;
-    
+
     // Usar divisor según fecha actual (agosto 2025 o posterior = 176, anterior = 184)
     const divisor = new Date() >= new Date(2025, 7, 1) ? 176 : 184;
-    
+
     const valorHora = parafiscales / divisor;
     return Math.round(valorHora * 100) / 100; // Redondear a 2 decimales
   };
@@ -110,16 +189,16 @@ const TrabajadorEditPage: React.FC = () => {
   // Función para formatear fechas
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'No especificado';
-    
+
     try {
       let dateToFormat = dateString;
       if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
         dateToFormat = `${dateString}T12:00:00`;
       }
-      
+
       const date = new Date(dateToFormat);
       if (isNaN(date.getTime())) return 'Fecha inválida';
-      
+
       return date.toLocaleDateString('es-CO', {
         year: 'numeric',
         month: 'long',
@@ -141,7 +220,7 @@ const TrabajadorEditPage: React.FC = () => {
     } else {
       return {
         backgroundColor: "#EF4444",
-        color: "white", 
+        color: "white",
         border: "2px solid #DC2626"
       };
     }
@@ -158,7 +237,7 @@ const TrabajadorEditPage: React.FC = () => {
       setLoading(true);
       const trabajadorData = await trabajadoresService.getById(trabajadorId);
       setTrabajador(trabajadorData);
-      
+
       // Cargar datos básicos del trabajador con validaciones
       setFormData({
         nombre: trabajadorData.nombre || "",
@@ -214,7 +293,7 @@ const TrabajadorEditPage: React.FC = () => {
       if (trabajadorData.clinica?.nombre) {
         setExpandedSections(prev => ({ ...prev, clinica: true }));
       }
-      
+
     } catch (err) {
       setError("Error al cargar la información del trabajador");
       console.error("Error:", err);
@@ -225,7 +304,7 @@ const TrabajadorEditPage: React.FC = () => {
 
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    
+
     // Manejo especial para campos de dinero (salario y auxilio de transporte)
     if (name === 'salario' || name === 'auxilioTransporte') {
       const valorNumerico = obtenerValorNumerico(value);
@@ -244,13 +323,13 @@ const TrabajadorEditPage: React.FC = () => {
       });
     } else {
       const numericValue = ["edad", "cantidadHijos"].includes(name) ? Number(value) : value;
-      
+
       setFormData(prev => ({
         ...prev,
         [name]: numericValue
       }));
     }
-    
+
     // Auto-calcular edad
     if (name === "fechaNacimiento" && value) {
       const today = new Date();
@@ -272,7 +351,7 @@ const TrabajadorEditPage: React.FC = () => {
   };
 
   const validateForm = (): boolean => {
-    const newErrors: {[key: string]: string} = {};
+    const newErrors: { [key: string]: string } = {};
 
     // Validaciones de información personal (requerida)
     if (!formData.nombre.trim()) newErrors.nombre = "El nombre es requerido";
@@ -295,12 +374,12 @@ const TrabajadorEditPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       alert("Por favor completa todos los campos requeridos");
       return;
     }
-    
+
     if (!trabajador) return;
 
     setSaving(true);
@@ -352,7 +431,7 @@ const TrabajadorEditPage: React.FC = () => {
 
       alert("Trabajador actualizado correctamente");
       navigate("/trabajadores");
-      
+
     } catch (error) {
       console.error("Error al actualizar trabajador:", error);
       alert("Error al actualizar el trabajador: " + (error as any)?.message || "Error desconocido");
@@ -364,6 +443,7 @@ const TrabajadorEditPage: React.FC = () => {
   const expandAll = () => {
     setExpandedSections({
       personal: true,
+       imagen: false,
       laboral: true,
       contacto: true,
       eps: true,
@@ -376,7 +456,8 @@ const TrabajadorEditPage: React.FC = () => {
 
   const collapseAll = () => {
     setExpandedSections({
-      personal: true, // Mantenemos personal y laboral siempre visibles
+      personal: true,
+       imagen: true,
       laboral: true,
       contacto: true,
       eps: false,
@@ -422,7 +503,7 @@ const TrabajadorEditPage: React.FC = () => {
     <div className="trabajador-edit-page">
       <div className="page-container">
         <div className="page-header">
-          <button 
+          <button
             className="btn-back"
             onClick={() => navigate("/trabajadores")}
           >
@@ -432,10 +513,10 @@ const TrabajadorEditPage: React.FC = () => {
           <p className="page-subtitle">
             Actualiza la información de {trabajador.nombre}
           </p>
-          
+
           {/* NUEVO: Mostrar estado del trabajador en el header */}
           <div className="worker-status-header">
-            <span 
+            <span
               className="estado-badge-edit"
               style={getEstadoStyle(trabajador.estado)}
             >
@@ -460,10 +541,10 @@ const TrabajadorEditPage: React.FC = () => {
         </div>
 
         <form className="trabajador-form-unified" onSubmit={handleSubmit}>
-          
+
           {/* Sección 1: Información Personal */}
           <div className="form-section">
-            <div 
+            <div
               className="section-header"
               onClick={() => toggleSection('personal')}
             >
@@ -476,7 +557,7 @@ const TrabajadorEditPage: React.FC = () => {
                 ▼
               </span>
             </div>
-            
+
             {expandedSections.personal && (
               <div className="section-content">
                 <div className="form-grid">
@@ -633,10 +714,112 @@ const TrabajadorEditPage: React.FC = () => {
               </div>
             )}
           </div>
+          {/* NUEVA SECCIÓN: Imagen del Trabajador */}
+          <div className="form-section">
+            <div
+              className="section-header"
+              onClick={() => toggleSection('imagen')}
+            >
+              <div className="section-title">
+                <span className="section-icon">🖼️</span>
+                <h3>Imagen del Trabajador</h3>
+                <span className="optional-badge">Opcional</span>
+              </div>
+              <span className={`chevron ${expandedSections.imagen ? 'expanded' : ''}`}>
+                ▼
+              </span>
+            </div>
 
+            {expandedSections.imagen && (
+              <div className="section-content">
+                <div className="image-management-container">
+
+                  {/* Vista previa de la imagen */}
+                  <div className="image-preview-section">
+                    <div className="image-preview-container">
+                      <div className="worker-avatar-large">
+                        {(imagePreview || (trabajador?.imagen_Url && !imageError)) ? (
+                          <img
+                            src={imagePreview || getImageUrl(trabajador?.imagen_Url)!}
+                            alt={trabajador?.nombre}
+                            className="avatar-image-preview"
+                            onError={() => setImageError(true)}
+                          />
+                        ) : (
+                          <div className="avatar-initials-large">
+                            {trabajador?.nombre ? getInitials(trabajador.nombre) : 'NA'}
+                          </div>
+                        )}
+
+                        {/* Overlay de carga */}
+                        {uploadingImage && (
+                          <div className="upload-overlay">
+                            <div className="upload-spinner"></div>
+                            <span>Procesando...</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="image-info">
+                      <p className="image-status">
+                        {trabajador?.imagen_Url ? "✅ Imagen configurada" : "📷 Sin imagen"}
+                      </p>
+                      <small className="image-requirements">
+                        Formatos: JPG, PNG, GIF • Tamaño máximo: 5MB
+                      </small>
+                    </div>
+                  </div>
+
+                  {/* Acciones de imagen */}
+                  <div className="image-actions">
+
+                    {/* Input de archivo oculto */}
+                    <input
+                      type="file"
+                      id="imageInput"
+                      accept="image/jpeg,image/jpg,image/png,image/gif"
+                      onChange={handleFileInputChange}
+                      style={{ display: 'none' }}
+                      disabled={uploadingImage}
+                    />
+
+                    {/* Botón para subir/cambiar imagen */}
+                    <button
+                      type="button"
+                      className="btn-image-upload"
+                      onClick={() => document.getElementById('imageInput')?.click()}
+                      disabled={uploadingImage || saving}
+                    >
+                      <span className="btn-icon">📤</span>
+                      <span>{trabajador?.imagen_Url ? 'Cambiar Imagen' : 'Subir Imagen'}</span>
+                    </button>
+
+                    {/* Botón para eliminar imagen */}
+                    {trabajador?.imagen_Url && (
+                      <button
+                        type="button"
+                        className="btn-image-delete"
+                        onClick={handleImageDelete}
+                        disabled={uploadingImage || saving}
+                      >
+                        <span className="btn-icon">🗑️</span>
+                        <span>Eliminar Imagen</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Mensaje de ayuda */}
+                  <div className="image-help">
+                    <p>💡 <strong>Consejo:</strong> Una buena imagen mejora la identificación del trabajador en el sistema.</p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
           {/* Sección 2: Información Laboral - ACTUALIZADA CON FECHA DE TERMINACIÓN */}
           <div className="form-section">
-            <div 
+            <div
               className="section-header"
               onClick={() => toggleSection('laboral')}
             >
@@ -649,7 +832,7 @@ const TrabajadorEditPage: React.FC = () => {
                 ▼
               </span>
             </div>
-            
+
             {expandedSections.laboral && (
               <div className="section-content">
                 <div className="form-grid">
@@ -693,9 +876,9 @@ const TrabajadorEditPage: React.FC = () => {
                   {/* NUEVA SECCIÓN: Estado Laboral */}
                   <div className="form-group">
                     <label className="form-label">Estado Laboral</label>
-                    <div 
+                    <div
                       className="form-input"
-                      style={{ 
+                      style={{
                         ...getEstadoStyle(trabajador.estado),
                         textAlign: 'center',
                         fontWeight: '600',
@@ -706,8 +889,8 @@ const TrabajadorEditPage: React.FC = () => {
                     >
                       {trabajador.estado}
                     </div>
-                    <small style={{ 
-                      color: 'var(--text-secondary)', 
+                    <small style={{
+                      color: 'var(--text-secondary)',
                       fontSize: '0.8rem',
                       display: 'block',
                       marginTop: '4px',
@@ -721,9 +904,9 @@ const TrabajadorEditPage: React.FC = () => {
                   {trabajador.estado === "No Vigente" && trabajador.fechaTerminacion && (
                     <div className="form-group">
                       <label className="form-label">Fecha de Terminación</label>
-                      <div 
+                      <div
                         className="form-input"
-                        style={{ 
+                        style={{
                           backgroundColor: '#FEF2F2',
                           color: '#EF4444',
                           border: '2px solid #FCA5A5',
@@ -733,8 +916,8 @@ const TrabajadorEditPage: React.FC = () => {
                       >
                         {formatDate(trabajador.fechaTerminacion)}
                       </div>
-                      <small style={{ 
-                        color: '#B91C1C', 
+                      <small style={{
+                        color: '#B91C1C',
                         fontSize: '0.8rem',
                         display: 'block',
                         marginTop: '4px',
@@ -783,28 +966,28 @@ const TrabajadorEditPage: React.FC = () => {
                       value={formData.valorHora ? formatearNumero(formData.valorHora.toString()) : ''}
                       className="form-input"
                       disabled={true}
-                      style={{ 
-                        fontStyle: 'italic', 
+                      style={{
+                        fontStyle: 'italic',
                         color: 'var(--text-secondary)',
-                        backgroundColor: 'var(--background-secondary)' 
+                        backgroundColor: 'var(--background-secondary)'
                       }}
                     />
-                    
+
                     {/* Información actualizada con nueva regla */}
                     <div style={{ marginTop: '8px' }}>
-                      <small style={{ 
-                        color: 'var(--text-secondary)', 
+                      <small style={{
+                        color: 'var(--text-secondary)',
                         fontSize: '0.8rem',
                         display: 'block',
                         marginBottom: '4px'
                       }}>
                         📊 <strong>Fórmula:</strong> (Salario × 1.6544 + Auxilio*) ÷ {new Date() >= new Date(2025, 7, 1) ? '176' : '184'}
                       </small>
-                      
+
                       {/* Mostrar si aplica auxilio según el salario actual */}
                       {formData.salario > 0 && (
-                        <small style={{ 
-                          color: verificarAplicaAuxilio(formData.salario) ? 'var(--success-color, #22c55e)' : 'var(--warning-color, #f59e0b)', 
+                        <small style={{
+                          color: verificarAplicaAuxilio(formData.salario) ? 'var(--success-color, #22c55e)' : 'var(--warning-color, #f59e0b)',
                           fontSize: '0.8rem',
                           display: 'block',
                           marginBottom: '4px',
@@ -817,9 +1000,9 @@ const TrabajadorEditPage: React.FC = () => {
                           )}
                         </small>
                       )}
-                      
-                      <small style={{ 
-                        color: 'var(--text-secondary)', 
+
+                      <small style={{
+                        color: 'var(--text-secondary)',
                         fontSize: '0.75rem',
                         display: 'block',
                         fontStyle: 'italic'
@@ -848,7 +1031,7 @@ const TrabajadorEditPage: React.FC = () => {
           {/* Resto de las secciones permanecen igual... */}
           {/* Sección 3: Contacto de Emergencia */}
           <div className="form-section">
-            <div 
+            <div
               className="section-header"
               onClick={() => toggleSection('contacto')}
             >
@@ -861,7 +1044,7 @@ const TrabajadorEditPage: React.FC = () => {
                 ▼
               </span>
             </div>
-            
+
             {expandedSections.contacto && (
               <div className="section-content">
                 <div className="form-grid">
@@ -940,7 +1123,7 @@ const TrabajadorEditPage: React.FC = () => {
             >
               Cancelar
             </button>
-            
+
             <button
               type="submit"
               className="btn-submit"

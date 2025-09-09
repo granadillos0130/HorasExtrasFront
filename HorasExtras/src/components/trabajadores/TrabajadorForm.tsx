@@ -1,5 +1,5 @@
 // src/components/trabajadores/TrabajadorForm.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { trabajadoresService } from "../../api/trabajadoresService";
 import "../../styles/components/trabajador/TrabajadorForm.css";
 import type { CrearTrabajadorDto } from "../../types/trabajadores";
@@ -52,6 +52,9 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
   const [loading, setLoading] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [imagen, setImagen] = useState<File | null>(null);
+  const [imagenPreview, setImagenPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Constantes para cálculos
   const SALARIO_MINIMO_2025 = 1400000; // $1,400,000
@@ -86,6 +89,42 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
       setForm(prev => ({ ...prev, edad: age }));
     }
   }, [form.fechaNacimiento]);
+
+  // Manejar cambio de imagen
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validar tipo de archivo
+      if (!file.type.startsWith('image/')) {
+        alert('Por favor selecciona un archivo de imagen válido');
+        return;
+      }
+      
+      // Validar tamaño (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La imagen no debe superar los 5MB');
+        return;
+      }
+      
+      setImagen(file);
+      
+      // Crear preview
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagenPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // Eliminar imagen seleccionada
+  const removeImage = () => {
+    setImagen(null);
+    setImagenPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -180,30 +219,33 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  e.preventDefault();
+  
+  if (currentStep < 8) {
+    nextStep();
+    return;
+  }
+
+  if (!validateStep(8)) return;
+
+  setLoading(true);
+  try {
+    // ✅ SIEMPRE usar createWithImage para consistencia
+    const resultado = await trabajadoresService.createWithImage(form, imagen || undefined);
     
-    if (currentStep < 8) {
-      nextStep();
-      return;
-    }
-
-    if (!validateStep(8)) return;
-
-    setLoading(true);
-    try {
-      const resultado = await trabajadoresService.create(form);
-      
-      alert("Trabajador creado correctamente con todos sus servicios");
-      onCreated(resultado.id);
-      onRefresh();
-      onCancel();
-    } catch (error) {
-      console.error("Error al crear trabajador:", error);
-      alert("Error al crear trabajador y sus servicios.");
-    } finally {
-      setLoading(false);
-    }
-  };
+    alert("Trabajador creado correctamente con todos sus servicios");
+    
+    // ✅ USAR trabajadorId en lugar de id
+    onCreated(resultado.trabajadorId);
+    onRefresh();
+    onCancel();
+  } catch (error) {
+    console.error("Error al crear trabajador:", error);
+    alert("Error al crear trabajador y sus servicios.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   const getStepTitle = () => {
     switch (currentStep) {
@@ -292,6 +334,41 @@ const TrabajadorForm: React.FC<Props> = ({ onCreated, onCancel, onRefresh }) => 
             </div>
             
             <div className="form-grid">
+              {/* Sección de imagen */}
+              <div className="form-group full-width">
+                <label className="form-label">Foto del Trabajador (Opcional)</label>
+                <div className="image-upload-container">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageChange}
+                    className="image-input"
+                    disabled={loading}
+                  />
+                  
+                  {imagenPreview ? (
+                    <div className="image-preview">
+                      <img src={imagenPreview} alt="Vista previa" />
+                      <button 
+                        type="button" 
+                        className="remove-image-btn"
+                        onClick={removeImage}
+                        disabled={loading}
+                      >
+                        ❌
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="image-placeholder">
+                      <div className="placeholder-icon">📷</div>
+                      <p>Haz clic para seleccionar una imagen</p>
+                      <small>Formatos: JPG, PNG, GIF (Máx. 5MB)</small>
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="form-group">
                 <label className="form-label">
                   Nombre Completo <span className="required">*</span>

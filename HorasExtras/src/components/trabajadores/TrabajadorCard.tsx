@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useState } from "react"; // 👈 AGREGAR useState
 import { useNavigate } from "react-router-dom";
 import type { Trabajador } from "../../types/trabajadores";
 import "../../styles/components/trabajador/TrabajadorCard.css";
 import { trabajadoresService } from "../../api/trabajadoresService";
+import { getImageUrl } from "../../utils/imageUtils"; // 👈 AGREGAR IMPORT
 
 interface Props {
   trabajador: Trabajador;
@@ -22,6 +23,7 @@ const TrabajadorCard: React.FC<Props> = ({
   onSelect
 }) => {
   const navigate = useNavigate();
+  const [imageError, setImageError] = useState(false); // 👈 NUEVO ESTADO
 
   const getInitials = (name: string) => {
     return name
@@ -68,10 +70,19 @@ const TrabajadorCard: React.FC<Props> = ({
       onClick={handleCardClick}
     >
       <div className="card-content">
-        {/* Avatar e info básica */}
+        {/* Avatar e info básica - SECCIÓN MODIFICADA */}
         <div className="worker-main-info">
           <div className="worker-avatar">
-            <span className="avatar-initials">{getInitials(trabajador.nombre)}</span>
+            {trabajador.imagen_Url && !imageError ? (
+              <img 
+                src={getImageUrl(trabajador.imagen_Url)} // 👈 USAR getImageUrl
+                alt={trabajador.nombre}
+                className="avatar-image"
+                onError={() => setImageError(true)} // 👈 MANEJAR ERROR
+              />
+            ) : (
+              <span className="avatar-initials">{getInitials(trabajador.nombre)}</span>
+            )}
           </div>
           <div className="worker-details">
             <h3 className="worker-name">{trabajador.nombre}</h3>

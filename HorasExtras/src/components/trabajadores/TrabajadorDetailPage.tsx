@@ -4,6 +4,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import type { Trabajador } from "../../types/trabajadores";
 import { trabajadoresService } from "../../api/trabajadoresService";
 import "../../styles/components/trabajador/TrabajadorDetailPage.css";
+import { getImageUrl } from "../../utils/imageUtils";
 
 const TrabajadorDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -11,6 +12,7 @@ const TrabajadorDetailPage: React.FC = () => {
   const [trabajador, setTrabajador] = useState<Trabajador | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [imageError, setImageError] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -34,7 +36,12 @@ const TrabajadorDetailPage: React.FC = () => {
     };
     fetchData();
   }, [id]);
-
+useEffect(() => {
+  if (trabajador?.imagen_Url) {
+    console.log('Imagen original:', trabajador.imagen_Url);
+    console.log('URL construida:', getImageUrl(trabajador.imagen_Url));
+  }
+}, [trabajador]);
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -55,19 +62,19 @@ const TrabajadorDetailPage: React.FC = () => {
 
   const formatDate = (dateString: string | null | undefined) => {
     if (!dateString) return 'No especificado';
-    
+
     try {
       // Manejar fechas que vienen solo con fecha (sin hora)
       let dateToFormat = dateString;
-      
+
       // Si la fecha no tiene hora, agregamos hora del mediodía para evitar problemas de zona horaria
       if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
         dateToFormat = `${dateString}T12:00:00`;
       }
-      
+
       const date = new Date(dateToFormat);
       if (isNaN(date.getTime())) return 'Fecha inválida';
-      
+
       return date.toLocaleDateString('es-CO', {
         year: 'numeric',
         month: 'long',
@@ -101,7 +108,7 @@ const TrabajadorDetailPage: React.FC = () => {
     } else {
       return {
         backgroundColor: "#EF4444",
-        color: "white", 
+        color: "white",
         border: "2px solid #DC2626"
       };
     }
@@ -177,10 +184,19 @@ const TrabajadorDetailPage: React.FC = () => {
               <span className="breadcrumb-current">{trabajador.nombre}</span>
             </div>
           </div>
-          
+
           <div className="header-content">
             <div className="worker-avatar-large">
-              <span className="avatar-initials-large">{getInitials(trabajador.nombre)}</span>
+              {trabajador.imagen_Url && !imageError ? (
+                <img
+                  src={getImageUrl(trabajador.imagen_Url)}  // 👈 LÍNEA CAMBIADA
+                  alt={trabajador.nombre}
+                  className="avatar-image"
+                  onError={() => setImageError(true)}
+                />
+              ) : (
+                <span className="avatar-initials-large">{getInitials(trabajador.nombre)}</span>
+              )}
               <div className="avatar-status-large"></div>
             </div>
             <div className="worker-header-info">
@@ -189,7 +205,7 @@ const TrabajadorDetailPage: React.FC = () => {
                 <span className="worker-id-badge">ID: {trabajador.id}</span>
                 <span className="worker-cedula-badge">CC: {trabajador.cedula}</span>
                 {trabajador.tipoContratacion && (
-                  <span 
+                  <span
                     className="contract-type-badge"
                     style={{ backgroundColor: getContractTypeColor(trabajador.tipoContratacion) }}
                   >
@@ -197,7 +213,7 @@ const TrabajadorDetailPage: React.FC = () => {
                   </span>
                 )}
                 {/* Estado badge en el header */}
-                <span 
+                <span
                   className="estado-badge-header"
                   style={getEstadoStyle(trabajador.estado)}
                 >
@@ -234,7 +250,7 @@ const TrabajadorDetailPage: React.FC = () => {
                   <div className="info-card-extra">{trabajador.edad ? `${trabajador.edad} años` : ''}</div>
                 </div>
               </div>
-              
+
               <div className="info-card">
                 <div className="info-card-icon">⚕️</div>
                 <div className="info-card-content">
@@ -242,7 +258,7 @@ const TrabajadorDetailPage: React.FC = () => {
                   <div className="info-card-value">{trabajador.rh || 'No especificado'}</div>
                 </div>
               </div>
-              
+
               <div className="info-card">
                 <div className="info-card-icon">👥</div>
                 <div className="info-card-content">
@@ -250,7 +266,7 @@ const TrabajadorDetailPage: React.FC = () => {
                   <div className="info-card-value">{trabajador.estadoCivil || 'No especificado'}</div>
                 </div>
               </div>
-              
+
               <div className="info-card">
                 <div className="info-card-icon">🚻</div>
                 <div className="info-card-content">
@@ -258,7 +274,7 @@ const TrabajadorDetailPage: React.FC = () => {
                   <div className="info-card-value">{trabajador.genero || 'No especificado'}</div>
                 </div>
               </div>
-              
+
               <div className="info-card">
                 <div className="info-card-icon">👶</div>
                 <div className="info-card-content">
@@ -266,7 +282,7 @@ const TrabajadorDetailPage: React.FC = () => {
                   <div className="info-card-value">{trabajador.cantidadHijos ?? 'No especificado'}</div>
                 </div>
               </div>
-              
+
               <div className="info-card">
                 <div className="info-card-icon">🎓</div>
                 <div className="info-card-content">
@@ -293,7 +309,7 @@ const TrabajadorDetailPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="info-card">
                 <div className="info-card-icon">📅</div>
                 <div className="info-card-content">
@@ -301,7 +317,7 @@ const TrabajadorDetailPage: React.FC = () => {
                   <div className="info-card-value">{formatDate(trabajador.fechaContratacion)}</div>
                 </div>
               </div>
-              
+
               <div className="info-card">
                 <div className="info-card-icon">📧</div>
                 <div className="info-card-content">
@@ -315,7 +331,7 @@ const TrabajadorDetailPage: React.FC = () => {
                 <div className="info-card-icon">🏷️</div>
                 <div className="info-card-content">
                   <div className="info-card-label">Estado Laboral</div>
-                  <div 
+                  <div
                     className="info-card-value estado-badge"
                     style={getEstadoStyle(trabajador.estado)}
                   >
