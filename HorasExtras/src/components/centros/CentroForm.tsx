@@ -6,6 +6,7 @@ import "../../styles/components/centro/CentroForm.css";
 
 interface Props {
   onSuccess?: () => void;
+  centroAEditar?: any | null;
 }
 
 // Interfaz para el payload que se envía al backend
@@ -33,7 +34,7 @@ interface ErrorResponse {
   };
 }
 
-const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
+const CentroForm: React.FC<Props> = ({ onSuccess = () => { }, centroAEditar = null }) => {
   const [formData, setFormData] = useState({
     id: "",
     nombreCentro: "",
@@ -81,21 +82,39 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
+
     setFormData((prev) => ({
       ...prev,
       [name]: type === 'number' ? (value === '' ? 0 : Number(value)) : value
     }));
     setError(null);
   };
+  // Prellenar formulario cuando se está editando
+  useEffect(() => {
+    if (centroAEditar) {
+      setFormData({
+        id: centroAEditar.id || "",
+        nombreCentro: centroAEditar.nombreCentro || "",
+        fechaInicio: centroAEditar.fechaInicio || "",
+        fechaFinal: centroAEditar.fechaFinal || "",
+        clienteId: centroAEditar.clienteId || "",
+        estado: centroAEditar.estado ? "Abierto" : "Cerrado",
+        interventor: centroAEditar.interventor || "",
+        vendedor: centroAEditar.vendedor || "",
+        valorOrden: centroAEditar.valorOrden || 0,
+        fechaFactura: centroAEditar.fechaFactura || "",
+        tipo: centroAEditar.tipo || "Suministros"
+      });
+    }
+  }, [centroAEditar]);
 
   // Manejador especial para el campo de valor de orden
   const handleValorOrdenChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const valor = e.target.value;
-    
+
     // Permitir solo números y puntos
     const valorLimpio = valor.replace(/[^\d]/g, '');
-    
+
     if (valorLimpio === '') {
       setValorOrdenDisplay('0');
       setFormData(prev => ({ ...prev, valorOrden: 0 }));
@@ -104,7 +123,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
 
     const numeroReal = Number(valorLimpio);
     const valorFormateado = formatearNumero(numeroReal);
-    
+
     setValorOrdenDisplay(valorFormateado);
     setFormData(prev => ({ ...prev, valorOrden: numeroReal }));
     setError(null);
@@ -160,10 +179,10 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
       const payload: CentroPayload = {
         id: formData.id.trim(),
         nombreCentro: formData.nombreCentro.trim(),
-        fechaInicio: formData.fechaInicio, // Ya está en formato "YYYY-MM-DD"
+        fechaInicio: formData.fechaInicio,
         fechaFinal: formData.fechaFinal?.trim() === "" ? null : formData.fechaFinal,
         clienteId: formData.clienteId,
-        estado: formData.estado === "Abierto", // Convertir string a boolean
+        estado: formData.estado === "Abierto",
         interventor: formData.interventor?.trim() === "" ? null : formData.interventor?.trim(),
         vendedor: formData.vendedor?.trim() === "" ? null : formData.vendedor?.trim(),
         valorOrden: formData.valorOrden || 0,
@@ -171,31 +190,40 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
         tipo: formData.tipo
       };
 
-      console.log("Enviando payload:", payload); // Log para debug
+      console.log("Enviando payload:", payload);
 
-      // Cast del payload al tipo esperado por el servicio
-      await centrosService.crear(payload as unknown as Parameters<typeof centrosService.crear>[0]);
-      alert("Centro creado con éxito ✅");
+      // Detectar si es edición o creación
+      if (centroAEditar) {
+        // Es edición
+        await centrosService.actualizar(centroAEditar.id, payload as unknown as Parameters<typeof centrosService.actualizar>[1]);
+        alert("Centro actualizado con éxito ✅");
+      } else {
+        // Es creación
+        await centrosService.crear(payload as unknown as Parameters<typeof centrosService.crear>[0]);
+        alert("Centro creado con éxito ✅");
+      }
       onSuccess();
-      
+      if (!centroAEditar) {
+        setFormData({
+          id: "",
+          nombreCentro: "",
+          fechaInicio: "",
+          fechaFinal: "",
+          clienteId: "",
+          estado: "Abierto",
+          interventor: "",
+          vendedor: "",
+          valorOrden: 0,
+          fechaFactura: "",
+          tipo: "Suministros"
+        });
+        setValorOrdenDisplay("0");
+      }
       // Resetear formulario
-      setFormData({
-        id: "",
-        nombreCentro: "",
-        fechaInicio: "",
-        fechaFinal: "",
-        clienteId: "",
-        estado: "Abierto",
-        interventor: "",
-        vendedor: "",
-        valorOrden: 0,
-        fechaFactura: "",
-        tipo: "Suministros"
-      });
-      setValorOrdenDisplay("0");
+
     } catch (err: unknown) {
       console.error("Error completo:", err); // Log para debug
-      
+
       // Type guard para verificar si el error tiene la estructura esperada
       const isErrorResponse = (error: unknown): error is ErrorResponse => {
         return (
@@ -207,13 +235,13 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
 
       if (isErrorResponse(err)) {
         const response = err.response;
-        
+
         if (response?.status === 409) {
           setError("Ya existe un centro con ese ID.");
         } else if (response?.status === 400) {
           // Extraer mensaje de error del backend
           let errorMessage = "Datos inválidos.";
-          
+
           if (response.data) {
             if (typeof response.data === 'string') {
               errorMessage = response.data;
@@ -221,7 +249,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
               errorMessage = response.data.message;
             }
           }
-          
+
           setError(errorMessage);
         } else if (response?.status === 404) {
           setError("El cliente seleccionado no existe.");
@@ -241,8 +269,8 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
       <div className="form-header">
         <div className="form-icon">🏗️</div>
         <div className="form-title-section">
-          <h3>Registrar Centro</h3>
-          <p>Llena los datos para crear un nuevo centro de trabajo</p>
+          <h3>{centroAEditar ? "Editar Centro" : "Registrar Centro"}</h3>
+          <p>{centroAEditar ? "Modifica los datos del centro" : "Llena los datos para crear un nuevo centro de trabajo"}</p>
         </div>
       </div>
 
@@ -254,7 +282,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
           <div className="section-title">
             <h4>📋 Información Básica</h4>
           </div>
-          
+
           <div className="form-row">
             <div className="form-group">
               <label>Orden de compra</label>
@@ -265,7 +293,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
                 onChange={handleChange}
                 placeholder="Ej: CTRO01"
                 required
-                disabled={loading}
+                disabled={loading || !!centroAEditar} // ✅ Agregar esto
               />
             </div>
             <div className="form-group">
@@ -321,7 +349,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
           <div className="section-title">
             <h4>📅 Fechas del Proyecto</h4>
           </div>
-          
+
           <div className="form-row">
             <div className="form-group">
               <label>Fecha de Inicio *</label>
@@ -360,11 +388,11 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
             <div className="form-group">
               <label>Valor de la Orden (COP)</label>
               <div className="valor-input-container" style={{ position: 'relative' }}>
-                <span style={{ 
-                  position: 'absolute', 
-                  left: '8px', 
-                  top: '50%', 
-                  transform: 'translateY(-50%)', 
+                <span style={{
+                  position: 'absolute',
+                  left: '8px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
                   color: '#666',
                   fontSize: '14px',
                   pointerEvents: 'none'
@@ -393,7 +421,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
           <div className="section-title">
             <h4>👥 Cliente y Personal</h4>
           </div>
-          
+
           <div className="form-row">
             <div className="form-group full-width">
               <label>Cliente *</label>
@@ -441,7 +469,7 @@ const CentroForm: React.FC<Props> = ({ onSuccess = () => {} }) => {
 
           <div className="form-footer">
             <button type="submit" disabled={loading}>
-              {loading ? "Guardando..." : "✅ Crear Centro"}
+              {loading ? "Guardando..." : (centroAEditar ? "✏️ Actualizar Centro" : "✅ Crear Centro")}
             </button>
           </div>
         </div>
