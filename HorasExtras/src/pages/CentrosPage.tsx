@@ -43,30 +43,42 @@ const CentrosPage: React.FC = () => {
   ];
 
   const cargarTodosCentros = useCallback(async () => {
-    try {
-      const centros = await centrosService.getAll();
-      setTodosCentros(centros);
-    } catch (error) {
-      console.error("Error al cargar todos los centros:", error);
-    }
-  }, []);
+  try {
+    const centros = await centrosService.getAll();
+    // 🚫 FILTRO: Excluir centros con nombres como "festivo", "vacaciones"
+    const centrosFiltrados = centros.filter(centro => {
+      const nombre = centro.nombreCentro.toLowerCase();
+      return !nombre.includes('festivo') && !nombre.includes('vacaciones');
+    });
+    setTodosCentros(centrosFiltrados);
+  } catch (error) {
+    console.error("Error al cargar todos los centros:", error);
+  }
+}, []);
 
   // ✅ Función optimizada - UNA SOLA PETICIÓN
-  const cargarCentrosDelMes = useCallback(async () => {
-    if (mesSeleccionado === null) return;
+ const cargarCentrosDelMes = useCallback(async () => {
+  if (mesSeleccionado === null) return;
 
-    setLoading(true);
-    try {
-      // ✅ UNA SOLA PETICIÓN que ya trae toda la información (mano de obra, cargos, cliente, etc.)
-      const centrosCompletos = await centrosService.obtenerPorMes(añoSeleccionado, mesSeleccionado);
-      setCentrosDelMes(centrosCompletos);
-    } catch (error) {
-      console.error("Error al cargar centros del mes:", error);
-      setCentrosDelMes([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [añoSeleccionado, mesSeleccionado]);
+  setLoading(true);
+  try {
+    // ✅ UNA SOLA PETICIÓN que ya trae toda la información
+    const centrosCompletos = await centrosService.obtenerPorMes(añoSeleccionado, mesSeleccionado);
+    
+    // 🚫 FILTRO: Excluir centros con nombres como "festivo", "vacaciones"
+    const centrosFiltrados = centrosCompletos.filter(centro => {
+      const nombre = centro.centroNombre.toLowerCase();
+      return !nombre.includes('festivo') && !nombre.includes('vacaciones');
+    });
+    
+    setCentrosDelMes(centrosFiltrados);
+  } catch (error) {
+    console.error("Error al cargar centros del mes:", error);
+    setCentrosDelMes([]);
+  } finally {
+    setLoading(false);
+  }
+}, [añoSeleccionado, mesSeleccionado]);
 
   // Cargar todos los centros al montar el componente para la búsqueda
   useEffect(() => {
