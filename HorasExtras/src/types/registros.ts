@@ -68,6 +68,9 @@ export interface RegistroActualizacionDto {
 // ===============================
 
 export interface Registro {
+  almuerzo: string;
+  horaFin: string;
+  horaInicio: string;
   id: number;
   trabajadorId: number;
   trabajadorNombre: string;

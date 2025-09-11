@@ -1,12 +1,19 @@
-// HorasExtras/src/pages/EditarRegistroPage.tsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { registrosService } from "../api/registrosService";
 import { trabajadoresService } from "../api/trabajadoresService";
 import { centrosService } from "../api/centrosService";
+import CentroBuscador from "../components/shared/CentroBuscador";
 import type { Registro, RegistroInputDto } from "../types/registros";
 import type { Trabajador } from "../types/trabajadores";
 import type { Centro } from "../types/centros";
+
+// TIPO ESPECÍFICO PARA REGISTROS EXISTENTES
+interface RegistroExistente {
+  id: number;
+  trabajadorId: number;
+  fecha: string;
+}
 
 const EditarRegistroPage: React.FC = () => {
   const navigate = useNavigate();
@@ -17,13 +24,21 @@ const EditarRegistroPage: React.FC = () => {
   // Estados principales
   const [registro, setRegistro] = useState<Registro | null>(null);
   const [loading, setLoading] = useState(true);
-  const [guardando, setGuardando] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>("");
   
   // Estados para datos de formulario
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
   const [centros, setCentros] = useState<Centro[]>([]);
-  const [analistas, setAnalistas] = useState<{ id: number; nombreCompleto: string }[]>([]);
+  
+  // ESTADOS PARA VERIFICACIÓN DE DUPLICADOS
+  const [registrosExistentes, setRegistrosExistentes] = useState<RegistroExistente[]>([]);
+  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
+  const [verificandoRegistros, setVerificandoRegistros] = useState(false);
+
+  // REFS PARA CONTROL DE MONTAJE Y TIMEOUTS
+  const isMountedRef = useRef(true);
+  const verificacionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
   // Estados del formulario
   const [formData, setFormData] = useState<RegistroInputDto>({
@@ -36,9 +51,135 @@ const EditarRegistroPage: React.FC = () => {
     Tiempo_Almuerzo: "01:00:00",
     desplazamientoIda: "",
     desplazamientoRegreso: "",
-    EsConductor: false, // 🆕 Campo agregado
-    AnalistaId: 0
+    EsConductor: false,
+    AnalistaId: 1
   });
+
+  // CONTROL DE MONTAJE DEL COMPONENTE
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+      if (verificacionTimeoutRef.current) {
+        clearTimeout(verificacionTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  // FUNCIÓN PARA LIMPIAR Y FORMATEAR TIEMPOS
+  const timeSpanToString = (timeString: string | null | undefined): string => {
+    if (!timeString) return "";
+
+    // Convertir a string y eliminar TODOS los espacios en blanco
+    const str = String(timeString).replace(/\s+/g, '');
+    
+    if (!str) return "";
+
+    // Si viene en formato "HH:mm:ss" o "HH:mm", procesar
+    if (str.includes(':')) {
+      const parts = str.split(':');
+      
+      if (parts.length >= 2) {
+        // Asegurar que las partes sean números válidos
+        const hoursNum = parseInt(parts[0], 10);
+        const minutesNum = parseInt(parts[1], 10);
+        
+        if (!isNaN(hoursNum) && !isNaN(minutesNum) && 
+            hoursNum >= 0 && hoursNum <= 23 && 
+            minutesNum >= 0 && minutesNum <= 59) {
+          
+          const hours = hoursNum.toString().padStart(2, '0');
+          const minutes = minutesNum.toString().padStart(2, '0');
+          return `${hours}:${minutes}`;
+        }
+      }
+    }
+
+    return "";
+  };
+
+  // FUNCIÓN PARA CONVERTIR TIEMPO A TIMESPAN COMPLETO
+  const convertirTiempoATimeSpan = (tiempo: string): string => {
+    if (!tiempo) return "00:00:00";
+
+    const tiempoLimpio = tiempo.trim();
+    
+    // Si ya tiene el formato correcto (HH:mm:ss)
+    if (tiempoLimpio.match(/^\d{2}:\d{2}:\d{2}$/)) {
+      return tiempoLimpio;
+    }
+
+    // Si tiene formato HH:mm, agregar :00
+    if (tiempoLimpio.match(/^\d{1,2}:\d{2}$/)) {
+      const parts = tiempoLimpio.split(':');
+      const hours = parts[0].padStart(2, '0');
+      const minutes = parts[1].padStart(2, '0');
+      return `${hours}:${minutes}:00`;
+    }
+
+    return "00:00:00";
+  };
+
+  // FUNCIÓN MEMOIZADA PARA VERIFICAR REGISTROS EXISTENTES (excluyendo el actual)
+  const verificarRegistrosExistentes = useCallback(async (trabajadorId: number, fecha: string) => {
+    if (!isMountedRef.current || !trabajadorId || !fecha) return;
+
+    if (trabajadorId > 0 && fecha) {
+      setVerificandoRegistros(true);
+      try {
+        const registros = await registrosService.obtenerTodosPorFecha(fecha);
+        const registrosDelTrabajador = registros
+          .filter((r: unknown) => {
+            return r &&
+              typeof r === 'object' &&
+              'trabajadorId' in r &&
+              'id' in r &&
+              (r as { trabajadorId: number; id: number }).trabajadorId === trabajadorId &&
+              (r as { trabajadorId: number; id: number }).id !== Number(id); // Excluir el registro actual
+          })
+          .map((r: unknown) => r as RegistroExistente);
+
+        if (isMountedRef.current) {
+          setRegistrosExistentes(registrosDelTrabajador);
+          setShowDuplicateWarning(registrosDelTrabajador.length > 0);
+        }
+      } catch (error) {
+        console.error("Error al verificar registros existentes:", error);
+        if (isMountedRef.current) {
+          setRegistrosExistentes([]);
+          setShowDuplicateWarning(false);
+        }
+      } finally {
+        if (isMountedRef.current) {
+          setVerificandoRegistros(false);
+        }
+      }
+    } else {
+      if (isMountedRef.current) {
+        setRegistrosExistentes([]);
+        setShowDuplicateWarning(false);
+        setVerificandoRegistros(false);
+      }
+    }
+  }, [id]);
+
+  // USEEFFECT PARA VERIFICACIÓN CON DEBOUNCING
+  useEffect(() => {
+    if (verificacionTimeoutRef.current) {
+      clearTimeout(verificacionTimeoutRef.current);
+    }
+
+    if (formData.Trabajador_ID > 0 && formData.Fecha && isMountedRef.current) {
+      verificacionTimeoutRef.current = setTimeout(() => {
+        verificarRegistrosExistentes(formData.Trabajador_ID, formData.Fecha);
+      }, 300);
+    }
+
+    return () => {
+      if (verificacionTimeoutRef.current) {
+        clearTimeout(verificacionTimeoutRef.current);
+      }
+    };
+  }, [formData.Trabajador_ID, formData.Fecha, verificarRegistrosExistentes]);
 
   // Cargar datos iniciales
   useEffect(() => {
@@ -55,38 +196,87 @@ const EditarRegistroPage: React.FC = () => {
         const [
           registroData,
           trabajadoresData,
-          centrosData,
-          analistasData
+          centrosData
         ] = await Promise.all([
           registrosService.obtenerPorId(parseInt(id)),
           trabajadoresService.getAll(),
-          centrosService.getAll(),
-          trabajadoresService.getAnalistas()
+          centrosService.getAll()
         ]);
 
         setRegistro(registroData);
         setTrabajadores(trabajadoresData.filter(t => t.estado === "Vigente"));
         setCentros(centrosData);
-        setAnalistas(analistasData);
 
-        // Convertir datos del registro al formato del formulario
-        const fechaFormateada = registroData.fecha;
-        const horaIngresoFormateada = registroData.horaIngreso.substring(0, 5);
-        const horaSalidaFormateada = registroData.horaSalida.substring(0, 5);
-        const tiempoAlmuerzoFormateado = registroData.tiempoAlmuerzo || "01:00:00";
+        // MAPEO DE PROPIEDADES
+        const mapearPropiedad = (obj: any, propiedades: string[]) => {
+          for (const prop of propiedades) {
+            if (obj[prop] !== undefined && obj[prop] !== null) {
+              return obj[prop];
+            }
+          }
+          return null;
+        };
+
+        // Extraer cada campo individualmente
+        const trabajadorIdRaw = mapearPropiedad(registroData, [
+          'trabajadorId', 'TrabajadorId', 'trabajador_id', 'Trabajador_ID'
+        ]);
         
+        const centroIdRaw = mapearPropiedad(registroData, [
+          'centroId', 'CentroId', 'centro_id', 'Centro_ID'
+        ]);
+        
+        const nombreCentroRaw = mapearPropiedad(registroData, [
+          'nombreCentro', 'NombreCentro', 'nombre_centro', 'Nombr_Centro'
+        ]);
+        
+        const fechaRaw = mapearPropiedad(registroData, [
+          'fecha', 'Fecha'
+        ]);
+
+        const horaIngresoRaw = mapearPropiedad(registroData, [
+          'horaIngreso', 'HoraIngreso', 'hora_ingreso', 'Hora_Ingreso', 'horaInicio', 'HoraInicio'
+        ]);
+        
+        const horaSalidaRaw = mapearPropiedad(registroData, [
+          'horaSalida', 'HoraSalida', 'hora_salida', 'Hora_Salida', 'horaFin', 'HoraFin'
+        ]);
+        
+        const tiempoAlmuerzoRaw = mapearPropiedad(registroData, [
+          'tiempoAlmuerzo', 'TiempoAlmuerzo', 'tiempo_almuerzo', 'Tiempo_Almuerzo', 'almuerzo', 'Almuerzo'
+        ]);
+
+        const desplazamientoIdaRaw = mapearPropiedad(registroData, [
+          'desplazamientoIda', 'DesplazamientoIda', 'desplazamiento_ida', 'viaje_ida'
+        ]);
+        
+        const desplazamientoRegresoRaw = mapearPropiedad(registroData, [
+          'desplazamientoRegreso', 'DesplazamientoRegreso', 'desplazamiento_regreso', 'viaje_regreso'
+        ]);
+
+        const esConductorRaw = mapearPropiedad(registroData, [
+          'esConductor', 'EsConductor', 'es_conductor', 'conductor'
+        ]);
+
+        // Limpiar y formatear los tiempos
+        const horaIngresoLimpia = horaIngresoRaw ? timeSpanToString(horaIngresoRaw) : "";
+        const horaSalidaLimpia = horaSalidaRaw ? timeSpanToString(horaSalidaRaw) : "";
+        const desplazamientoIdaLimpio = desplazamientoIdaRaw ? timeSpanToString(desplazamientoIdaRaw) : "";
+        const desplazamientoRegresoLimpio = desplazamientoRegresoRaw ? timeSpanToString(desplazamientoRegresoRaw) : "";
+
+        // Preparar datos para el formulario
         setFormData({
-          Trabajador_ID: registroData.trabajadorId,
-          Centro_ID: registroData.centroId.toString(),
-          Nombr_Centro: registroData.nombreCentro,
-          Fecha: fechaFormateada,
-          Hora_Ingreso: horaIngresoFormateada,
-          Hora_Salida: horaSalidaFormateada,
-          Tiempo_Almuerzo: tiempoAlmuerzoFormateado,
-          desplazamientoIda: registroData.desplazamientoIda?.substring(0, 5) || "",
-          desplazamientoRegreso: registroData.desplazamientoRegreso?.substring(0, 5) || "",
-          EsConductor: registroData.esConductor || false, // 🆕 Campo agregado
-          AnalistaId: analistasData[0]?.id || 0
+          Trabajador_ID: trabajadorIdRaw || 0,
+          Centro_ID: String(centroIdRaw || ""),
+          Nombr_Centro: nombreCentroRaw || "",
+          Fecha: fechaRaw || "",
+          Hora_Ingreso: horaIngresoLimpia,
+          Hora_Salida: horaSalidaLimpia,
+          Tiempo_Almuerzo: tiempoAlmuerzoRaw || "01:00:00",
+          desplazamientoIda: desplazamientoIdaLimpio,
+          desplazamientoRegreso: desplazamientoRegresoLimpio,
+          EsConductor: Boolean(esConductorRaw),
+          AnalistaId: 1
         });
 
       } catch (err) {
@@ -108,17 +298,8 @@ const EditarRegistroPage: React.FC = () => {
     }));
   };
 
-  // Manejar cambio de trabajador
-  const handleTrabajadorChange = (trabajadorId: number) => {
-    setFormData(prev => ({
-      ...prev,
-      Trabajador_ID: trabajadorId
-    }));
-  };
-
-  // Manejar cambio de centro
-  const handleCentroChange = (centroId: string) => {
-    const centro = centros.find(c => c.id === centroId);
+  // HANDLER PARA EL BUSCADOR DE CENTROS
+  const handleCentroChange = (centroId: string, centro?: Centro) => {
     setFormData(prev => ({
       ...prev,
       Centro_ID: centroId,
@@ -172,18 +353,49 @@ const EditarRegistroPage: React.FC = () => {
         return;
       }
 
-      setGuardando(true);
+      // Mostrar advertencia si hay registros duplicados
+      if (showDuplicateWarning) {
+        const trabajadorNombre = trabajadores.find(t => t.id === formData.Trabajador_ID)?.nombre || "este trabajador";
+        const tipoTrabajador = formData.EsConductor ? "conductor" : "trabajador";
+        const confirmMessage = `⚠️ ATENCIÓN: Además de este registro que está editando, ya existe${registrosExistentes.length > 1 ? 'n' : ''} ${registrosExistentes.length} registro${registrosExistentes.length > 1 ? 's' : ''} más para ${trabajadorNombre} en la fecha ${new Date(formData.Fecha).toLocaleDateString('es-ES')}.\n\n` +
+          `${formData.EsConductor
+            ? '🚛 CONDUCTOR: Los desplazamientos se incluirán como tiempo de trabajo.'
+            : '👷 NO CONDUCTOR: Los desplazamientos se restarán del tiempo trabajado.'
+          }\n\n` +
+          `${registrosExistentes.length === 0 ? 'El tiempo de almuerzo SÍ se descontará de este registro.' : 'El tiempo de almuerzo NO se descontará de este registro (ya hay otros registros en el día).'}\n\n` +
+          `¿Está seguro que desea continuar actualizando este registro para ${tipoTrabajador}?`;
+
+        if (!confirm(confirmMessage)) {
+          return;
+        }
+      }
+
+      setSaving(true);
       setError("");
 
-      // Preparar datos para envío
-      const dataToSend: RegistroInputDto = {
-        ...formData,
-        Tiempo_Almuerzo: formData.Tiempo_Almuerzo || "01:00:00",
-        desplazamientoIda: formData.desplazamientoIda || undefined,
-        desplazamientoRegreso: formData.desplazamientoRegreso || undefined,
+      // Preparar datos para envío con nombres correctos para el backend C#
+      const datosParaEnvio = {
+        Trabajador_ID: formData.Trabajador_ID,
+        Centro_ID: formData.Centro_ID,
+        Nombr_Centro: formData.Nombr_Centro,
+        Fecha: formData.Fecha,
+        Hora_Ingreso: formData.Hora_Ingreso,
+        Hora_Salida: formData.Hora_Salida,
+        Tiempo_Almuerzo: convertirTiempoATimeSpan(formData.Tiempo_Almuerzo),
+        // IMPORTANTE: El backend C# espera PascalCase para desplazamientos
+        DesplazamientoIda: formData.desplazamientoIda ? convertirTiempoATimeSpan(formData.desplazamientoIda) : undefined,
+        DesplazamientoRegreso: formData.desplazamientoRegreso ? convertirTiempoATimeSpan(formData.desplazamientoRegreso) : undefined,
+        EsConductor: formData.EsConductor,
+        AnalistaId: formData.AnalistaId || 1
       };
 
-      await registrosService.actualizar(parseInt(id!), dataToSend);
+      await registrosService.actualizar(parseInt(id!), datosParaEnvio);
+      
+      const tipoMensaje = formData.EsConductor
+        ? "✅ Registro de conductor actualizado correctamente (desplazamientos incluidos)"
+        : "✅ Registro actualizado correctamente (desplazamientos descontados)";
+
+      alert(tipoMensaje);
       
       // Redirigir con mensaje de éxito
       const targetUrl = new URL(returnUrl, window.location.origin);
@@ -195,13 +407,67 @@ const EditarRegistroPage: React.FC = () => {
       const error = err as { response?: { data?: { message?: string } } };
       setError(error.response?.data?.message || "Error al guardar el registro");
     } finally {
-      setGuardando(false);
+      setSaving(false);
     }
   };
 
   // Cancelar edición
   const handleCancelar = () => {
     navigate(returnUrl);
+  };
+
+  // Función para mostrar información sobre el cálculo de horas
+  const mostrarInfoCalculoHoras = () => {
+    const tiempoDesplazamiento = formData.desplazamientoIda || formData.desplazamientoRegreso;
+
+    if (!tiempoDesplazamiento) return null;
+
+    if (formData.EsConductor) {
+      return (
+        <div style={{
+          background: 'linear-gradient(135deg, #10b981, #059669)',
+          color: 'white',
+          padding: '12px 15px',
+          borderRadius: '8px',
+          fontSize: '0.9rem',
+          fontWeight: '600',
+          marginBottom: '15px'
+        }}>
+          🚛 <strong>CONDUCTOR:</strong> Los desplazamientos se INCLUYEN como tiempo de trabajo
+        </div>
+      );
+    } else {
+      return (
+        <div style={{
+          background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+          color: 'white',
+          padding: '12px 15px',
+          borderRadius: '8px',
+          fontSize: '0.9rem',
+          fontWeight: '600',
+          marginBottom: '15px'
+        }}>
+          👷 <strong>NO CONDUCTOR:</strong> Los desplazamientos se DESCUENTAN del tiempo trabajado
+        </div>
+      );
+    }
+  };
+
+  const formatearFecha = (fecha: string) => {
+    const date = new Date(fecha + 'T00:00:00');
+    return date.toLocaleDateString('es-ES', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const formatearHoras = (hours: number) => {
+    if (hours === 0) return "0:00";
+    const h = Math.floor(hours);
+    const m = Math.round((hours - h) * 60);
+    return `${h}:${m.toString().padStart(2, "0")}`;
   };
 
   if (loading) {
@@ -275,7 +541,7 @@ const EditarRegistroPage: React.FC = () => {
       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
       padding: '20px'
     }}>
-      <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+      <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{
           textAlign: 'center',
@@ -298,28 +564,110 @@ const EditarRegistroPage: React.FC = () => {
         {/* Información del registro original */}
         {registro && (
           <div style={{
-            background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
-            border: '2px solid #f59e0b',
+            background: 'white',
             borderRadius: '15px',
-            padding: '20px',
-            marginBottom: '20px'
+            padding: '25px',
+            marginBottom: '30px',
+            boxShadow: '0 10px 30px rgba(0,0,0,0.1)'
           }}>
-            <h3 style={{ margin: '0 0 15px 0', color: '#92400e' }}>
-              📋 Información Original
+            <h3 style={{
+              margin: '0 0 20px 0',
+              color: '#333',
+              fontSize: '1.3rem',
+              textAlign: 'center',
+              padding: '15px',
+              background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+              borderRadius: '10px',
+              border: '2px solid #0ea5e9'
+            }}>
+              📋 Información Actual del Registro
             </h3>
             <div style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '10px',
-              fontSize: '0.9rem'
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '15px'
             }}>
-              <div><strong>Trabajador:</strong> {registro.trabajadorNombre}</div>
-              <div><strong>Centro:</strong> {registro.nombreCentro}</div>
-              <div><strong>Fecha:</strong> {registro.fecha}</div>
-              <div><strong>Horario:</strong> {registro.horaIngreso} - {registro.horaSalida}</div>
-              <div><strong>Horas Totales:</strong> {registro.totalHoras}h</div>
-              <div><strong>Horas Normales:</strong> {registro.horasNormales}h</div>
-              <div><strong>Es Conductor:</strong> {registro.esConductor ? 'Sí' : 'No'}</div>
+              <div style={{ padding: '15px', background: '#f8fafb', borderRadius: '8px' }}>
+                <strong style={{ color: '#1f2937' }}>👤 Trabajador:</strong><br />
+                <span style={{ color: '#4b5563' }}>{registro.trabajadorNombre}</span>
+              </div>
+              <div style={{ padding: '15px', background: '#f8fafb', borderRadius: '8px' }}>
+                <strong style={{ color: '#1f2937' }}>🏢 Centro:</strong><br />
+                <span style={{ color: '#4b5563' }}>{registro.nombreCentro}</span>
+              </div>
+              <div style={{ padding: '15px', background: '#f8fafb', borderRadius: '8px' }}>
+                <strong style={{ color: '#1f2937' }}>📅 Fecha:</strong><br />
+                <span style={{ color: '#4b5563' }}>{formatearFecha(registro.fecha)}</span>
+              </div>
+              <div style={{ padding: '15px', background: '#f8fafb', borderRadius: '8px' }}>
+                <strong style={{ color: '#1f2937' }}>⏰ Horario:</strong><br />
+                <span style={{ color: '#4b5563' }}>
+                  {registro.horaIngreso?.substring(0, 5)} - {registro.horaSalida?.substring(0, 5)}
+                </span>
+              </div>
+              <div style={{ padding: '15px', background: '#f0fdf4', borderRadius: '8px' }}>
+                <strong style={{ color: '#15803d' }}>📊 Total Horas:</strong><br />
+                <span style={{ color: '#166534', fontSize: '1.1rem', fontWeight: '600' }}>
+                  {formatearHoras(registro.totalHoras)}
+                </span>
+              </div>
+              <div style={{ padding: '15px', background: '#fef3c7', borderRadius: '8px' }}>
+                <strong style={{ color: '#92400e' }}>🌅 Extras Diurnas:</strong><br />
+                <span style={{ color: '#a16207' }}>{formatearHoras(registro.horasExtrasDiurnas)}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* INDICADOR DE VERIFICACIÓN */}
+        {verificandoRegistros && (
+          <div style={{
+            background: '#f0f9ff',
+            color: '#0369a1',
+            padding: '12px 15px',
+            borderRadius: '10px',
+            marginBottom: '20px',
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{
+              width: '16px',
+              height: '16px',
+              border: '2px solid #0369a1',
+              borderTop: '2px solid transparent',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite'
+            }} />
+            🔍 Verificando otros registros en esta fecha...
+          </div>
+        )}
+
+        {/* Advertencia de registro duplicado */}
+        {showDuplicateWarning && !verificandoRegistros && (
+          <div style={{
+            background: 'linear-gradient(135deg, #ff9500, #ff6b35)',
+            color: 'white',
+            padding: '15px 20px',
+            borderRadius: '10px',
+            marginBottom: '20px',
+            border: '2px solid #ff6b35',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <span style={{ fontSize: '1.2rem' }}>⚠️</span>
+              <div>
+                <strong>Otros Registros Detectados</strong>
+                <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem' }}>
+                  Además de este registro que está editando, ya existe{registrosExistentes.length > 1 ? 'n' : ''} <strong>{registrosExistentes.length}</strong> registro{registrosExistentes.length > 1 ? 's' : ''} más para este trabajador en esta fecha.
+                  {registrosExistentes.length === 0
+                    ? ' El tiempo de almuerzo SÍ se descontará de este registro.'
+                    : ' El tiempo de almuerzo NO se descontará de este registro.'
+                  }
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -350,64 +698,81 @@ const EditarRegistroPage: React.FC = () => {
             display: 'grid',
             gap: '20px'
           }}>
-            {/* Trabajador */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontWeight: '600',
-                marginBottom: '8px',
-                color: '#333'
-              }}>
-                👤 Trabajador *
-              </label>
-              <select
-                value={formData.Trabajador_ID}
-                onChange={(e) => handleTrabajadorChange(Number(e.target.value))}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '2px solid #e1e8ed',
-                  borderRadius: '10px',
+            {/* Fila 1: Trabajador y Centro */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '20px'
+            }}>
+              <div>
+                <label style={{
+                  display: 'block',
+                  fontWeight: '600',
+                  color: '#374151',
+                  marginBottom: '8px',
                   fontSize: '1rem'
-                }}
-              >
-                <option value={0}>Seleccionar trabajador...</option>
-                {trabajadores.map(trabajador => (
-                  <option key={trabajador.id} value={trabajador.id}>
-                    {trabajador.nombre}
+                }}>
+                  👤 Trabajador *
+                </label>
+                <select
+                  value={formData.Trabajador_ID}
+                  onChange={(e) => handleInputChange('Trabajador_ID', Number(e.target.value))}
+                  required
+                  disabled={verificandoRegistros}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '2px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '1rem',
+                    background: verificandoRegistros ? '#f3f4f6' : '#f9fafb',
+                    cursor: verificandoRegistros ? 'wait' : 'pointer'
+                  }}
+                >
+                  <option value={0}>
+                    {verificandoRegistros ? "Verificando registros..." : "Seleccionar trabajador..."}
                   </option>
-                ))}
-              </select>
-            </div>
+                  {trabajadores.map(trabajador => (
+                    <option key={trabajador.id} value={trabajador.id}>
+                      {trabajador.nombre}
+                    </option>
+                  ))}
+                </select>
 
-            {/* Centro */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontWeight: '600',
-                marginBottom: '8px',
-                color: '#333'
-              }}>
-                🏢 Centro de Trabajo *
-              </label>
-              <select
-                value={formData.Centro_ID}
-                onChange={(e) => handleCentroChange(e.target.value)}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '2px solid #e1e8ed',
-                  borderRadius: '10px',
-                  fontSize: '1rem'
-                }}
-              >
-                <option value="">Seleccionar centro...</option>
-                {centros.map(centro => (
-                  <option key={centro.id} value={centro.id}>
-                    {centro.nombreCentro}
-                  </option>
-                ))}
-              </select>
+                {verificandoRegistros && (
+                  <div style={{
+                    fontSize: '0.8rem',
+                    color: '#0369a1',
+                    marginTop: '4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}>
+                    <div style={{
+                      width: '12px',
+                      height: '12px',
+                      border: '2px solid #0369a1',
+                      borderTop: '2px solid transparent',
+                      borderRadius: '50%',
+                      animation: 'spin 1s linear infinite'
+                    }} />
+                    Verificando registros existentes...
+                  </div>
+                )}
+              </div>
+
+              {/* CENTRO CON BUSCADOR */}
+              <div>
+                <CentroBuscador
+                  centros={centros}
+                  value={formData.Centro_ID}
+                  onChange={handleCentroChange}
+                  label="🏢 Centro de Trabajo"
+                  placeholder="Buscar centro por nombre o ID..."
+                  required
+                  showSelectedInfo={true}
+                />
+              </div>
             </div>
 
             {/* Fecha */}
@@ -494,6 +859,19 @@ const EditarRegistroPage: React.FC = () => {
                   color: '#333'
                 }}>
                   🍽️ Tiempo Almuerzo
+                  {showDuplicateWarning && (
+                    <span style={{
+                      color: '#ff6b35',
+                      fontSize: '0.8rem',
+                      fontWeight: 'normal',
+                      display: 'block'
+                    }}>
+                      {registrosExistentes.length === 0
+                        ? '✓ Se descontará normalmente'
+                        : '⚠️ No se descontará (hay otros registros)'
+                      }
+                    </span>
+                  )}
                 </label>
                 <select
                   value={formData.Tiempo_Almuerzo}
@@ -501,7 +879,7 @@ const EditarRegistroPage: React.FC = () => {
                   style={{
                     width: '100%',
                     padding: '12px',
-                    border: '2px solid #e1e8ed',
+                    border: showDuplicateWarning ? '2px solid #ff6b35' : '2px solid #e1e8ed',
                     borderRadius: '10px',
                     fontSize: '1rem'
                   }}
@@ -513,6 +891,9 @@ const EditarRegistroPage: React.FC = () => {
                 </select>
               </div>
             </div>
+
+            {/* Información sobre el cálculo */}
+            {mostrarInfoCalculoHoras()}
 
             {/* Desplazamientos */}
             <div style={{
@@ -541,6 +922,9 @@ const EditarRegistroPage: React.FC = () => {
                     fontSize: '1rem'
                   }}
                 />
+                <small style={{ color: "#666", fontSize: "0.8rem", marginTop: '5px', display: 'block' }}>
+                  Tiempo de desplazamiento de casa al trabajo
+                </small>
               </div>
 
               <div>
@@ -564,6 +948,9 @@ const EditarRegistroPage: React.FC = () => {
                     fontSize: '1rem'
                   }}
                 />
+                <small style={{ color: "#666", fontSize: "0.8rem", marginTop: '5px', display: 'block' }}>
+                  Tiempo de desplazamiento del trabajo a casa
+                </small>
               </div>
             </div>
 
@@ -595,38 +982,11 @@ const EditarRegistroPage: React.FC = () => {
                 marginTop: '5px',
                 marginLeft: '28px' 
               }}>
-                Marca esta opción si el trabajador desempeñó funciones de conductor
+                {formData.EsConductor
+                  ? 'Los desplazamientos se incluirán como tiempo de trabajo'
+                  : 'Los desplazamientos se descontarán del tiempo trabajado'
+                }
               </p>
-            </div>
-
-            {/* Analista */}
-            <div>
-              <label style={{
-                display: 'block',
-                fontWeight: '600',
-                marginBottom: '8px',
-                color: '#333'
-              }}>
-                👨‍💼 Analista
-              </label>
-              <select
-                value={formData.AnalistaId || 0}
-                onChange={(e) => handleInputChange('AnalistaId', Number(e.target.value))}
-                style={{
-                  width: '100%',
-                  padding: '12px',
-                  border: '2px solid #e1e8ed',
-                  borderRadius: '10px',
-                  fontSize: '1rem'
-                }}
-              >
-                <option value={0}>Seleccionar analista...</option>
-                {analistas.map(analista => (
-                  <option key={analista.id} value={analista.id}>
-                    {analista.nombreCompleto}
-                  </option>
-                ))}
-              </select>
             </div>
           </div>
 
@@ -639,17 +999,17 @@ const EditarRegistroPage: React.FC = () => {
           }}>
             <button
               onClick={handleCancelar}
-              disabled={guardando}
+              disabled={saving}
               style={{
                 background: 'linear-gradient(135deg, #6b7280, #4b5563)',
                 color: 'white',
                 border: 'none',
                 padding: '15px 30px',
                 borderRadius: '10px',
-                cursor: guardando ? 'not-allowed' : 'pointer',
+                cursor: saving ? 'not-allowed' : 'pointer',
                 fontWeight: '600',
                 fontSize: '1rem',
-                opacity: guardando ? 0.7 : 1
+                opacity: saving ? 0.7 : 1
               }}
             >
               ❌ Cancelar
@@ -657,26 +1017,38 @@ const EditarRegistroPage: React.FC = () => {
 
             <button
               onClick={handleGuardar}
-              disabled={guardando}
+              disabled={saving || verificandoRegistros}
               style={{
-                background: guardando 
+                background: saving || verificandoRegistros
                   ? 'linear-gradient(135deg, #9ca3af, #6b7280)' 
                   : 'linear-gradient(135deg, #22c55e, #15803d)',
                 color: 'white',
                 border: 'none',
                 padding: '15px 30px',
                 borderRadius: '10px',
-                cursor: guardando ? 'not-allowed' : 'pointer',
+                cursor: (saving || verificandoRegistros) ? 'not-allowed' : 'pointer',
                 fontWeight: '600',
                 fontSize: '1rem',
                 minWidth: '160px'
               }}
             >
-              {guardando ? '🔄 Guardando...' : '💾 Guardar Cambios'}
+              {saving ? '🔄 Guardando...' : 
+               verificandoRegistros ? '🔍 Verificando...' : 
+               '💾 Guardar Cambios'}
+              {!saving && !verificandoRegistros && (formData.EsConductor ? " 🚛" : " 👷")}
+              {showDuplicateWarning && !saving && !verificandoRegistros && " (Con otros registros)"}
             </button>
           </div>
         </div>
       </div>
+
+      {/* CSS PARA ANIMACIÓN DE LOADING */}
+      <style>{`
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 };
