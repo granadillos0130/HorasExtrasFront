@@ -26,11 +26,11 @@ const EditarRegistroPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string>("");
-  
+
   // Estados para datos de formulario
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
   const [centros, setCentros] = useState<Centro[]>([]);
-  
+
   // ESTADOS PARA VERIFICACIÓN DE DUPLICADOS
   const [registrosExistentes, setRegistrosExistentes] = useState<RegistroExistente[]>([]);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
@@ -39,7 +39,7 @@ const EditarRegistroPage: React.FC = () => {
   // REFS PARA CONTROL DE MONTAJE Y TIMEOUTS
   const isMountedRef = useRef(true);
   const verificacionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   // Estados del formulario
   const [formData, setFormData] = useState<RegistroInputDto>({
     Trabajador_ID: 0,
@@ -48,7 +48,7 @@ const EditarRegistroPage: React.FC = () => {
     Fecha: "",
     Hora_Ingreso: "",
     Hora_Salida: "",
-    Tiempo_Almuerzo: "01:00:00",
+    Tiempo_Almuerzo: "",
     desplazamientoIda: "",
     desplazamientoRegreso: "",
     EsConductor: false,
@@ -71,22 +71,22 @@ const EditarRegistroPage: React.FC = () => {
 
     // Convertir a string y eliminar TODOS los espacios en blanco
     const str = String(timeString).replace(/\s+/g, '');
-    
+
     if (!str) return "";
 
     // Si viene en formato "HH:mm:ss" o "HH:mm", procesar
     if (str.includes(':')) {
       const parts = str.split(':');
-      
+
       if (parts.length >= 2) {
         // Asegurar que las partes sean números válidos
         const hoursNum = parseInt(parts[0], 10);
         const minutesNum = parseInt(parts[1], 10);
-        
-        if (!isNaN(hoursNum) && !isNaN(minutesNum) && 
-            hoursNum >= 0 && hoursNum <= 23 && 
-            minutesNum >= 0 && minutesNum <= 59) {
-          
+
+        if (!isNaN(hoursNum) && !isNaN(minutesNum) &&
+          hoursNum >= 0 && hoursNum <= 23 &&
+          minutesNum >= 0 && minutesNum <= 59) {
+
           const hours = hoursNum.toString().padStart(2, '0');
           const minutes = minutesNum.toString().padStart(2, '0');
           return `${hours}:${minutes}`;
@@ -102,7 +102,7 @@ const EditarRegistroPage: React.FC = () => {
     if (!tiempo) return "00:00:00";
 
     const tiempoLimpio = tiempo.trim();
-    
+
     // Si ya tiene el formato correcto (HH:mm:ss)
     if (tiempoLimpio.match(/^\d{2}:\d{2}:\d{2}$/)) {
       return tiempoLimpio;
@@ -186,7 +186,7 @@ const EditarRegistroPage: React.FC = () => {
     const cargarDatos = async () => {
       try {
         setLoading(true);
-        
+
         if (!id) {
           setError("ID de registro no válido");
           return;
@@ -221,15 +221,15 @@ const EditarRegistroPage: React.FC = () => {
         const trabajadorIdRaw = mapearPropiedad(registroData, [
           'trabajadorId', 'TrabajadorId', 'trabajador_id', 'Trabajador_ID'
         ]);
-        
+
         const centroIdRaw = mapearPropiedad(registroData, [
           'centroId', 'CentroId', 'centro_id', 'Centro_ID'
         ]);
-        
+
         const nombreCentroRaw = mapearPropiedad(registroData, [
           'nombreCentro', 'NombreCentro', 'nombre_centro', 'Nombr_Centro'
         ]);
-        
+
         const fechaRaw = mapearPropiedad(registroData, [
           'fecha', 'Fecha'
         ]);
@@ -237,11 +237,11 @@ const EditarRegistroPage: React.FC = () => {
         const horaIngresoRaw = mapearPropiedad(registroData, [
           'horaIngreso', 'HoraIngreso', 'hora_ingreso', 'Hora_Ingreso', 'horaInicio', 'HoraInicio'
         ]);
-        
+
         const horaSalidaRaw = mapearPropiedad(registroData, [
           'horaSalida', 'HoraSalida', 'hora_salida', 'Hora_Salida', 'horaFin', 'HoraFin'
         ]);
-        
+
         const tiempoAlmuerzoRaw = mapearPropiedad(registroData, [
           'tiempoAlmuerzo', 'TiempoAlmuerzo', 'tiempo_almuerzo', 'Tiempo_Almuerzo', 'almuerzo', 'Almuerzo'
         ]);
@@ -249,7 +249,7 @@ const EditarRegistroPage: React.FC = () => {
         const desplazamientoIdaRaw = mapearPropiedad(registroData, [
           'desplazamientoIda', 'DesplazamientoIda', 'desplazamiento_ida', 'viaje_ida'
         ]);
-        
+
         const desplazamientoRegresoRaw = mapearPropiedad(registroData, [
           'desplazamientoRegreso', 'DesplazamientoRegreso', 'desplazamiento_regreso', 'viaje_regreso'
         ]);
@@ -265,6 +265,17 @@ const EditarRegistroPage: React.FC = () => {
         const desplazamientoRegresoLimpio = desplazamientoRegresoRaw ? timeSpanToString(desplazamientoRegresoRaw) : "";
 
         // Preparar datos para el formulario
+        let tiempoAlmuerzoMapeado = "";
+        if (tiempoAlmuerzoRaw) {
+          const tiempoStr = String(tiempoAlmuerzoRaw);
+          if (tiempoStr === "00:00:00" || tiempoStr === "0:00:00") {
+            tiempoAlmuerzoMapeado = ""; // Sin almuerzo
+          } else {
+            tiempoAlmuerzoMapeado = tiempoStr;
+          }
+        }
+
+        // Preparar datos para el formulario
         setFormData({
           Trabajador_ID: trabajadorIdRaw || 0,
           Centro_ID: String(centroIdRaw || ""),
@@ -272,7 +283,7 @@ const EditarRegistroPage: React.FC = () => {
           Fecha: fechaRaw || "",
           Hora_Ingreso: horaIngresoLimpia,
           Hora_Salida: horaSalidaLimpia,
-          Tiempo_Almuerzo: tiempoAlmuerzoRaw || "01:00:00",
+          Tiempo_Almuerzo: tiempoAlmuerzoMapeado,
           desplazamientoIda: desplazamientoIdaLimpio,
           desplazamientoRegreso: desplazamientoRegresoLimpio,
           EsConductor: Boolean(esConductorRaw),
@@ -335,7 +346,7 @@ const EditarRegistroPage: React.FC = () => {
     if (formData.Hora_Ingreso && formData.Hora_Salida) {
       const ingreso = new Date(`1970-01-01T${formData.Hora_Ingreso}:00`);
       const salida = new Date(`1970-01-01T${formData.Hora_Salida}:00`);
-      
+
       if (salida <= ingreso) {
         errores.push("La hora de salida debe ser posterior a la hora de ingreso");
       }
@@ -357,12 +368,16 @@ const EditarRegistroPage: React.FC = () => {
       if (showDuplicateWarning) {
         const trabajadorNombre = trabajadores.find(t => t.id === formData.Trabajador_ID)?.nombre || "este trabajador";
         const tipoTrabajador = formData.EsConductor ? "conductor" : "trabajador";
+        const mensajeAlmuerzo = formData.Tiempo_Almuerzo
+          ? (registrosExistentes.length === 0 ? 'El tiempo de almuerzo SÍ se descontará de este registro.' : 'El tiempo de almuerzo NO se descontará de este registro (ya hay otros registros en el día).')
+          : 'No hay tiempo de almuerzo configurado para descontar.';
+
         const confirmMessage = `⚠️ ATENCIÓN: Además de este registro que está editando, ya existe${registrosExistentes.length > 1 ? 'n' : ''} ${registrosExistentes.length} registro${registrosExistentes.length > 1 ? 's' : ''} más para ${trabajadorNombre} en la fecha ${new Date(formData.Fecha).toLocaleDateString('es-ES')}.\n\n` +
           `${formData.EsConductor
             ? '🚛 CONDUCTOR: Los desplazamientos se incluirán como tiempo de trabajo.'
             : '👷 NO CONDUCTOR: Los desplazamientos se restarán del tiempo trabajado.'
           }\n\n` +
-          `${registrosExistentes.length === 0 ? 'El tiempo de almuerzo SÍ se descontará de este registro.' : 'El tiempo de almuerzo NO se descontará de este registro (ya hay otros registros en el día).'}\n\n` +
+          `${mensajeAlmuerzo}\n\n` +
           `¿Está seguro que desea continuar actualizando este registro para ${tipoTrabajador}?`;
 
         if (!confirm(confirmMessage)) {
@@ -381,7 +396,8 @@ const EditarRegistroPage: React.FC = () => {
         Fecha: formData.Fecha,
         Hora_Ingreso: formData.Hora_Ingreso,
         Hora_Salida: formData.Hora_Salida,
-        Tiempo_Almuerzo: convertirTiempoATimeSpan(formData.Tiempo_Almuerzo),
+        // Si está vacío, enviar null; si no, convertir a TimeSpan
+        Tiempo_Almuerzo: formData.Tiempo_Almuerzo ? convertirTiempoATimeSpan(formData.Tiempo_Almuerzo) : null,
         // IMPORTANTE: El backend C# espera PascalCase para desplazamientos
         DesplazamientoIda: formData.desplazamientoIda ? convertirTiempoATimeSpan(formData.desplazamientoIda) : undefined,
         DesplazamientoRegreso: formData.desplazamientoRegreso ? convertirTiempoATimeSpan(formData.desplazamientoRegreso) : undefined,
@@ -390,13 +406,13 @@ const EditarRegistroPage: React.FC = () => {
       };
 
       await registrosService.actualizar(parseInt(id!), datosParaEnvio);
-      
+
       const tipoMensaje = formData.EsConductor
         ? "✅ Registro de conductor actualizado correctamente (desplazamientos incluidos)"
         : "✅ Registro actualizado correctamente (desplazamientos descontados)";
 
       alert(tipoMensaje);
-      
+
       // Redirigir con mensaje de éxito
       const targetUrl = new URL(returnUrl, window.location.origin);
       targetUrl.searchParams.set('success', 'registro-actualizado');
@@ -663,8 +679,8 @@ const EditarRegistroPage: React.FC = () => {
                 <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem' }}>
                   Además de este registro que está editando, ya existe{registrosExistentes.length > 1 ? 'n' : ''} <strong>{registrosExistentes.length}</strong> registro{registrosExistentes.length > 1 ? 's' : ''} más para este trabajador en esta fecha.
                   {registrosExistentes.length === 0
-                    ? ' El tiempo de almuerzo SÍ se descontará de este registro.'
-                    : ' El tiempo de almuerzo NO se descontará de este registro.'
+                    ? (formData.Tiempo_Almuerzo ? '✓ Se descontará normalmente' : '✓ Sin descuento de almuerzo')
+                    : '⚠️ No se descontará (hay otros registros)'
                   }
                 </p>
               </div>
@@ -874,7 +890,7 @@ const EditarRegistroPage: React.FC = () => {
                   )}
                 </label>
                 <select
-                  value={formData.Tiempo_Almuerzo}
+                  value={formData.Tiempo_Almuerzo || ""} // Convertir null a string vacío
                   onChange={(e) => handleInputChange('Tiempo_Almuerzo', e.target.value)}
                   style={{
                     width: '100%',
@@ -884,6 +900,7 @@ const EditarRegistroPage: React.FC = () => {
                     fontSize: '1rem'
                   }}
                 >
+                  <option value="">Sin almuerzo</option>
                   <option value="00:30:00">30 minutos</option>
                   <option value="01:00:00">1 hora</option>
                   <option value="01:30:00">1.5 horas</option>
@@ -976,11 +993,11 @@ const EditarRegistroPage: React.FC = () => {
                 />
                 🚛 ¿Es conductor en este registro?
               </label>
-              <p style={{ 
-                fontSize: '0.9rem', 
-                color: '#666', 
+              <p style={{
+                fontSize: '0.9rem',
+                color: '#666',
                 marginTop: '5px',
-                marginLeft: '28px' 
+                marginLeft: '28px'
               }}>
                 {formData.EsConductor
                   ? 'Los desplazamientos se incluirán como tiempo de trabajo'
@@ -1020,7 +1037,7 @@ const EditarRegistroPage: React.FC = () => {
               disabled={saving || verificandoRegistros}
               style={{
                 background: saving || verificandoRegistros
-                  ? 'linear-gradient(135deg, #9ca3af, #6b7280)' 
+                  ? 'linear-gradient(135deg, #9ca3af, #6b7280)'
                   : 'linear-gradient(135deg, #22c55e, #15803d)',
                 color: 'white',
                 border: 'none',
@@ -1032,9 +1049,9 @@ const EditarRegistroPage: React.FC = () => {
                 minWidth: '160px'
               }}
             >
-              {saving ? '🔄 Guardando...' : 
-               verificandoRegistros ? '🔍 Verificando...' : 
-               '💾 Guardar Cambios'}
+              {saving ? '🔄 Guardando...' :
+                verificandoRegistros ? '🔍 Verificando...' :
+                  '💾 Guardar Cambios'}
               {!saving && !verificandoRegistros && (formData.EsConductor ? " 🚛" : " 👷")}
               {showDuplicateWarning && !saving && !verificandoRegistros && " (Con otros registros)"}
             </button>

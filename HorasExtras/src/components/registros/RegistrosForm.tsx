@@ -31,17 +31,17 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
   const [cursos, setCursos] = useState<Curso[]>([]); // 🆕 NUEVO ESTADO
   const [loading, setLoading] = useState(false);
   const [analistas, setAnalistas] = useState<{ id: number; nombreCompleto: string }[]>([]);
-  
+
   // 🆕 NUEVO: Estado para tipo de destino (centro o curso)
   const [tipoDestino, setTipoDestino] = useState<TipoDestino>('centro');
-  
+
   // TIPOS ESPECÍFICOS PARA REGISTROS EXISTENTES
   const [registrosExistentes, setRegistrosExistentes] = useState<RegistroExistente[]>([]);
   const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
-  
+
   // NUEVOS ESTADOS PARA CONTROL DE VERIFICACIÓN
   const [verificandoRegistros, setVerificandoRegistros] = useState(false);
-  
+
   // REFS PARA CONTROL DE MONTAJE Y TIMEOUTS
   const isMountedRef = useRef(true);
   const verificacionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -93,17 +93,17 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           cursosService.getAll(), // 🆕 NUEVO: Cargar cursos
           trabajadoresService.getAnalistas(),
         ]);
-        
+
         // Verificar que cada trabajador tenga las propiedades necesarias
-        const trabajadoresValidos = trabajadoresData.filter(t => 
+        const trabajadoresValidos = trabajadoresData.filter(t =>
           t && t.id && t.nombre && t.cedula
         );
-        
+
         setTrabajadores(trabajadoresValidos);
         setCentros(centrosData);
         setCursos(cursosData); // 🆕 NUEVO
         setAnalistas(analistasData);
-        
+
       } catch (error) {
         console.error("Error al cargar datos:", error);
       }
@@ -127,20 +127,20 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
   // FUNCIÓN MEMOIZADA PARA VERIFICAR REGISTROS EXISTENTES
   const verificarRegistrosExistentes = useCallback(async (trabajadorId: number, fecha: string) => {
     if (!isMountedRef.current || !trabajadorId || !fecha) return;
-    
+
     if (trabajadorId > 0 && fecha) {
       setVerificandoRegistros(true);
       try {
         const registros = await registrosService.obtenerTodosPorFecha(fecha);
         const registrosDelTrabajador = registros
           .filter((r: unknown) => {
-            return r && 
-                   typeof r === 'object' && 
-                   'trabajadorId' in r && 
-                   (r as { trabajadorId: number }).trabajadorId === trabajadorId;
+            return r &&
+              typeof r === 'object' &&
+              'trabajadorId' in r &&
+              (r as { trabajadorId: number }).trabajadorId === trabajadorId;
           })
           .map((r: unknown) => r as RegistroExistente);
-        
+
         if (isMountedRef.current) {
           setRegistrosExistentes(registrosDelTrabajador);
           setShowDuplicateWarning(registrosDelTrabajador.length > 0);
@@ -223,15 +223,15 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
       const tipoTrabajador = formData.EsConductor ? "conductor" : "trabajador";
       const tipoDestinoTexto = tieneCurso ? "curso" : "centro";
       const nombreDestino = tieneCurso ? formData.CursoNombre : formData.Nombr_Centro;
-      
+
       const confirmMessage = `⚠️ ATENCIÓN: Ya existe${registrosExistentes.length > 1 ? 'n' : ''} ${registrosExistentes.length} registro${registrosExistentes.length > 1 ? 's' : ''} para ${trabajadorNombre} en la fecha ${new Date(formData.Fecha).toLocaleDateString('es-ES')}.\n\n` +
-        `${formData.EsConductor 
-          ? '🚛 CONDUCTOR: Los desplazamientos se incluirán como tiempo de trabajo.' 
+        `${formData.EsConductor
+          ? '🚛 CONDUCTOR: Los desplazamientos se incluirán como tiempo de trabajo.'
           : '👷 NO CONDUCTOR: Los desplazamientos se restarán del tiempo trabajado.'
         }\n\n` +
         `${registrosExistentes.length === 1 ? 'El tiempo de almuerzo NO se descontará de este nuevo registro.' : 'El tiempo de almuerzo ya fue descontado en el primer registro del día.'}\n\n` +
         `¿Está seguro que desea continuar creando este registro adicional de ${tipoDestinoTexto} "${nombreDestino}" para ${tipoTrabajador}?`;
-      
+
       if (!confirm(confirmMessage)) {
         return;
       }
@@ -246,7 +246,9 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
       // 🆕 NUEVO: Preparar payload según tipo de destino
       const payload: RegistroInputDto = {
         ...formData,
-        Tiempo_Almuerzo: normalizarHora(formData.Tiempo_Almuerzo),
+        Tiempo_Almuerzo: !formData.Tiempo_Almuerzo || formData.Tiempo_Almuerzo === ""
+          ? null  // Enviar null para "sin almuerzo"
+          : normalizarHora(formData.Tiempo_Almuerzo),
         desplazamientoIda: formData.desplazamientoIda?.trim()
           ? convertirATimeSpan(formData.desplazamientoIda)
           : undefined,
@@ -268,13 +270,13 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
       }
 
       await registrosService.crear(payload);
-      
+
       const tipoDestinoTexto = tieneCurso ? "curso" : "centro";
       const nombreDestino = tieneCurso ? formData.CursoNombre : formData.Nombr_Centro;
-      const tipoMensaje = formData.EsConductor 
-        ? `Registro de ${tipoDestinoTexto} "${nombreDestino}" creado correctamente para conductor (desplazamientos incluidos)` 
+      const tipoMensaje = formData.EsConductor
+        ? `Registro de ${tipoDestinoTexto} "${nombreDestino}" creado correctamente para conductor (desplazamientos incluidos)`
         : `Registro de ${tipoDestinoTexto} "${nombreDestino}" creado correctamente (desplazamientos descontados)`;
-      
+
       alert(tipoMensaje);
       onSuccess();
     } catch (error: unknown) {
@@ -282,7 +284,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
       if (error instanceof AxiosError && error.response?.data) {
         alert(
           "Error del servidor:\n" +
-            JSON.stringify(error.response.data, null, 2)
+          JSON.stringify(error.response.data, null, 2)
         );
       } else {
         alert("Error al crear el registro");
@@ -352,7 +354,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
   // Función para mostrar información sobre el cálculo de horas
   const mostrarInfoCalculoHoras = () => {
     const tiempoDesplazamiento = formData.desplazamientoIda || formData.desplazamientoRegreso;
-    
+
     if (!tiempoDesplazamiento) return null;
 
     if (formData.EsConductor) {
@@ -387,7 +389,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
   return (
     <div className="registros-form-container">
       <h3>Crear Nuevo Registro</h3>
-      
+
       {fechaInicial && (
         <div
           style={{
@@ -423,9 +425,9 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           alignItems: 'center',
           gap: '8px'
         }}>
-          <div style={{ 
-            width: '16px', 
-            height: '16px', 
+          <div style={{
+            width: '16px',
+            height: '16px',
             border: '2px solid #0369a1',
             borderTop: '2px solid transparent',
             borderRadius: '50%',
@@ -453,7 +455,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
               <strong>Registro Duplicado Detectado</strong>
               <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem' }}>
                 Ya existe{registrosExistentes.length > 1 ? 'n' : ''} <strong>{registrosExistentes.length}</strong> registro{registrosExistentes.length > 1 ? 's' : ''} para este trabajador en esta fecha.
-                {registrosExistentes.length === 1 
+                {registrosExistentes.length === 1
                   ? ' El tiempo de almuerzo NO se descontará de este nuevo registro.'
                   : ' El tiempo de almuerzo ya fue descontado en el primer registro del día.'
                 }
@@ -473,12 +475,12 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
               label="Trabajador *"
               required
               disabled={verificandoRegistros}
-              placeholder={verificandoRegistros ? 
-                "Verificando registros existentes..." : 
+              placeholder={verificandoRegistros ?
+                "Verificando registros existentes..." :
                 "Buscar por nombre o cédula..."
               }
             />
-            
+
             {verificandoRegistros && (
               <div style={{
                 fontSize: '0.8rem',
@@ -488,9 +490,9 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
                 alignItems: 'center',
                 gap: '6px'
               }}>
-                <div style={{ 
-                  width: '12px', 
-                  height: '12px', 
+                <div style={{
+                  width: '12px',
+                  height: '12px',
                   border: '2px solid #0369a1',
                   borderTop: '2px solid transparent',
                   borderRadius: '50%',
@@ -518,18 +520,18 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
             <label style={{ display: 'block', marginBottom: '10px', fontWeight: '600' }}>
               Tipo de Asignación *
             </label>
-            <div style={{ 
-              display: 'flex', 
-              gap: '15px', 
+            <div style={{
+              display: 'flex',
+              gap: '15px',
               padding: '10px',
               backgroundColor: '#f8f9fa',
               borderRadius: '8px',
               border: '2px solid #e1e8ed'
             }}>
-              <label style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px', 
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
                 cursor: 'pointer',
                 padding: '8px 12px',
                 borderRadius: '6px',
@@ -548,11 +550,11 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
                 />
                 🏢 Centro de Trabajo
               </label>
-              
-              <label style={{ 
-                display: 'flex', 
-                alignItems: 'center', 
-                gap: '8px', 
+
+              <label style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
                 cursor: 'pointer',
                 padding: '8px 12px',
                 borderRadius: '6px',
@@ -629,9 +631,9 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
                       {formData.CursoDescripcion}
                     </div>
                   )}
-                  <div style={{ 
-                    fontSize: '0.8rem', 
-                    color: '#6b7280', 
+                  <div style={{
+                    fontSize: '0.8rem',
+                    color: '#6b7280',
                     marginTop: '4px',
                     fontStyle: 'italic'
                   }}>
@@ -668,13 +670,13 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
             <label>
               Tiempo Almuerzo *
               {showDuplicateWarning && (
-                <span style={{ 
-                  color: '#ff6b35', 
-                  fontSize: '0.8rem', 
+                <span style={{
+                  color: '#ff6b35',
+                  fontSize: '0.8rem',
                   fontWeight: 'normal',
                   display: 'block'
                 }}>
-                  {registrosExistentes.length === 1 
+                  {registrosExistentes.length === 1
                     ? '⚠️ No se descontará (ya hay 1 registro)'
                     : '⚠️ No se descontará (múltiples registros)'
                   }
@@ -682,12 +684,12 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
               )}
             </label>
             <select
-              value={formData.Tiempo_Almuerzo}
+              value={formData.Tiempo_Almuerzo || ""}
               onChange={(e) => handleInputChange("Tiempo_Almuerzo", e.target.value)}
-              required
+              // required  // <-- QUITAR ESTA LÍNEA
               style={showDuplicateWarning ? { borderColor: '#ff6b35' } : {}}
             >
-              <option value="00:00:00">Sin almuerzo</option>
+              <option value="">Sin almuerzo</option>
               <option value="00:30:00">30 minutos</option>
               <option value="01:00:00">1 hora</option>
               <option value="01:30:00">1 hora 30 minutos</option>
@@ -743,7 +745,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
               </span>
             </label>
             <small style={{ color: "#666", fontSize: "0.8rem", marginTop: '5px', display: 'block' }}>
-              {formData.EsConductor 
+              {formData.EsConductor
                 ? 'Los desplazamientos se incluirán como tiempo de trabajo'
                 : 'Los desplazamientos se descontarán del tiempo trabajado'
               }
@@ -810,8 +812,8 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
         {/* 🆕 NUEVO: Información contextual según tipo seleccionado */}
         {tieneSeleccionValida() && (
           <div style={{
-            background: tipoDestino === 'curso' ? 
-              'linear-gradient(135deg, #8b5cf6, #7c3aed)' : 
+            background: tipoDestino === 'curso' ?
+              'linear-gradient(135deg, #8b5cf6, #7c3aed)' :
               'linear-gradient(135deg, #06b6d4, #0891b2)',
             color: 'white',
             padding: '12px 15px',
@@ -823,8 +825,8 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
               <div>
                 <strong>📚 REGISTRO DE CURSO:</strong>
                 <div style={{ marginTop: '4px', fontSize: '0.85rem' }}>
-                  • Se guardará como "CURSO-{formData.CursoId}" en el sistema<br/>
-                  • Las horas cuentan para las 44 horas semanales normales<br/>
+                  • Se guardará como "CURSO-{formData.CursoId}" en el sistema<br />
+                  • Las horas cuentan para las 44 horas semanales normales<br />
                   • Misma lógica de cálculo que centros de trabajo
                 </div>
               </div>
@@ -832,8 +834,8 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
               <div>
                 <strong>🏢 REGISTRO DE CENTRO:</strong>
                 <div style={{ marginTop: '4px', fontSize: '0.85rem' }}>
-                  • Se guardará con ID: "{formData.Centro_ID}"<br/>
-                  • Aplicación de lógica de 44 horas semanales<br/>
+                  • Se guardará con ID: "{formData.Centro_ID}"<br />
+                  • Aplicación de lógica de 44 horas semanales<br />
                   • Tiempo de almuerzo configurado: 1.5 horas
                 </div>
               </div>
@@ -841,9 +843,9 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           </div>
         )}
 
-        <button 
-          type="submit" 
-          disabled={loading || verificandoRegistros || !tieneSeleccionValida()} 
+        <button
+          type="submit"
+          disabled={loading || verificandoRegistros || !tieneSeleccionValida()}
           className="btn-submit"
           style={{
             backgroundColor: !tieneSeleccionValida() ? '#9ca3af' : undefined,
@@ -854,17 +856,17 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           {showDuplicateWarning && " (Registro Adicional)"}
           {formData.EsConductor ? " 🚛" : " 👷"}
         </button>
-        
+
         {!tieneSeleccionValida() && formData.Trabajador_ID > 0 && (
-          <small style={{ 
-            display: 'block', 
-            textAlign: 'center', 
-            color: '#ef4444', 
+          <small style={{
+            display: 'block',
+            textAlign: 'center',
+            color: '#ef4444',
             marginTop: '8px',
             fontWeight: '600'
           }}>
-            {tipoDestino === 'centro' ? 
-              'Seleccione un centro de trabajo' : 
+            {tipoDestino === 'centro' ?
+              'Seleccione un centro de trabajo' :
               'Seleccione un curso de capacitación'
             }
           </small>
