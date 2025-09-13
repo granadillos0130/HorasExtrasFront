@@ -2,6 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import type { Trabajador } from "../../types/trabajadores";
 import "../../styles/shared/TrabajadorBuscador.css";
+import { getImageUrl } from "../../utils/imageUtils";
 
 interface Props {
   trabajadores: Trabajador[];
@@ -29,7 +30,7 @@ const TrabajadorBuscador: React.FC<Props> = ({
   const [busqueda, setBusqueda] = useState<string>("");
   const [mostrarResultados, setMostrarResultados] = useState<boolean>(false);
   const [trabajadorSeleccionado, setTrabajadorSeleccionado] = useState<Trabajador | null>(null);
-  
+  const [imageErrors, setImageErrors] = useState<Set<number>>(new Set());
   // 🆕 REFS MEJORADAS CON CONTROL DE MONTAJE
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -46,11 +47,14 @@ const TrabajadorBuscador: React.FC<Props> = ({
       }
     };
   }, []);
+  const handleImageError = useCallback((trabajadorId: number) => {
+    setImageErrors(prev => new Set(prev).add(trabajadorId));
+  }, []);
 
   // 🆕 MEMOIZAR TRABAJADORES FILTRADOS PARA OPTIMIZAR PERFORMANCE
   const trabajadoresFiltrados = useMemo(() => {
     if (!busqueda.trim()) return [];
-    
+
     return trabajadores
       .filter(t =>
         t.nombre.toLowerCase().includes(busqueda.toLowerCase()) ||
@@ -82,9 +86,9 @@ const TrabajadorBuscador: React.FC<Props> = ({
       if (!isMountedRef.current) return;
 
       const target = event.target as Node;
-      
+
       if (
-        dropdownRef.current && 
+        dropdownRef.current &&
         !dropdownRef.current.contains(target) &&
         inputRef.current &&
         !inputRef.current.contains(target)
@@ -103,7 +107,7 @@ const TrabajadorBuscador: React.FC<Props> = ({
 
     const valor = e.target.value;
     setBusqueda(valor);
-    
+
     // Limpiar timeout anterior
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
@@ -113,7 +117,7 @@ const TrabajadorBuscador: React.FC<Props> = ({
     debounceTimeoutRef.current = setTimeout(() => {
       if (isMountedRef.current) {
         setMostrarResultados(valor.trim().length > 0);
-        
+
         // Si se borra todo, notificar que no hay selección
         if (!valor.trim()) {
           setTrabajadorSeleccionado(null);
@@ -136,7 +140,7 @@ const TrabajadorBuscador: React.FC<Props> = ({
   // 🆕 HANDLER DE FOCUS MEJORADO
   const handleFocus = useCallback(() => {
     if (!isMountedRef.current || disabled) return;
-    
+
     // Solo mostrar resultados si hay búsqueda o si hay trabajadores
     if (busqueda.trim() || trabajadores.length > 0) {
       setMostrarResultados(true);
@@ -151,7 +155,7 @@ const TrabajadorBuscador: React.FC<Props> = ({
     setTrabajadorSeleccionado(null);
     setMostrarResultados(false);
     onChange(0);
-    
+
     // Focus al input después de limpiar
     if (inputRef.current) {
       inputRef.current.focus();
@@ -170,8 +174,8 @@ const TrabajadorBuscador: React.FC<Props> = ({
 
   // 🆕 PREVENIR RE-RENDERS INNECESARIOS
   const containerClassName = useMemo(() => `trabajador-buscador ${className}`, [className]);
-  const inputClassName = useMemo(() => 
-    `form-input buscador-input ${trabajadorSeleccionado ? 'has-selection' : ''}`, 
+  const inputClassName = useMemo(() =>
+    `form-input buscador-input ${trabajadorSeleccionado ? 'has-selection' : ''}`,
     [trabajadorSeleccionado]
   );
 
@@ -184,7 +188,7 @@ const TrabajadorBuscador: React.FC<Props> = ({
             {required && <span className="required-asterisk">*</span>}
           </label>
         )}
-        
+
         <div className="buscador-container">
           <input
             ref={inputRef}
@@ -199,7 +203,7 @@ const TrabajadorBuscador: React.FC<Props> = ({
             autoComplete="off" // 🆕 Prevenir autocompletado del navegador
             spellCheck={false} // 🆕 Desactivar corrector ortográfico
           />
-          
+
           {trabajadorSeleccionado && !disabled && (
             <button
               type="button"
@@ -211,14 +215,14 @@ const TrabajadorBuscador: React.FC<Props> = ({
               ✕
             </button>
           )}
-          
+
           <div className="search-icon">
             👤
           </div>
-          
+
           {mostrarResultados && !disabled && (
-            <div 
-              ref={dropdownRef} 
+            <div
+              ref={dropdownRef}
               className="resultados-dropdown"
               role="listbox" // 🆕 Mejorar accesibilidad
               aria-label="Resultados de búsqueda"
@@ -235,8 +239,20 @@ const TrabajadorBuscador: React.FC<Props> = ({
                   >
                     <div className="resultado-content">
                       <div className="resultado-avatar">
-                        {getInitials(trabajador.nombre)}
+                        {trabajador.imagen_Url && !imageErrors.has(trabajador.id) ? (
+                          <img
+                            src={getImageUrl(trabajador.imagen_Url)}
+                            alt={trabajador.nombre}
+                            className="avatar-image"
+                            onError={() => handleImageError(trabajador.id)}
+                          />
+                        ) : (
+                          <span className="avatar-initials">
+                            {getInitials(trabajador.nombre)}
+                          </span>
+                        )}
                       </div>
+
                       <div className="resultado-info">
                         <div className="resultado-nombre">{trabajador.nombre}</div>
                         <div className="resultado-cedula">CC: {trabajador.cedula}</div>
@@ -246,7 +262,7 @@ const TrabajadorBuscador: React.FC<Props> = ({
                   </div>
                 ))
               ) : busqueda.trim() ? (
-                <div 
+                <div
                   className="resultado-item no-resultados"
                   role="option"
                   aria-selected={false}
@@ -257,7 +273,7 @@ const TrabajadorBuscador: React.FC<Props> = ({
                   </div>
                 </div>
               ) : (
-                <div 
+                <div
                   className="resultado-item no-resultados"
                   role="option"
                   aria-selected={false}
@@ -271,11 +287,22 @@ const TrabajadorBuscador: React.FC<Props> = ({
             </div>
           )}
         </div>
-        
+
         {showSelectedInfo && trabajadorSeleccionado && (
           <div className="selected-info">
             <div className="selected-avatar">
-              {getInitials(trabajadorSeleccionado.nombre)}
+              {trabajadorSeleccionado.imagen_Url && !imageErrors.has(trabajadorSeleccionado.id) ? (
+                <img
+                  src={getImageUrl(trabajadorSeleccionado.imagen_Url)}
+                  alt={trabajadorSeleccionado.nombre}
+                  className="avatar-image"
+                  onError={() => handleImageError(trabajadorSeleccionado.id)}
+                />
+              ) : (
+                <span className="avatar-initials">
+                  {getInitials(trabajadorSeleccionado.nombre)}
+                </span>
+              )}
             </div>
             <div className="selected-text">
               <strong>{trabajadorSeleccionado.nombre}</strong>
