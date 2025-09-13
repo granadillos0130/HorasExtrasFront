@@ -116,6 +116,28 @@ async obtenerManoObraTotalBatch(centroIds: string[]): Promise<{
     return api.post(`/centros/mano-obra-total/batch`, centroIds)
       .then(res => res.data);
   },
+  async cambiarEstado(centroId: string, estado: 'abierto' | 'cerrado'): Promise<{
+    mensaje: string;
+    centroId: string;
+    centroNombre: string;
+    estado: string;
+  }> {
+    return api.put(`/centros/${centroId}/cambiar-estado`, { estado })
+      .then(res => res.data);
+  },
 
+  // Obtener centros por estado
+  async obtenerPorEstado(estado: 'abierto' | 'cerrado'): Promise<{
+    id: string;
+    nombreCentro: string;
+    estado: string;
+    fechaInicio: string;
+    fechaFinal: string | null;
+    clienteId: string | null;
+    clienteNombre: string;
+  }[]> {
+    return api.get(`/centros/por-estado/${estado}`)
+      .then(res => res.data);
+  },
 
 };
