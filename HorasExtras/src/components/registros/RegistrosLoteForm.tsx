@@ -46,7 +46,9 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
     }
   ]);
 
-  const convertirATimeSpan = (valor: string): string => {
+  const convertirATimeSpan = (valor: string | null): string => {
+    if (!valor) return ""; // Manejar null o string vacío
+
     const parts = valor.trim().split(":");
     if (parts.length === 1 && /^\d+$/.test(parts[0])) {
       return `00:${parts[0].padStart(2, "0")}:00`;
@@ -65,14 +67,14 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
 
     for (let fecha = new Date(inicio); fecha <= fin; fecha.setDate(fecha.getDate() + 1)) {
       const diaSemana = fecha.getDay();
-      
+
       if (excluirDomingos && diaSemana === 0) continue;
       if (excluirSabados && diaSemana === 6) continue;
       if (excluirViernes && diaSemana === 5) continue;
-      
+
       fechas.push(fecha.toISOString().split("T")[0]);
     }
-    
+
     return fechas;
   };
 
@@ -254,7 +256,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
 
     const registrosNormalizados = registros.map(registro => ({
       ...registro,
-      Tiempo_Almuerzo: normalizarHora(registro.Tiempo_Almuerzo),
+      Tiempo_Almuerzo: normalizarHora(registro.Tiempo_Almuerzo || "01:00:00"), // Agregar || con valor por defecto
       desplazamientoIda: registro.desplazamientoIda?.trim()
         ? convertirATimeSpan(registro.desplazamientoIda)
         : undefined,
@@ -304,11 +306,11 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
           <h3>Crear Registros en Lote</h3>
           <p>Agrega múltiples registros de trabajo de una vez</p>
           {fechaInicial && (
-            <div style={{ 
-              background: 'linear-gradient(135deg, #43e97b, #38f9d7)', 
-              color: 'white', 
-              padding: '5px 10px', 
-              borderRadius: '6px', 
+            <div style={{
+              background: 'linear-gradient(135deg, #43e97b, #38f9d7)',
+              color: 'white',
+              padding: '5px 10px',
+              borderRadius: '6px',
               fontSize: '0.8rem',
               marginTop: '5px',
               display: 'inline-block'
@@ -469,10 +471,10 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
               </button>
             </div>
 
-            <div style={{ 
-              marginTop: '10px', 
-              padding: '10px', 
-              background: 'rgba(255,255,255,0.2)', 
+            <div style={{
+              marginTop: '10px',
+              padding: '10px',
+              background: 'rgba(255,255,255,0.2)',
               borderRadius: '6px',
               fontSize: '0.85rem'
             }}>
@@ -580,7 +582,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                   <div className="form-group">
                     <label className="form-label">Tiempo Almuerzo *</label>
                     <select
-                      value={registro.Tiempo_Almuerzo}
+                      value={registro.Tiempo_Almuerzo || ""}
                       onChange={(e) => actualizarRegistro(index, "Tiempo_Almuerzo", e.target.value)}
                       className="form-select"
                       required
@@ -609,7 +611,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                       </span>
                     </label>
                     <small style={{ color: "#666", fontSize: "0.8rem", marginTop: '5px', display: 'block' }}>
-                      {registro.EsConductor 
+                      {registro.EsConductor
                         ? 'Los desplazamientos se incluirán como tiempo de trabajo'
                         : 'Los desplazamientos se descontarán del tiempo trabajado'
                       }
@@ -650,7 +652,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                   <p
                     style={{ margin: "5px 0 0 0", fontSize: "0.9rem", color: "#888" }}
                   >
-                    {registro.EsConductor 
+                    {registro.EsConductor
                       ? 'Como es conductor, estos tiempos se INCLUYEN en el cálculo'
                       : 'Como NO es conductor, estos tiempos se DESCUENTAN del trabajo'
                     }
@@ -759,8 +761,8 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
               <span className="summary-text">
                 <strong>Exclusiones:</strong>{" "}
                 {excluirSabados && excluirDomingos ? "Sáb. y Dom." :
-                 excluirSabados ? "Sábados" :
-                 excluirDomingos ? "Domingos" : "Ninguna"}
+                  excluirSabados ? "Sábados" :
+                    excluirDomingos ? "Domingos" : "Ninguna"}
               </span>
             </div>
           </>
