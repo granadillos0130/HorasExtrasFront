@@ -1,5 +1,5 @@
 import { api } from "./api";
-import type { Centro, CentroPorMesCompleto, EstadisticasMes, TipoHora, TrabajadoresPorTipoHora } from "../types/centros";
+import type { Centro, CentroPorEstado, CentroPorMesCompleto, EstadisticasMes, TipoHora, TrabajadoresPorTipoHora } from "../types/centros";
 
 export const centrosService = {
   async getAll(): Promise<Centro[]> {
@@ -30,18 +30,18 @@ export const centrosService = {
   getEstadisticas(params: { centroId?: string; nombre?: string }): Promise<any> {
     return api.get(`/centros/estadisticas`, { params }).then(res => res.data);
   },
-   obtenerPorCliente(clienteId: string): Promise<Centro[]> {
+  obtenerPorCliente(clienteId: string): Promise<Centro[]> {
     return api.get(`/centros/por-cliente/${clienteId}`).then(res => res.data);
   },
-   crearLote(data: Centro[]): Promise<void> {
+  crearLote(data: Centro[]): Promise<void> {
     return api.post("/centros/lote", data);
   },
-   // Nuevo método para obtener centros por mes
+  // Nuevo método para obtener centros por mes
   obtenerPorMes(anio: number, mes: number): Promise<CentroPorMesCompleto[]> {
-  return api.get(`/centros/por-mes`, { 
-    params: { anio, mes } 
-  }).then(res => res.data);
-},
+    return api.get(`/centros/por-mes`, {
+      params: { anio, mes }
+    }).then(res => res.data);
+  },
   obtenerManoObraTotal(centroId: string): Promise<{ centroId: string; manoObraTotal: number }> {
     return api.get(`/centros/${centroId}/mano-obra-total`).then(res => res.data);
   },
@@ -71,7 +71,7 @@ export const centrosService = {
   }> {
     return api.get(`/centros/${centroId}/trabajadores/${trabajadorId}/detalle-dias`).then(res => res.data);
   },
-  
+
   obtenerMesesConActividad(centroId: string, anio: number): Promise<{
     mes: number;
     nombreMes: string;
@@ -83,30 +83,30 @@ export const centrosService = {
     fechaPrimerRegistro: string;
     fechaUltimoRegistro: string;
   }[]> {
-    return api.get(`/centros/${centroId}/meses-actividad`, { 
-      params: { anio } 
+    return api.get(`/centros/${centroId}/meses-actividad`, {
+      params: { anio }
     }).then(res => res.data);
   },
-  
-// Obtener estadísticas detalladas del mes
-obtenerEstadisticasMes(centroId: string, mes: number, anio: number): Promise<EstadisticasMes> {
-  return api.get(`/centros/${centroId}/estadisticas-mes`, { 
-    params: { mes, anio } 
-  }).then(res => res.data);
-},
 
-// Obtener trabajadores por tipo de hora específico
-obtenerTrabajadoresPorTipoHora(
-  centroId: string, 
-  mes: number, 
-  anio: number, 
-  tipoHora: TipoHora
-): Promise<TrabajadoresPorTipoHora> {
-  return api.get(`/centros/${centroId}/trabajadores-por-tipo-hora`, { 
-    params: { mes, anio, tipoHora } 
-  }).then(res => res.data);
-},
-async obtenerManoObraTotalBatch(centroIds: string[]): Promise<{
+  // Obtener estadísticas detalladas del mes
+  obtenerEstadisticasMes(centroId: string, mes: number, anio: number): Promise<EstadisticasMes> {
+    return api.get(`/centros/${centroId}/estadisticas-mes`, {
+      params: { mes, anio }
+    }).then(res => res.data);
+  },
+
+  // Obtener trabajadores por tipo de hora específico
+  obtenerTrabajadoresPorTipoHora(
+    centroId: string,
+    mes: number,
+    anio: number,
+    tipoHora: TipoHora
+  ): Promise<TrabajadoresPorTipoHora> {
+    return api.get(`/centros/${centroId}/trabajadores-por-tipo-hora`, {
+      params: { mes, anio, tipoHora }
+    }).then(res => res.data);
+  },
+  async obtenerManoObraTotalBatch(centroIds: string[]): Promise<{
     centroId: string;
     manoObraTotal: number;
     success: boolean;
@@ -127,17 +127,11 @@ async obtenerManoObraTotalBatch(centroIds: string[]): Promise<{
   },
 
   // Obtener centros por estado
-  async obtenerPorEstado(estado: 'abierto' | 'cerrado'): Promise<{
-    id: string;
-    nombreCentro: string;
-    estado: string;
-    fechaInicio: string;
-    fechaFinal: string | null;
-    clienteId: string | null;
-    clienteNombre: string;
-  }[]> {
-    return api.get(`/centros/por-estado/${estado}`)
-      .then(res => res.data);
-  },
+  // Reemplaza tu método obtenerPorEstado actual con este:
+
+  async obtenerPorEstado(estado: 'abierto' | 'cerrado'): Promise<CentroPorEstado[]> {
+  return api.get(`/centros/por-estado/${estado}`)
+    .then(res => res.data);
+},
 
 };

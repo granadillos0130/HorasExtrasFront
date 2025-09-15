@@ -226,3 +226,37 @@ export const TIPOS_HORAS_CONFIG: Record<TipoHora, ConfigTipoHora> = {
     descripcion: 'Horas trabajadas domingos de noche (x2.1)'
   }
 };
+// Agregar este tipo a tu archivo types/centros.ts
+
+export interface CentroPorEstado {
+  centroId: string;
+  centroNombre: string;
+  estado: string;
+  fechaInicio: string;
+  fechaFinal: string | null;
+  clienteId: string | null;
+  clienteNombre: string;
+  // Nuevos campos que devuelve el endpoint mejorado
+  manoObraTotal: number;
+  cargosUnicos: string[];
+  cliente: {
+    id: string;
+    nombre: string;
+  } | null;
+  tipo: string | null;
+  valorOrden: number | null;
+  fechaFactura: string | null;
+  interventor: string | null;
+  vendedor: string | null;
+  trabajadores: {
+    trabajadorId: number;
+    nombre: string;
+    cargo: string;
+    totalHoras: number;
+    horasNormales: number;
+    extrasDiurnas: number;
+    extrasNocturnas: number;
+    extrasDominicalesDiurnas: number;
+    extrasDominicalesNocturnas: number;
+  }[];
+}

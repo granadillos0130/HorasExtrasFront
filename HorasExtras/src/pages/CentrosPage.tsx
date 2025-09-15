@@ -4,7 +4,7 @@ import { clientesService } from "../api/clientesService";
 import CentroForm from "../components/centros/CentroForm";
 import CentroBuscador from "../components/shared/CentroBuscador";
 import InformacionEjecucionPage from "./InformacionEjecucionPage";
-import type { Centro, EstadisticaTrabajador, CentroPorMesCompleto } from "../types/centros";
+import type { Centro, EstadisticaTrabajador, CentroPorMesCompleto, CentroPorEstado } from "../types/centros";
 import type { Cliente } from "../types/cliente";
 
 const CentrosPage: React.FC = () => {
@@ -41,15 +41,7 @@ const CentrosPage: React.FC = () => {
   });
   // Estados para filtros por estado
   const [estadoFiltro, setEstadoFiltro] = useState<'todos' | 'abierto' | 'cerrado'>('todos');
-  const [centrosPorEstado, setCentrosPorEstado] = useState<{
-    id: string;
-    nombreCentro: string;
-    estado: string;
-    fechaInicio: string;
-    fechaFinal: string | null;
-    clienteId: string | null;
-    clienteNombre: string;
-  }[]>([]);
+  const [centrosPorEstado, setCentrosPorEstado] = useState<CentroPorEstado[]>([]);
   const [loadingEstado, setLoadingEstado] = useState(false);
   const meses = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
@@ -83,66 +75,78 @@ const CentrosPage: React.FC = () => {
     }
   }, []);
   // ✅ AGREGAR ESTA FUNCIÓN COMPLETA:
-  const handleSeleccionarCentroEstado = async (centroId: string, nombreCentro: string) => {
-    try {
-      setLoading(true);
+  const handleSeleccionarCentroEstado = async (centroId: string) => {
+  try {
+    setLoading(true);
 
-      const centroData = await centrosService.getById(centroId);
-      setCentroEncontrado(centroData);
-
-      const estadisticas = await centrosService.getEstadisticas({ centroId: centroId });
-
-      let manoObraTotal = 0;
-      try {
-        const resultadoBatch = await centrosService.obtenerManoObraTotalBatch([centroId]);
-        if (resultadoBatch.length > 0 && resultadoBatch[0].success) {
-          manoObraTotal = resultadoBatch[0].manoObraTotal;
-        }
-      } catch (error) {
-        console.warn("No se pudo cargar la mano de obra total:", error);
-      }
-
-      if (estadisticas && estadisticas.trabajadores) {
-        const centroCompleto: CentroPorMesCompleto = {
-          centroId: centroId,
-          centroNombre: nombreCentro,
-          fechaInicio: centroData.fechaInicio, // ✅ Usar centroData
-          fechaFinal: centroData.fechaFinal,
-          manoObraTotal,
-          cargosUnicos: [],
-          trabajadores: estadisticas.trabajadores.map((t: EstadisticaTrabajador) => ({
-            trabajadorId: t.trabajadorId,
-            nombre: t.nombreTrabajador,
-            totalHoras: t.totalHoras,
-            horasNormales: t.horasNormales,
-            extrasDiurnas: t.horasExtrasDiurnas,
-            extrasNocturnas: t.horasExtrasNocturnas,
-            cargo: 'No especificado'
-          }))
-        };
-        setCentroEstadoSeleccionado(centroCompleto);
-      } else {
-        const centroBasico: CentroPorMesCompleto = {
-          centroId: centroId,
-          centroNombre: nombreCentro,
-          fechaInicio: centroData.fechaInicio, // ✅ Usar centroData
-          fechaFinal: centroData.fechaFinal,
-          manoObraTotal,
-          cargosUnicos: [],
-          trabajadores: []
-        };
-        setCentroEstadoSeleccionado(centroBasico);
-      }
-
-      await cargarDatosCompletosCentro(centroData, estadisticas); // ✅ Usar centroData      setModalEstado('info');
-
-    } catch (error) {
-      console.error("Error al cargar centro desde vista por estado:", error);
-      alert("Error al cargar los datos del centro");
-    } finally {
-      setLoading(false);
+    // Buscar el centro completo en los datos ya cargados
+    const centroCompleto = centrosPorEstado.find(c => c.centroId === centroId);
+    
+    if (!centroCompleto) {
+      alert("Error: No se encontraron los datos completos del centro");
+      return;
     }
-  };
+
+    // Crear el objeto de centro encontrado usando los datos completos
+    const centroData: Centro = {
+  id: centroCompleto.centroId,
+  nombreCentro: centroCompleto.centroNombre,
+  fechaInicio: centroCompleto.fechaInicio,
+  fechaFinal: centroCompleto.fechaFinal,
+  clienteId: centroCompleto.clienteId || "", // ✅ Mantener fallback para null
+  estado: centroCompleto.estado, // 🔄 CAMBIO: Mantener como string, no convertir a boolean
+  tipo: centroCompleto.tipo ?? undefined, // 🔄 CAMBIO: Convertir null a undefined
+  valorOrden: centroCompleto.valorOrden ?? undefined, // 🔄 CAMBIO: Convertir null a undefined
+  fechaFactura: centroCompleto.fechaFactura ?? undefined, // 🔄 CAMBIO: Convertir null a undefined
+  interventor: centroCompleto.interventor ?? undefined, // 🔄 CAMBIO: Convertir null a undefined
+  vendedor: centroCompleto.vendedor ?? undefined // 🔄 CAMBIO: Convertir null a undefined
+};
+    
+    setCentroEncontrado(centroData);
+
+    // Crear el centro completo para el modal usando los datos que ya tienes
+    const centroParaModal: CentroPorMesCompleto = {
+      centroId: centroCompleto.centroId,
+      centroNombre: centroCompleto.centroNombre,
+      fechaInicio: centroCompleto.fechaInicio,
+      fechaFinal: centroCompleto.fechaFinal,
+      manoObraTotal: centroCompleto.manoObraTotal || 0,
+      cargosUnicos: centroCompleto.cargosUnicos || [],
+      trabajadores: (centroCompleto.trabajadores || []).map(t => ({
+        trabajadorId: t.trabajadorId,
+        nombre: t.nombre,
+        totalHoras: t.totalHoras,
+        horasNormales: t.horasNormales,
+        extrasDiurnas: t.extrasDiurnas,
+        extrasNocturnas: t.extrasNocturnas,
+        extrasDominicalesDiurnas: t.extrasDominicalesDiurnas || 0,
+        extrasDominicalesNocturnas: t.extrasDominicalesNocturnas || 0,
+        cargo: t.cargo
+      })),
+      cliente: centroCompleto.cliente || undefined // 🔄 Cambiar null por undefined
+    };
+
+    setCentroEstadoSeleccionado(centroParaModal);
+
+    // Establecer los datos completos directamente (sin llamadas HTTP adicionales)
+    setDatosCompletos({
+      cliente: centroCompleto.cliente ? {
+        id: centroCompleto.cliente.id,
+        nombreCliente: centroCompleto.cliente.nombre
+      } : null,
+      manoObraTotal: centroCompleto.manoObraTotal || 0,
+      cargosUnicos: centroCompleto.cargosUnicos || ['Trabajador General']
+    });
+
+    setModalEstado('info');
+
+  } catch (error) {
+    console.error("Error al cargar centro desde vista por estado:", error);
+    alert("Error al cargar los datos del centro");
+  } finally {
+    setLoading(false);
+  }
+};
   // Función para cambiar estado de un centro
   const handleCambiarEstado = async (centroId: string, nuevoEstado: 'abierto' | 'cerrado', nombreCentro: string) => {
     const estadoActual = nuevoEstado === 'abierto' ? 'cerrado' : 'abierto';
@@ -1002,7 +1006,7 @@ const CentrosPage: React.FC = () => {
                   gap: '20px'
                 }}>
                   {centrosPorEstado.map((centro) => (
-                    <div key={centro.id} style={{
+                    <div key={centro.centroId} style={{
                       background: 'linear-gradient(135deg, #f8fafb, #ffffff)',
                       padding: '25px',
                       borderRadius: '15px',
@@ -1037,14 +1041,14 @@ const CentrosPage: React.FC = () => {
                             fontWeight: '700',
                             color: '#333'
                           }}>
-                            {centro.nombreCentro}
+                            {centro.centroNombre}
                           </h3>
                           <p style={{
                             margin: '0 0 5px 0',
                             color: '#666',
                             fontSize: '0.9rem'
                           }}>
-                            ID: {centro.id}
+                            ID: {centro.centroId}
                           </p>
                           <span style={{
                             background: centro.estado === 'Abierto' ? '#dcfce7' : '#fee2e2',
@@ -1095,7 +1099,7 @@ const CentrosPage: React.FC = () => {
                         flexWrap: 'wrap'
                       }}>
                         <button
-                          onClick={() => handleSeleccionarCentroEstado(centro.id, centro.nombreCentro)}
+                          onClick={() => handleSeleccionarCentroEstado(centro.centroId)}
                           style={{
                             flex: 1,
                             minWidth: '120px',
@@ -1115,7 +1119,7 @@ const CentrosPage: React.FC = () => {
                         {/* Botón Ver Cargos */}
                         <button
                           onClick={() => {
-                            handleSeleccionarCentroEstado(centro.id, centro.nombreCentro);
+                            handleSeleccionarCentroEstado(centro.centroId);
                             setModalEstado('cargos');
                           }}
                           style={{
@@ -1138,8 +1142,8 @@ const CentrosPage: React.FC = () => {
                         <button
                           onClick={() => {
                             setCentroSeleccionado({
-                              centroId: centro.id,
-                              centroNombre: centro.nombreCentro,
+                              centroId: centro.centroId,
+                              centroNombre: centro.centroNombre,
                               fechaInicio: centro.fechaInicio,
                               fechaFinal: centro.fechaFinal,
                               manoObraTotal: 0,
@@ -1166,7 +1170,7 @@ const CentrosPage: React.FC = () => {
 
                         {/* Botón Editar */}
                         <button
-                          onClick={() => handleEditarCentro(centro.id)}
+                          onClick={() => handleEditarCentro(centro.centroId)}
                           style={{
                             flex: 1,
                             minWidth: '120px',
@@ -1186,9 +1190,9 @@ const CentrosPage: React.FC = () => {
                         {/* Botón Cambiar Estado (ya existente) */}
                         <button
                           onClick={() => handleCambiarEstado(
-                            centro.id,
+                            centro.centroId,
                             centro.estado === 'Abierto' ? 'cerrado' : 'abierto',
-                            centro.nombreCentro
+                            centro.centroNombre
                           )}
                           style={{
                             flex: 1,
