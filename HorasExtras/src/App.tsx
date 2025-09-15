@@ -27,7 +27,7 @@ import { CursosPage } from "./pages/CursosPage";
 // CACHE MANAGER
 const useCacheManager = () => {
   useEffect(() => {
-    const CURRENT_VERSION = '2025-09-03-v4'; // Cambia esto con cada versión nueva
+    const CURRENT_VERSION = '2025-09-15-v5'; // Cambia esto con cada versión nueva
     const lastVersion = localStorage.getItem('app_version');
     
     if (lastVersion !== CURRENT_VERSION) {
