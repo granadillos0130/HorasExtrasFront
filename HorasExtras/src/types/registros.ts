@@ -34,6 +34,62 @@ export interface RegistroInputDto {
   // Otros campos
   AnalistaId?: number;
 }
+ interface RespuestaIntensidadHoraria {
+  success: boolean;
+  tipoVista: string;
+  trabajadorUsaBanco: boolean;
+  valoresMostrados: string;
+  data: Registro[];
+  total: number;
+  informacionAdicional?: {
+    semanaEspecifica?: {
+      inicioSemana: string;
+      horasBase: number;
+      horasTrabajadas: number;
+      excesoDeficit: number;
+      estado: string;
+    };
+    contextoBanco?: {
+      totalHorasSegunExcel: number;
+      horasNormalesSegunExcel: number;
+      horasExtrasSegunExcel: number;
+      horasSobrantes: number;
+      horasFaltantes: number;
+      mensaje: string;
+    };
+    bancoHoras?: {
+      historial: Array<{
+        semana: number;
+        fechaInicio: string;
+        horasBase: number;
+        horasTrabajadas: number;
+        excesoDeficit: number;
+      }>;
+      resumen: {
+        saldoTotal: number;
+      };
+    };
+    // NUEVAS PROPIEDADES AÑADIDAS
+    desgloseSemanas?: Array<{
+      semana: string;
+      horasTrabajadas: number;
+      horasBase: number;
+      balance: number;
+      estado: string;
+    }>;
+    resumenPeriodo?: {
+      balanceTotal: number;
+      estadoTotal: string;
+      mensaje: string;
+    };
+  };
+  filtros: {
+    trabajadorId: number;
+    fechaInicio: string;
+    fechaFin: string;
+    diasEnRango: number;
+  };
+}
 
 export interface RegistroActualizacionDto {
   Id: number; // ID del registro a actualizar
@@ -564,4 +620,7 @@ export interface DiagnosticoValoresHistoricos {
 // ===============================
 // RE-EXPORTAR CURSO PARA COMPATIBILIDAD
 // ===============================
-export type { Curso };
+// ===============================
+// RE-EXPORTAR CURSO PARA COMPATIBILIDAD
+// ===============================
+export type { Curso, RespuestaIntensidadHoraria };

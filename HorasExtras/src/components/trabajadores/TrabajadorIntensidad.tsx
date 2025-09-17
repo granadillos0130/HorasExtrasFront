@@ -5,7 +5,7 @@ import { saveAs } from "file-saver";
 import { registrosService } from "../../api/registrosService";
 import { trabajadoresService } from "../../api/trabajadoresService";
 import TrabajadorBuscador from "../shared/TrabajadorBuscador";
-import type { Registro } from "../../types/registros";
+import type { Registro, RespuestaIntensidadHoraria } from "../../types/registros";
 import type { Trabajador } from "../../types/trabajadores";
 import "../../styles/components/trabajador/TrabajadorIntensidad.css";
 
@@ -36,27 +36,23 @@ const getCurrentWeekRange = () => {
   };
 };
 
-// ✅ NUEVA FUNCIÓN HELPER para fechas seguras
+// FUNCIÓN HELPER para fechas seguras
 const formatFechaSafe = (fechaStr: string | null | undefined, options?: Intl.DateTimeFormatOptions): string => {
   if (!fechaStr) return 'N/A';
-  
-  // ✅ Agregar T00:00:00 para evitar problemas de zona horaria
   const fecha = new Date(fechaStr + 'T00:00:00');
-  
   const defaultOptions: Intl.DateTimeFormatOptions = {
     day: '2-digit',
     month: '2-digit',
     year: '2-digit'
   };
-  
   return fecha.toLocaleDateString('es-CO', options || defaultOptions);
 };
 
 const TrabajadorIntensidad: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  
-  // Estados
+
+  // Estados principales
   const [registros, setRegistros] = useState<Registro[]>([]);
   const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
   const [trabajadorSeleccionado, setTrabajadorSeleccionado] = useState<number>(0);
@@ -64,6 +60,14 @@ const TrabajadorIntensidad: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadingRegistros, setLoadingRegistros] = useState(false);
   const [error, setError] = useState("");
+
+  // Estado para metadatos de vista (DENTRO del componente)
+  const [metadatosVista, setMetadatosVista] = useState<{
+    tipoVista: string;
+    trabajadorUsaBanco: boolean;
+    valoresMostrados: string;
+    informacionAdicional?: RespuestaIntensidadHoraria['informacionAdicional'];
+  } | null>(null);
 
   // Filtros de fecha
   const currentWeek = getCurrentWeekRange();
@@ -78,7 +82,7 @@ const TrabajadorIntensidad: React.FC = () => {
         setLoading(true);
         const data = await trabajadoresService.getAll();
         setTrabajadores(data);
-        
+
         if (id) {
           const trabajadorId = Number(id);
           setTrabajadorSeleccionado(trabajadorId);
@@ -88,9 +92,9 @@ const TrabajadorIntensidad: React.FC = () => {
             await cargarRegistros(trabajadorId, fechaInicio, fechaFin);
           }
         }
-      } catch (error) {
+      } catch (err) {
         setError("Error cargando trabajadores.");
-        console.error("Error:", error);
+        console.error("Error:", err);
       } finally {
         setLoading(false);
       }
@@ -106,23 +110,78 @@ const TrabajadorIntensidad: React.FC = () => {
     }
   }, [fechaInicio, fechaFin, trabajadorSeleccionado]);
 
+  // Función para cargar registros (CORREGIDA)
   const cargarRegistros = async (trabajadorId: number, inicio: string, fin: string) => {
     try {
       setLoadingRegistros(true);
       setError("");
-      const data = await registrosService.buscarPorTrabajadorRangoFechas(
+
+      // El servicio ahora retorna la respuesta completa
+      const response = await registrosService.buscarPorTrabajadorRangoFechas(
         trabajadorId,
         inicio,
         fin
-      );
-      setRegistros(data);
-    } catch (error) {
+      ) as RespuestaIntensidadHoraria;
+
+      // Extraer los registros
+      setRegistros(response.data || []);
+
+      // Guardar metadatos de vista si existen
+      if (response.tipoVista) {
+        setMetadatosVista({
+          tipoVista: response.tipoVista,
+          trabajadorUsaBanco: response.trabajadorUsaBanco,
+          valoresMostrados: response.valoresMostrados,
+          informacionAdicional: response.informacionAdicional
+        });
+      } else {
+        // Fallback si la respuesta no tiene metadatos (respuesta antigua)
+        setMetadatosVista(null);
+      }
+
+    } catch (err) {
+      console.error('Error cargando registros:', err);
       setError("Error cargando la intensidad horaria.");
       setRegistros([]);
+      setMetadatosVista(null);
     } finally {
       setLoadingRegistros(false);
     }
   };
+
+  // Función para obtener información del banco de horas (CORREGIDA con nombres correctos)
+  const getBancoHorasInfo = () => {
+  if (!metadatosVista?.informacionAdicional) return null;
+
+  if (metadatosVista.tipoVista === "Semanal" && metadatosVista.informacionAdicional.semanaEspecifica) {
+    const semana = metadatosVista.informacionAdicional.semanaEspecifica;
+    const contexto = metadatosVista.informacionAdicional.contextoBanco;
+
+    return {
+      tipo: "semanal" as const,
+      horasBase: semana.horasBase,
+      horasTrabajadas: semana.horasTrabajadas,
+      excesoDeficit: semana.excesoDeficit,
+      estado: semana.estado,
+      totalSegunExcel: contexto?.totalHorasSegunExcel || 0,
+      horasSobrantes: contexto?.horasSobrantes || 0,
+      horasFaltantes: contexto?.horasFaltantes || 0,
+      mensaje: contexto?.mensaje || ''
+    };
+  }
+
+  if (metadatosVista.tipoVista === "Mensual" && metadatosVista.informacionAdicional.bancoHoras) {
+    return {
+      tipo: "mensual" as const,
+      bancoHoras: metadatosVista.informacionAdicional.bancoHoras,
+      // Añadir las nuevas propiedades
+      desgloseSemanas: metadatosVista.informacionAdicional.desgloseSemanas,
+      resumenPeriodo: metadatosVista.informacionAdicional.resumenPeriodo
+    };
+  }
+
+  return null;
+};
 
   const exportarExcel = async () => {
     if (!trabajadorActual || registros.length === 0) return;
@@ -138,38 +197,18 @@ const TrabajadorIntensidad: React.FC = () => {
 
     // Configurar ancho de columnas
     worksheet.columns = [
-      { width: 12 }, // Fecha
-      { width: 10 }, // Día
-      { width: 25 }, // Centro (aumentado para nombres completos)
-      { width: 10 }, // Ingreso
-      { width: 10 }, // Salida
-      { width: 10 }, // Almuerzo
-      { width: 12 }, // H. Normales
-      { width: 12 }, // Ex. Diurnas
-      { width: 12 }, // Ex. Nocturnas
-      { width: 12 }, // Dom. Diurnas
-      { width: 12 }, // Dom. Nocturnas
-      { width: 12 }, // Total
+      { width: 12 }, { width: 10 }, { width: 25 }, { width: 10 }, { width: 10 },
+      { width: 10 }, { width: 12 }, { width: 12 }, { width: 12 }, { width: 12 },
+      { width: 12 }, { width: 12 },
     ];
 
     // Agregar título principal
     worksheet.mergeCells('A1:L1');
     const titleCell = worksheet.getCell('A1');
-    titleCell.value = '⏰ INTENSIDAD HORARIA DEL TRABAJADOR';
-    titleCell.font = { 
-      size: 18, 
-      bold: true, 
-      color: { argb: 'FFFFFFFF' } 
-    };
-    titleCell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: 'FF228B22' },
-    };
-    titleCell.alignment = { 
-      horizontal: 'center', 
-      vertical: 'middle' 
-    };
+    titleCell.value = 'INTENSIDAD HORARIA DEL TRABAJADOR';
+    titleCell.font = { size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
+    titleCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF228B22' } };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
     titleCell.border = {
       top: { style: 'thick', color: { argb: 'FF32CD32' } },
       bottom: { style: 'thick', color: { argb: 'FF32CD32' } },
@@ -181,21 +220,13 @@ const TrabajadorIntensidad: React.FC = () => {
     worksheet.mergeCells('A3:L3');
     const trabajadorCell = worksheet.getCell('A3');
     trabajadorCell.value = `Trabajador: ${trabajadorActual.nombre} | CC: ${trabajadorActual.cedula} | ID: ${trabajadorActual.id}`;
-    trabajadorCell.font = { 
-      size: 14, 
-      bold: true, 
-      color: { argb: 'FF228B22' } 
-    };
+    trabajadorCell.font = { size: 14, bold: true, color: { argb: 'FF228B22' } };
     trabajadorCell.alignment = { horizontal: 'center' };
 
     worksheet.mergeCells('A4:L4');
     const periodoCell = worksheet.getCell('A4');
     periodoCell.value = `Período: ${formatFechaLegible(fechaInicio)} - ${formatFechaLegible(fechaFin)} | Total registros: ${registros.length}`;
-    periodoCell.font = { 
-      size: 12, 
-      italic: true, 
-      color: { argb: 'FF666666' } 
-    };
+    periodoCell.font = { size: 12, italic: true, color: { argb: 'FF666666' } };
     periodoCell.alignment = { horizontal: 'center' };
 
     // Agregar centros visitados
@@ -204,27 +235,17 @@ const TrabajadorIntensidad: React.FC = () => {
       worksheet.mergeCells('A5:L5');
       const centrosCell = worksheet.getCell('A5');
       centrosCell.value = `Centros visitados: ${centrosVisitados.join(', ')}`;
-      centrosCell.font = { 
-        size: 11, 
-        color: { argb: 'FF4A5568' } 
-      };
+      centrosCell.font = { size: 11, color: { argb: 'FF4A5568' } };
       centrosCell.alignment = { horizontal: 'center' };
     }
 
     // Agregar fecha de generación
     worksheet.mergeCells('A6:L6');
     const fechaCell = worksheet.getCell('A6');
-    fechaCell.value = `Generado el: ${new Date().toLocaleDateString('es-ES', { 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    fechaCell.value = `Generado el: ${new Date().toLocaleDateString('es-ES', {
+      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
     })}`;
-    fechaCell.font = { 
-      size: 10, 
-      color: { argb: 'FF666666' } 
-    };
+    fechaCell.font = { size: 10, color: { argb: 'FF666666' } };
     fechaCell.alignment = { horizontal: 'center' };
 
     // Espacio antes de la tabla
@@ -232,18 +253,9 @@ const TrabajadorIntensidad: React.FC = () => {
 
     // Encabezados de la tabla
     const headers = [
-      "Fecha",
-      "Día",
-      "Centro",
-      "Ingreso",
-      "Salida",
-      "Almuerzo",
-      "H. Normales",
-      "Ex. Diurnas",
-      "Ex. Nocturnas",
-      "Dom. Diurnas",
-      "Dom. Nocturnas",
-      "Total Horas",
+      "Fecha", "Día", "Centro", "Ingreso", "Salida", "Almuerzo",
+      "H. Normales", "Ex. Diurnas", "Ex. Nocturnas",
+      "Dom. Diurnas", "Dom. Nocturnas", "Total Horas",
     ];
 
     // Agregar encabezados
@@ -253,20 +265,9 @@ const TrabajadorIntensidad: React.FC = () => {
     const headerRow = worksheet.getRow(startRow);
     headerRow.height = 25;
     headerRow.eachCell((cell) => {
-      cell.font = { 
-        bold: true, 
-        color: { argb: 'FFFFFFFF' },
-        size: 12
-      };
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF32CD32' },
-      };
-      cell.alignment = { 
-        horizontal: 'center', 
-        vertical: 'middle' 
-      };
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF32CD32' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
       cell.border = {
         top: { style: 'medium', color: { argb: 'FF228B22' } },
         bottom: { style: 'medium', color: { argb: 'FF228B22' } },
@@ -280,7 +281,7 @@ const TrabajadorIntensidad: React.FC = () => {
       const rowData = [
         formatFechaSafe(registro.fecha, { day: '2-digit', month: '2-digit', year: 'numeric' }),
         registro.diaSemana?.substring(0, 3) || 'N/A',
-        registro.nombreCentro || 'Sin centro', // Nombre completo del centro
+        registro.nombreCentro || 'Sin centro',
         registro.horaIngreso || 'N/A',
         registro.horaSalida || 'N/A',
         registro.tiempoAlmuerzo || 'N/A',
@@ -291,49 +292,36 @@ const TrabajadorIntensidad: React.FC = () => {
         registro.extrasDominicalesNocturnas || 0,
         registro.totalHoras || 0,
       ];
-      
+
       const currentRow = startRow + 1 + index;
       worksheet.insertRow(currentRow, rowData);
-      
+
       // Estilo para filas de datos
       const dataRow = worksheet.getRow(currentRow);
       dataRow.height = 20;
-      
+
       dataRow.eachCell((cell, colNumber) => {
-        cell.alignment = { 
-          horizontal: colNumber <= 3 ? 'left' : 'center', 
-          vertical: 'middle' 
-        };
+        cell.alignment = { horizontal: colNumber <= 3 ? 'left' : 'center', vertical: 'middle' };
         cell.border = {
           top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
           bottom: { style: 'thin', color: { argb: 'FFCCCCCC' } },
           left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
           right: { style: 'thin', color: { argb: 'FFCCCCCC' } },
         };
-        
+
         // Colores alternos para las filas
         if (index % 2 === 0) {
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFF8FFF8' },
-          };
+          cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF8FFF8' } };
         }
-        
+
         // Formato para números (horas)
         if (colNumber > 6) {
-          cell.font = { 
-            size: 11,
-            color: { argb: 'FF333333' }
-          };
+          cell.font = { size: 11, color: { argb: 'FF333333' } };
           if (typeof cell.value === 'number' && cell.value > 0) {
             cell.numFmt = '#,##0.00';
           }
         } else {
-          cell.font = { 
-            size: 11,
-            color: { argb: 'FF333333' }
-          };
+          cell.font = { size: 11, color: { argb: 'FF333333' } };
         }
       });
     });
@@ -344,45 +332,25 @@ const TrabajadorIntensidad: React.FC = () => {
     // Agregar fila de totales
     const totalRow = startRow + 1 + registros.length;
     const totales = [
-      'TOTALES',
-      '',
-      '',
-      '',
-      '',
-      '',
-      resumen.normales,
-      resumen.extrasDiurnas,
-      resumen.extrasNocturnas,
-      resumen.domDiurnas,
-      resumen.domNocturnas,
-      resumen.total,
+      'TOTALES', '', '', '', '', '',
+      resumen.normales, resumen.extrasDiurnas, resumen.extrasNocturnas,
+      resumen.domDiurnas, resumen.domNocturnas, resumen.total,
     ];
-    
+
     worksheet.insertRow(totalRow, totales);
     const totalRowObj = worksheet.getRow(totalRow);
     totalRowObj.height = 25;
     totalRowObj.eachCell((cell, colNumber) => {
-      cell.font = { 
-        bold: true, 
-        color: { argb: 'FFFFFFFF' },
-        size: 12
-      };
-      cell.fill = {
-        type: 'pattern',
-        pattern: 'solid',
-        fgColor: { argb: 'FF228B22' },
-      };
-      cell.alignment = { 
-        horizontal: 'center', 
-        vertical: 'middle' 
-      };
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 12 };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF228B22' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
       cell.border = {
         top: { style: 'medium', color: { argb: 'FF006400' } },
         bottom: { style: 'medium', color: { argb: 'FF006400' } },
         left: { style: 'thin', color: { argb: 'FF006400' } },
         right: { style: 'thin', color: { argb: 'FF006400' } },
       };
-      
+
       if (colNumber > 6 && typeof cell.value === 'number') {
         cell.numFmt = '#,##0.00';
       }
@@ -392,12 +360,8 @@ const TrabajadorIntensidad: React.FC = () => {
     const footerRow = totalRow + 2;
     worksheet.mergeCells(`A${footerRow}:L${footerRow}`);
     const footerCell = worksheet.getCell(`A${footerRow}`);
-    footerCell.value = '© Sistema de Gestión de Horas Extras - Reporte de Intensidad Horaria';
-    footerCell.font = { 
-      size: 9, 
-      italic: true, 
-      color: { argb: 'FF888888' } 
-    };
+    footerCell.value = 'Sistema de Gestión de Horas Extras - Reporte de Intensidad Horaria';
+    footerCell.font = { size: 9, italic: true, color: { argb: 'FF888888' } };
     footerCell.alignment = { horizontal: 'center' };
 
     // Configurar vista de impresión
@@ -407,19 +371,12 @@ const TrabajadorIntensidad: React.FC = () => {
       fitToPage: true,
       fitToHeight: 1,
       fitToWidth: 1,
-      margins: {
-        left: 0.7,
-        right: 0.7,
-        top: 0.75,
-        bottom: 0.75,
-        header: 0.3,
-        footer: 0.3,
-      },
+      margins: { left: 0.7, right: 0.7, top: 0.75, bottom: 0.75, header: 0.3, footer: 0.3 },
     };
 
     // Configurar encabezado y pie de página de impresión
-    worksheet.headerFooter.oddHeader = '&C&16&B⏰ INTENSIDAD HORARIA';
-    worksheet.headerFooter.oddFooter = '&L&D &T&C&P de &N&R© Sistema de Gestión';
+    worksheet.headerFooter.oddHeader = '&C&16&BINTENSIDAD HORARIA';
+    worksheet.headerFooter.oddFooter = '&L&D &T&C&P de &N&RSistema de Gestión';
 
     // Generar y descargar el archivo
     const buffer = await workbook.xlsx.writeBuffer();
@@ -431,18 +388,19 @@ const TrabajadorIntensidad: React.FC = () => {
   const handleTrabajadorChange = (trabajadorId: number, trabajador?: Trabajador) => {
     setTrabajadorSeleccionado(trabajadorId);
     setTrabajadorActual(trabajador || null);
-    
+
     if (trabajadorId > 0) {
       navigate(`/trabajadores/${trabajadorId}/intensidad`, { replace: true });
     } else {
       setRegistros([]);
+      setMetadatosVista(null);
     }
   };
 
   const handleRangoPreseleccionado = (rango: string) => {
     setRangoPreseleccionado(rango);
     const today = new Date();
-    
+
     switch (rango) {
       case "hoy": {
         setFechaInicio(formatDateForInput(today));
@@ -516,10 +474,7 @@ const TrabajadorIntensidad: React.FC = () => {
   const formatFechaLegible = (fechaStr: string) => {
     const fecha = new Date(fechaStr + 'T00:00:00');
     return fecha.toLocaleDateString('es-CO', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
     });
   };
 
@@ -535,13 +490,11 @@ const TrabajadorIntensidad: React.FC = () => {
     return str.substring(start, end);
   };
 
-  // ✅ FUNCIÓN MEJORADA PARA MOSTRAR NOMBRES COMPLETOS DE CENTROS
   const formatCentroName = (nombreCentro: string | null | undefined): string => {
     const nombre = nombreCentro || 'Sin centro';
-    return nombre; // Mostrar nombre completo sin limitaciones
+    return nombre;
   };
 
-  // ✅ NUEVA FUNCIÓN PARA OBTENER CENTROS VISITADOS
   const getCentrosVisitados = () => {
     const centrosUnicos = [...new Set(
       registros
@@ -579,10 +532,7 @@ const TrabajadorIntensidad: React.FC = () => {
     <div className="trabajador-intensidad-page">
       <div className="page-container">
         <div className="page-header">
-          <button 
-            className="btn-back"
-            onClick={() => navigate("/trabajadores")}
-          >
+          <button className="btn-back" onClick={() => navigate("/trabajadores")}>
             ← Volver a Trabajadores
           </button>
           <h1>Intensidad Horaria por Trabajador</h1>
@@ -608,7 +558,6 @@ const TrabajadorIntensidad: React.FC = () => {
               showSelectedInfo={true}
             />
 
-            {/* Selector de rango rápido */}
             <div className="form-group">
               <label className="form-label">Período de Consulta</label>
               <div className="range-selector">
@@ -659,7 +608,6 @@ const TrabajadorIntensidad: React.FC = () => {
               </div>
             </div>
 
-            {/* Selectores de fecha personalizados */}
             <div className="form-row">
               <div className="form-group">
                 <label className="form-label">Fecha de Inicio</label>
@@ -689,7 +637,6 @@ const TrabajadorIntensidad: React.FC = () => {
               </div>
             </div>
 
-            {/* Información del rango seleccionado */}
             <div className="range-info">
               <div className="range-info-item">
                 <span className="range-info-icon">📅</span>
@@ -752,16 +699,12 @@ const TrabajadorIntensidad: React.FC = () => {
                       <div className="total-badge">
                         Total: {formatHours(resumen.total)}
                       </div>
-                      <button 
-                        className="btn-exportar" 
-                        onClick={exportarExcel}
-                        title="Exportar a Excel"
-                      >
+                      <button className="btn-exportar" onClick={exportarExcel} title="Exportar a Excel">
                         📤 Exportar Excel
                       </button>
                     </div>
                   </div>
-                  
+
                   <div className="resumen-grid">
                     <div className="resumen-item normal">
                       <div className="resumen-icon">⏰</div>
@@ -770,7 +713,7 @@ const TrabajadorIntensidad: React.FC = () => {
                         <div className="resumen-label">Horas Normales</div>
                       </div>
                     </div>
-                    
+
                     <div className="resumen-item extra-diurna">
                       <div className="resumen-icon">☀️</div>
                       <div className="resumen-content">
@@ -778,7 +721,7 @@ const TrabajadorIntensidad: React.FC = () => {
                         <div className="resumen-label">Extras Diurnas</div>
                       </div>
                     </div>
-                    
+
                     <div className="resumen-item extra-nocturna">
                       <div className="resumen-icon">🌙</div>
                       <div className="resumen-content">
@@ -786,7 +729,7 @@ const TrabajadorIntensidad: React.FC = () => {
                         <div className="resumen-label">Extras Nocturnas</div>
                       </div>
                     </div>
-                    
+
                     <div className="resumen-item dom-diurna">
                       <div className="resumen-icon">🌅</div>
                       <div className="resumen-content">
@@ -794,7 +737,7 @@ const TrabajadorIntensidad: React.FC = () => {
                         <div className="resumen-label">Dom. Diurnas</div>
                       </div>
                     </div>
-                    
+
                     <div className="resumen-item dom-nocturna">
                       <div className="resumen-icon">🌃</div>
                       <div className="resumen-content">
@@ -804,7 +747,6 @@ const TrabajadorIntensidad: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Información adicional del período */}
                   <div className="period-summary">
                     <div className="period-item">
                       <span className="period-icon">📊</span>
@@ -817,7 +759,7 @@ const TrabajadorIntensidad: React.FC = () => {
                   </div>
                 </div>
 
-                {/* ✅ NUEVA SECCIÓN: Centros visitados */}
+                {/* Centros visitados */}
                 {getCentrosVisitados().length > 0 && (
                   <div className="centros-visitados-card">
                     <div className="centros-header">
@@ -826,9 +768,7 @@ const TrabajadorIntensidad: React.FC = () => {
                     </div>
                     <div className="centros-lista">
                       {getCentrosVisitados().map((centro, index) => (
-                        <span key={index} className="centro-badge">
-                          {centro}
-                        </span>
+                        <span key={index} className="centro-badge">{centro}</span>
                       ))}
                     </div>
                     <div className="centros-stats">
@@ -838,6 +778,130 @@ const TrabajadorIntensidad: React.FC = () => {
                     </div>
                   </div>
                 )}
+
+                {/* NUEVA SECCIÓN: Información del tipo de vista y banco de horas */}
+                {metadatosVista && (
+                  <div className="vista-info-card">
+                    <div className="vista-header">
+                      <div className="vista-icon">
+                        {metadatosVista.tipoVista === "Semanal" ? "📅" : "📊"}
+                      </div>
+                      <h3>Información de Vista: {metadatosVista.tipoVista}</h3>
+                      <span className="vista-badge">
+                        {metadatosVista.valoresMostrados}
+                      </span>
+                    </div>
+
+                    <div className="vista-details">
+                      <div className="vista-item">
+                        <span className="vista-label">Tipo de trabajador:</span>
+                        <span className="vista-value">
+                          {metadatosVista.trabajadorUsaBanco ? "Con banco de horas" : "Sin banco de horas"}
+                        </span>
+                      </div>
+                      <div className="vista-item">
+                        <span className="vista-label">Valores mostrados:</span>
+                        <span className="vista-value">{metadatosVista.valoresMostrados}</span>
+                      </div>
+                    </div>
+
+                    {(() => {
+                      const bancoInfo = getBancoHorasInfo();
+                      if (!bancoInfo) return null;
+
+                      return (
+                        <div className="banco-info">
+                          {bancoInfo.tipo === "semanal" && (
+                            <div className="banco-semanal">
+                              <div className="banco-titulo">📝 Información Semanal (Vista Excel)</div>
+                              <div className="banco-grid">
+                                <div className="banco-item">
+                                  <span className="banco-label">Horas base semanal:</span>
+                                  <span className="banco-value">{bancoInfo.horasBase || 0}h</span>
+                                </div>
+                                <div className="banco-item">
+                                  <span className="banco-label">Según Excel:</span>
+                                  <span className="banco-value">{bancoInfo.totalSegunExcel || 0}h</span>
+                                </div>
+                                <div className="banco-item">
+                                  <span className="banco-label">Estado:</span>
+                                  <span className={`banco-estado ${(bancoInfo.estado || '').toLowerCase()}`}>
+                                    {bancoInfo.estado || 'Desconocido'}
+                                  </span>
+                                </div>
+                              </div>
+                              {bancoInfo.mensaje && (
+                                <div className="banco-mensaje">
+                                  💡 {bancoInfo.mensaje}
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {bancoInfo.tipo === "mensual" && bancoInfo.bancoHoras && (
+                            <div className="banco-mensual">
+                              <div className="banco-titulo">🏦 Estado del Banco de Horas</div>
+
+                              {/* Nueva sección: Desglose de semanas */}
+                              {bancoInfo.desgloseSemanas && bancoInfo.desgloseSemanas.length > 0 && (
+                                <div className="desglose-semanas">
+                                  <h4>Desglose Semanal</h4>
+                                  <div className="semanas-grid">
+                                    {bancoInfo.desgloseSemanas.map((semana: any, index: number) => (
+                                      <div key={index} className="semana-card">
+                                        <div className="semana-header">
+                                          <span className="semana-numero">Semana {index + 1}</span>
+                                          <span className={`semana-balance ${semana.balance >= 0 ? 'positivo' : 'negativo'}`}>
+                                            {semana.balance >= 0 ? '+' : ''}{semana.balance.toFixed(2)}h
+                                          </span>
+                                        </div>
+                                        <div className="semana-detalles">
+                                          <div className="semana-fechas">{semana.semana}</div>
+                                          <div className="semana-horas">
+                                            <span>Trabajadas: {semana.horasTrabajadas.toFixed(2)}h</span>
+                                            <span>Base: {semana.horasBase.toFixed(2)}h</span>
+                                          </div>
+                                          <div className={`semana-estado ${semana.estado.toLowerCase()}`}>
+                                            {semana.estado}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Nueva sección: Resumen del período */}
+                              {bancoInfo.resumenPeriodo && (
+                                <div className="resumen-periodo">
+                                  <h4>Resumen del Período</h4>
+                                  <div className="resumen-card total">
+                                    <div className="resumen-header">
+                                      <span className="resumen-titulo">Balance Total</span>
+                                      <span className={`resumen-valor ${bancoInfo.resumenPeriodo.balanceTotal >= 0 ? 'positivo' : 'negativo'}`}>
+                                        {bancoInfo.resumenPeriodo.balanceTotal >= 0 ? '+' : ''}
+                                        {bancoInfo.resumenPeriodo.balanceTotal.toFixed(2)}h
+                                      </span>
+                                    </div>
+                                    <div className="resumen-detalle">
+                                      <span className={`resumen-estado ${bancoInfo.resumenPeriodo.estadoTotal.toLowerCase()}`}>
+                                        {bancoInfo.resumenPeriodo.estadoTotal}
+                                      </span>
+                                      <span className="resumen-mensaje">
+                                        {bancoInfo.resumenPeriodo.mensaje}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
 
                 {/* Tabla de registros detallados */}
                 <div className="registros-card">
@@ -937,7 +1001,7 @@ const TrabajadorIntensidad: React.FC = () => {
                 <div className="empty-state-icon">📊</div>
                 <h3>No hay registros</h3>
                 <p>
-                  No se encontraron registros para {trabajadorActual?.nombre || 'este trabajador'} 
+                  No se encontraron registros para {trabajadorActual?.nombre || 'este trabajador'}
                   en el período seleccionado.
                 </p>
                 <div className="empty-state-suggestions">
@@ -958,7 +1022,7 @@ const TrabajadorIntensidad: React.FC = () => {
             <div className="empty-state-icon">👤</div>
             <h3>Selecciona un trabajador</h3>
             <p>
-              Utiliza el buscador de arriba para seleccionar un trabajador y ver 
+              Utiliza el buscador de arriba para seleccionar un trabajador y ver
               su intensidad horaria en el período deseado.
             </p>
             <div className="empty-state-features">

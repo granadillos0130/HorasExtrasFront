@@ -60,9 +60,9 @@ const TrabajadorAusenciasPage: React.FC = () => {
     });
   };
 
-  const formatearHoras = (horas: number) => {
-    return `${horas.toFixed(1)}h`;
-  };
+  const formatearHoras = (horas: number | undefined) => {
+  return horas ? `${horas.toFixed(1)}h` : '0.0h'; // Si es undefined, muestra 0.0h
+};
 
   const handleVolver = () => {
     navigate('/trabajadores');

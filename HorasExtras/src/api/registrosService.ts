@@ -1,6 +1,6 @@
 // src/api/registrosService.ts - VERSIÓN ACTUALIZADA
 import { api } from "./api";
-import type { Registro} from "../types/registros";
+import type { Registro, RespuestaIntensidadHoraria} from "../types/registros";
 import type { RegistroInputDto, RegistroActualizacionDto } from "../types/registros";
 import type { ResumenSemana } from "../types/ResumenSemana";
 
@@ -97,30 +97,46 @@ export const registrosService = {
 
   // Obtener registros por trabajador y rango de fechas
   async buscarPorTrabajadorRangoFechas(
-    trabajadorId: number,
-    fechaInicio: string,
-    fechaFin: string
-  ): Promise<Registro[]> {
-    try {
-      const res = await api.get<{
-        success: boolean;
-        data: Registro[];
-        total: number;
-        filtros: any;
-      }>("/registros/porTrabajadorRangoFechas", {
-        params: { trabajadorId, fechaInicio, fechaFin },
-      });
-      
-      if (res.data && typeof res.data === 'object' && 'data' in res.data) {
-        return res.data.data;
-      }
-      
-      return Array.isArray(res.data) ? res.data : [];
-    } catch (error) {
-      console.error('Error al buscar registros por rango de fechas:', error);
-      throw error;
+  trabajadorId: number,
+  fechaInicio: string,
+  fechaFin: string
+): Promise<RespuestaIntensidadHoraria> {
+  try {
+    const res = await api.get<RespuestaIntensidadHoraria>("/registros/porTrabajadorRangoFechas", {
+      params: { trabajadorId, fechaInicio, fechaFin },
+    });
+    
+    // Si el backend envía la nueva estructura completa con metadatos
+    if (res.data && typeof res.data === 'object' && 'tipoVista' in res.data) {
+      return res.data;
     }
-  },
+    
+    // Fallback para mantener compatibilidad con respuesta antigua
+    // Si solo recibe un array de registros o estructura antigua
+    const registros = Array.isArray(res.data) 
+      ? res.data 
+      : (res.data as any)?.data || [];
+    
+    return {
+      success: true,
+      tipoVista: "Desconocido",
+      trabajadorUsaBanco: false,
+      valoresMostrados: "Valores originales (compatibilidad)",
+      data: registros,
+      total: registros.length,
+      filtros: {
+        trabajadorId,
+        fechaInicio,
+        fechaFin,
+        diasEnRango: 1
+      }
+    };
+    
+  } catch (error) {
+    console.error('Error al buscar registros por rango de fechas:', error);
+    throw error;
+  }
+},
 
   // Mantener compatibilidad: Obtener registros por trabajador, mes y semana
   async buscarPorTrabajadorMesSemana(
