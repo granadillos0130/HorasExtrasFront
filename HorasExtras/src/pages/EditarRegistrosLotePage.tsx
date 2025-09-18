@@ -106,25 +106,28 @@ const EditarRegistrosLotePage: React.FC = () => {
         if (trabajadorId && fechaInicio && fechaFin) {
   // Cargar registros por rango de fechas si hay filtros
   try {
-    registrosData = await registrosService.buscarPorTrabajadorRangoFechas(
-      parseInt(trabajadorId), 
-      fechaInicio, 
-      fechaFin
-    );
-    // Ya no necesitas filtrar por trabajador específico porque el método ya lo hace
-  } catch {
-    // Si no existe el método, usar obtenerTodos y filtrar
-    console.warn("Método buscarPorTrabajadorRangoFechas falló, usando obtenerTodos");
-    registrosData = await registrosService.obtenerTodos();
-    registrosData = registrosData.filter(r => {
-      const registroFecha = new Date(r.fecha);
-      const inicio = new Date(fechaInicio);
-      const fin = new Date(fechaFin);
-      return r.trabajadorId === parseInt(trabajadorId) && 
-             registroFecha >= inicio && 
-             registroFecha <= fin;
-    });
-  }
+  const respuesta = await registrosService.buscarPorTrabajadorRangoFechas(
+    parseInt(trabajadorId), 
+    fechaInicio, 
+    fechaFin
+  );
+  
+  // Extraer los registros de la propiedad 'data'
+  registrosData = respuesta.data;
+  
+} catch {
+  // Si no existe el método, usar obtenerTodos y filtrar
+  console.warn("Método buscarPorTrabajadorRangoFechas falló, usando obtenerTodos");
+  registrosData = await registrosService.obtenerTodos();
+  registrosData = registrosData.filter(r => {
+    const registroFecha = new Date(r.fecha);
+    const inicio = new Date(fechaInicio);
+    const fin = new Date(fechaFin);
+    return r.trabajadorId === parseInt(trabajadorId) && 
+           registroFecha >= inicio && 
+           registroFecha <= fin;
+  });
+}
 } else {
   // Cargar todos los registros (limitado para rendimiento)
   registrosData = await registrosService.obtenerTodos();
