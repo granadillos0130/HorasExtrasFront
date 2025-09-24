@@ -1,5 +1,3 @@
-// types/trabajadores.ts - Interface actualizado para coincidir con el backend
-
 export interface Trabajador {
   id: number;
   nombre: string;
@@ -28,7 +26,7 @@ export interface Trabajador {
   direccionContacto?: string;
   parentescoContacto?: string;
 
-  // ✅ ESTRUCTURA ACTUALIZADA PARA COINCIDIR CON EL BACKEND
+  tipoBancoHoras?: boolean;
   eps?: {
     nombre: string;
     fechaInicio?: string;

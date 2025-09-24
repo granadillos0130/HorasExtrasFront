@@ -121,6 +121,12 @@ export function AusenciasPage() {
           >
             📊 Ver Estadísticas
           </button>
+           <button 
+            className="compensados-btn" 
+            onClick={() => navigate("/compensados/nueva")}
+          >
+            💳 Crear Compensado
+          </button>
           <button 
             className="crear-ausencia-btn" 
             onClick={() => navigate("/ausencias/nueva")}
