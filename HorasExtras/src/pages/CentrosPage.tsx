@@ -648,7 +648,7 @@ const CentrosPage: React.FC = () => {
                       centroId: centroSeleccionado.centroId,
                       centroNombre: centroSeleccionado.centroNombre,
                       fechaInicio: centroSeleccionado.fechaInicio,
-                      fechaFinal: centroSeleccionado.fechaFinal,
+                      fechaFinal: centroSeleccionado.fechaFinal ?? undefined,
                       trabajadores: centroSeleccionado.trabajadores,
                       manoObraTotal: centroSeleccionado.manoObraTotal
                     }}
@@ -764,7 +764,7 @@ const CentrosPage: React.FC = () => {
                       centroId: centro.centroId,
                       centroNombre: centro.centroNombre,
                       fechaInicio: centro.fechaInicio,
-                      fechaFinal: centro.fechaFinal,
+                      fechaFinal: centro.fechaFinal ?? undefined,
                       trabajadores: centro.trabajadores || [],
                       manoObraTotal: centro.manoObraTotal,
                       estado: centro.estado,
@@ -1000,7 +1000,7 @@ const CentrosPage: React.FC = () => {
                             centroId: centro.centroId,
                             centroNombre: centro.centroNombre,
                             fechaInicio: centro.fechaInicio,
-                            fechaFinal: centro.fechaFinal,
+                            fechaFinal: centro.fechaFinal ?? undefined,
                             trabajadores: centro.trabajadores,
                             manoObraTotal: centro.manoObraTotal
                           }}
