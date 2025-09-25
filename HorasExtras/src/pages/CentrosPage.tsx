@@ -1,35 +1,64 @@
+// CentrosPage.tsx - Versión Ultra Simplificada
 import React, { useState, useEffect, useCallback } from "react";
 import { centrosService } from "../api/centrosService";
 import { clientesService } from "../api/clientesService";
 import CentroForm from "../components/centros/CentroForm";
 import CentroBuscador from "../components/shared/CentroBuscador";
 import InformacionEjecucionPage from "./InformacionEjecucionPage";
+import CentroModalUniversal from "../components/centros/CentroModalUniversal";
+import { CentroCard } from "../components/centros/CentroCard";
 import type { Centro, EstadisticaTrabajador, CentroPorMesCompleto, CentroPorEstado } from "../types/centros";
 import type { Cliente } from "../types/cliente";
 
+// Utilidades
+const formatearMoneda = (valor: number) => {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0
+  }).format(valor);
+};
+
+const MESES = [
+  "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+  "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+];
+
 const CentrosPage: React.FC = () => {
+  // Estados básicos
   const [añoSeleccionado, setAñoSeleccionado] = useState<number>(new Date().getFullYear());
   const [mesSeleccionado, setMesSeleccionado] = useState<number | null>(null);
-  const [centrosDelMes, setCentrosDelMes] = useState<CentroPorMesCompleto[]>([]);
-  // ✅ Unificado para usar CentroPorMesCompleto
-  const [centroSeleccionado, setCentroSeleccionado] = useState<CentroPorMesCompleto | null>(null);
-  const [vistaActual, setVistaActual] = useState<'info' | 'cargos' | 'crear' | 'ejecucion' | 'busqueda' | 'editar' | 'estado' | null>(null);
-  const [centroAEditar, setCentroAEditar] = useState<Centro | null>(null);
-
-  // Estado separado para el modal en la vista de búsqueda
-  const [modalBusqueda, setModalBusqueda] = useState<'info' | 'cargos' | null>(null);
-
-  const [modalEstado, setModalEstado] = useState<'info' | 'cargos' | null>(null);
-  const [centroEstadoSeleccionado, setCentroEstadoSeleccionado] = useState<CentroPorMesCompleto | null>(null);
+  const [vistaActual, setVistaActual] = useState<'crear' | 'ejecucion' | 'busqueda' | 'editar' | 'estado' | null>(null);
   const [loading, setLoading] = useState(false);
 
-  // Estados para búsqueda
+  // Estados para datos
+  const [centrosDelMes, setCentrosDelMes] = useState<CentroPorMesCompleto[]>([]);
   const [todosCentros, setTodosCentros] = useState<Centro[]>([]);
-  const [centroBuscado, setCentroBuscado] = useState<string>("");
-  const [centroEncontrado, setCentroEncontrado] = useState<Centro | null>(null);
-  const [loadingBusqueda, setLoadingBusqueda] = useState(false);
+  const [centrosPorEstado, setCentrosPorEstado] = useState<CentroPorEstado[]>([]);
 
-  // Estados para datos adicionales del centro
+  // Estados para modales y selecciones
+  const [centroSeleccionado, setCentroSeleccionado] = useState<CentroPorMesCompleto | null>(null);
+  const [centroEncontrado, setCentroEncontrado] = useState<Centro | null>(null);
+  const [centroAEditar, setCentroAEditar] = useState<Centro | null>(null);
+
+  // Estado del modal universal - SIMPLIFICADO: solo un modal
+  const [modal, setModal] = useState<{
+    isOpen: boolean;
+    type: 'info' | 'cargos';
+    source: 'busqueda' | 'estado' | 'meses';
+  }>({
+    isOpen: false,
+    type: 'info',
+    source: 'meses'
+  });
+
+  // Estados para búsqueda y filtros
+  const [centroBuscado, setCentroBuscado] = useState<string>("");
+  const [loadingBusqueda, setLoadingBusqueda] = useState(false);
+  const [estadoFiltro, setEstadoFiltro] = useState<'todos' | 'abierto' | 'cerrado'>('todos');
+  const [loadingEstado, setLoadingEstado] = useState(false);
+
+  // Estados para datos adicionales
   const [datosCompletos, setDatosCompletos] = useState<{
     cliente: Cliente | null;
     manoObraTotal: number;
@@ -39,19 +68,13 @@ const CentrosPage: React.FC = () => {
     manoObraTotal: 0,
     cargosUnicos: []
   });
-  // Estados para filtros por estado
-  const [estadoFiltro, setEstadoFiltro] = useState<'todos' | 'abierto' | 'cerrado'>('todos');
-  const [centrosPorEstado, setCentrosPorEstado] = useState<CentroPorEstado[]>([]);
-  const [loadingEstado, setLoadingEstado] = useState(false);
-  const meses = [
-    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-  ];
 
+  // ================================
+  // FUNCIONES DE CARGA DE DATOS (sin cambios)
+  // ================================
   const cargarTodosCentros = useCallback(async () => {
     try {
       const centros = await centrosService.getAll();
-      // 🚫 FILTRO: Excluir centros con nombres como "festivo", "vacaciones"
       const centrosFiltrados = centros.filter(centro => {
         const nombre = centro.nombreCentro.toLowerCase();
         return !nombre.includes('festivo') && !nombre.includes('vacaciones');
@@ -61,7 +84,25 @@ const CentrosPage: React.FC = () => {
       console.error("Error al cargar todos los centros:", error);
     }
   }, []);
-  // Función para cargar centros por estado
+
+  const cargarCentrosDelMes = useCallback(async () => {
+    if (mesSeleccionado === null) return;
+    setLoading(true);
+    try {
+      const centrosCompletos = await centrosService.obtenerPorMes(añoSeleccionado, mesSeleccionado);
+      const centrosFiltrados = centrosCompletos.filter(centro => {
+        const nombre = centro.centroNombre.toLowerCase();
+        return !nombre.includes('festivo') && !nombre.includes('vacaciones');
+      });
+      setCentrosDelMes(centrosFiltrados);
+    } catch (error) {
+      console.error("Error al cargar centros del mes:", error);
+      setCentrosDelMes([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [añoSeleccionado, mesSeleccionado]);
+
   const cargarCentrosPorEstado = useCallback(async (estado: 'abierto' | 'cerrado') => {
     setLoadingEstado(true);
     try {
@@ -74,189 +115,13 @@ const CentrosPage: React.FC = () => {
       setLoadingEstado(false);
     }
   }, []);
-  // ✅ AGREGAR ESTA FUNCIÓN COMPLETA:
-  const handleSeleccionarCentroEstado = async (centroId: string) => {
-  try {
-    setLoading(true);
 
-    // Buscar el centro completo en los datos ya cargados
-    const centroCompleto = centrosPorEstado.find(c => c.centroId === centroId);
-    
-    if (!centroCompleto) {
-      alert("Error: No se encontraron los datos completos del centro");
-      return;
-    }
-
-    // Crear el objeto de centro encontrado usando los datos completos
-    const centroData: Centro = {
-  id: centroCompleto.centroId,
-  nombreCentro: centroCompleto.centroNombre,
-  fechaInicio: centroCompleto.fechaInicio,
-  fechaFinal: centroCompleto.fechaFinal,
-  clienteId: centroCompleto.clienteId || "", // ✅ Mantener fallback para null
-  estado: centroCompleto.estado, // 🔄 CAMBIO: Mantener como string, no convertir a boolean
-  tipo: centroCompleto.tipo ?? undefined, // 🔄 CAMBIO: Convertir null a undefined
-  valorOrden: centroCompleto.valorOrden ?? undefined, // 🔄 CAMBIO: Convertir null a undefined
-  fechaFactura: centroCompleto.fechaFactura ?? undefined, // 🔄 CAMBIO: Convertir null a undefined
-  interventor: centroCompleto.interventor ?? undefined, // 🔄 CAMBIO: Convertir null a undefined
-  vendedor: centroCompleto.vendedor ?? undefined // 🔄 CAMBIO: Convertir null a undefined
-};
-    
-    setCentroEncontrado(centroData);
-
-    // Crear el centro completo para el modal usando los datos que ya tienes
-    const centroParaModal: CentroPorMesCompleto = {
-      centroId: centroCompleto.centroId,
-      centroNombre: centroCompleto.centroNombre,
-      fechaInicio: centroCompleto.fechaInicio,
-      fechaFinal: centroCompleto.fechaFinal,
-      manoObraTotal: centroCompleto.manoObraTotal || 0,
-      cargosUnicos: centroCompleto.cargosUnicos || [],
-      trabajadores: (centroCompleto.trabajadores || []).map(t => ({
-        trabajadorId: t.trabajadorId,
-        nombre: t.nombre,
-        totalHoras: t.totalHoras,
-        horasNormales: t.horasNormales,
-        extrasDiurnas: t.extrasDiurnas,
-        extrasNocturnas: t.extrasNocturnas,
-        extrasDominicalesDiurnas: t.extrasDominicalesDiurnas || 0,
-        extrasDominicalesNocturnas: t.extrasDominicalesNocturnas || 0,
-        cargo: t.cargo
-      })),
-      cliente: centroCompleto.cliente || undefined // 🔄 Cambiar null por undefined
-    };
-
-    setCentroEstadoSeleccionado(centroParaModal);
-
-    // Establecer los datos completos directamente (sin llamadas HTTP adicionales)
-    setDatosCompletos({
-      cliente: centroCompleto.cliente ? {
-        id: centroCompleto.cliente.id,
-        nombreCliente: centroCompleto.cliente.nombre
-      } : null,
-      manoObraTotal: centroCompleto.manoObraTotal || 0,
-      cargosUnicos: centroCompleto.cargosUnicos || ['Trabajador General']
-    });
-
-    setModalEstado('info');
-
-  } catch (error) {
-    console.error("Error al cargar centro desde vista por estado:", error);
-    alert("Error al cargar los datos del centro");
-  } finally {
-    setLoading(false);
-  }
-};
-  // Función para cambiar estado de un centro
-  const handleCambiarEstado = async (centroId: string, nuevoEstado: 'abierto' | 'cerrado', nombreCentro: string) => {
-    const estadoActual = nuevoEstado === 'abierto' ? 'cerrado' : 'abierto';
-    const confirmación = window.confirm(
-      `¿Estás seguro de cambiar el estado del centro "${nombreCentro}" de ${estadoActual} a ${nuevoEstado}?`
-    );
-
-    if (!confirmación) return;
-
-    try {
-      setLoading(true);
-      const resultado = await centrosService.cambiarEstado(centroId, nuevoEstado);
-
-      alert(`✅ ${resultado.mensaje}`);
-
-      // Refrescar los datos según la vista actual
-      if (estadoFiltro !== 'todos') {
-        await cargarCentrosPorEstado(estadoFiltro);
-      }
-
-      if (mesSeleccionado !== null) {
-        await cargarCentrosDelMes();
-      }
-
-      await cargarTodosCentros();
-
-      // Si hay un centro seleccionado, actualizarlo
-      if (centroEncontrado && centroEncontrado.id === centroId) {
-        const centroActualizado = await centrosService.getById(centroId);
-        setCentroEncontrado(centroActualizado);
-      }
-
-    } catch (error) {
-      console.error("Error al cambiar estado:", error);
-      alert("❌ Error al cambiar el estado del centro");
-    } finally {
-      setLoading(false);
-    }
-  };
-  // ✅ Función optimizada - UNA SOLA PETICIÓN
-  const cargarCentrosDelMes = useCallback(async () => {
-    if (mesSeleccionado === null) return;
-
-    setLoading(true);
-    try {
-      // ✅ UNA SOLA PETICIÓN que ya trae toda la información
-      const centrosCompletos = await centrosService.obtenerPorMes(añoSeleccionado, mesSeleccionado);
-
-      // 🚫 FILTRO: Excluir centros con nombres como "festivo", "vacaciones"
-      const centrosFiltrados = centrosCompletos.filter(centro => {
-        const nombre = centro.centroNombre.toLowerCase();
-        return !nombre.includes('festivo') && !nombre.includes('vacaciones');
-      });
-
-      setCentrosDelMes(centrosFiltrados);
-    } catch (error) {
-      console.error("Error al cargar centros del mes:", error);
-      setCentrosDelMes([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [añoSeleccionado, mesSeleccionado]);
-
-  // Cargar todos los centros al montar el componente para la búsqueda
-  useEffect(() => {
-    cargarTodosCentros();
-  }, [cargarTodosCentros]);
-
-  // Cargar centros cuando se selecciona un mes
-  useEffect(() => {
-    if (mesSeleccionado !== null) {
-      cargarCentrosDelMes();
-    }
-  }, [mesSeleccionado, cargarCentrosDelMes]);
-
-
-  const handleEditarCentro = async (centroId: string) => {
-    try {
-      setLoading(true);
-      const centroCompleto = await centrosService.getById(centroId);
-      setCentroAEditar(centroCompleto);
-      setVistaActual('editar');
-    } catch (error) {
-      console.error("Error al cargar centro para editar:", error);
-      alert("Error al cargar los datos del centro");
-    } finally {
-      setLoading(false);
-    }
-  };
-  // ✅ AGREGAR ESTA FUNCIÓN:
-  const handleCentroActualizado = () => {
-    if (mesSeleccionado !== null) {
-      cargarCentrosDelMes();
-    }
-    cargarTodosCentros();
-
-    if (vistaActual === 'busqueda' && centroEncontrado) {
-      handleBusquedaCentro(centroEncontrado.id);
-    }
-
-    cerrarModal();
-  };
-  // ✅ Función optimizada para usar datos precargados cuando están disponibles
   const cargarDatosCompletosCentro = async (
     centro: Centro,
     estadisticas: { trabajadores?: EstadisticaTrabajador[] } | null,
-    centroCompleto?: CentroPorMesCompleto // ✅ Nuevo parámetro opcional
+    centroCompleto?: CentroPorMesCompleto
   ) => {
     try {
-      // ✅ Si tenemos los datos completos del mes, usarlos directamente (evitar peticiones HTTP)
       if (centroCompleto) {
         setDatosCompletos({
           cliente: centroCompleto.cliente ? {
@@ -269,8 +134,7 @@ const CentrosPage: React.FC = () => {
         return;
       }
 
-      // ✅ Solo hacer peticiones HTTP si NO tenemos los datos (caso de búsqueda)
-      // Obtener datos del cliente
+      // Cargar datos desde API si no están disponibles
       let cliente = null;
       if (centro.clienteId) {
         try {
@@ -280,36 +144,29 @@ const CentrosPage: React.FC = () => {
         }
       }
 
-      // Obtener mano de obra total
       let manoObraTotal = 0;
       try {
-        const manoObra = await centrosService.obtenerManoObraTotal(centro.id);
-        manoObraTotal = manoObra.manoObraTotal;
+        const resultadoBatch = await centrosService.obtenerManoObraTotalBatch([centro.id]);
+        if (resultadoBatch.length > 0 && resultadoBatch[0].success) {
+          manoObraTotal = resultadoBatch[0].manoObraTotal;
+        }
       } catch (error) {
         console.warn("No se pudo cargar la mano de obra total:", error);
       }
 
-      // Extraer cargos únicos de los trabajadores
       const cargosUnicos: string[] = [];
       if (estadisticas && estadisticas.trabajadores) {
         const cargosSet = new Set<string>();
-
-        // Intentar obtener los cargos desde las estadísticas
         estadisticas.trabajadores.forEach((t: EstadisticaTrabajador) => {
-          // Asumiendo que EstadisticaTrabajador tiene un campo cargo
           if ((t as any).cargo && (t as any).cargo !== 'No especificado') {
             cargosSet.add((t as any).cargo);
           }
         });
-
-        // Si no se obtuvieron cargos, usar un valor por defecto
         if (cargosSet.size === 0) {
           cargosSet.add("Trabajador General");
         }
-
         cargosUnicos.push(...Array.from(cargosSet));
       } else {
-        // Fallback: usar valor por defecto
         cargosUnicos.push("Trabajador General");
       }
 
@@ -328,49 +185,90 @@ const CentrosPage: React.FC = () => {
     }
   };
 
+  // ================================
+  // FUNCIONES SIMPLIFICADAS PARA MANEJAR MODAL
+  // ================================
+  
+  const abrirModal = (tipo: 'info' | 'cargos', fuente: 'busqueda' | 'estado' | 'meses') => {
+    setModal({
+      isOpen: true,
+      type: tipo,
+      source: fuente
+    });
+  };
+
+  const cerrarModal = () => {
+    setModal({
+      isOpen: false,
+      type: 'info',
+      source: 'meses'
+    });
+    setCentroSeleccionado(null);
+    setVistaActual(null);
+    setCentroAEditar(null);
+    setDatosCompletos({
+      cliente: null,
+      manoObraTotal: 0,
+      cargosUnicos: []
+    });
+  };
+
+  const toggleModalType = () => {
+    setModal(prev => ({
+      ...prev,
+      type: prev.type === 'info' ? 'cargos' : 'info'
+    }));
+  };
+
+  // ================================
+  // FUNCIONES DE MANEJO SIMPLIFICADAS
+  // ================================
+  
+  const prepararCentroParaModal = async (centro: any, fuente: 'busqueda' | 'estado' | 'meses') => {
+    setCentroSeleccionado(centro);
+    try {
+      if (fuente === 'meses') {
+        // Para meses ya tenemos los datos completos
+        const centroCompleto = await centrosService.getById(centro.centroId);
+        setCentroEncontrado(centroCompleto);
+        await cargarDatosCompletosCentro(centroCompleto, null, centro);
+      } else {
+        // Para búsqueda y estado, cargar los datos
+        await cargarDatosCompletosCentro(centro, null);
+      }
+    } catch (error) {
+      console.error("Error al preparar centro para modal:", error);
+    }
+  };
+
   const handleBusquedaCentro = async (centroId: string, centro?: Centro) => {
     setCentroBuscado(centroId);
-
     if (!centroId) {
       setCentroEncontrado(null);
+      setCentroSeleccionado(null);
       return;
     }
 
     setLoadingBusqueda(true);
     try {
       let centroData: Centro;
-
       if (centro) {
         centroData = centro;
       } else {
         centroData = await centrosService.getById(centroId);
       }
 
-      // Obtener las estadísticas completas del centro
       const estadisticas = await centrosService.getEstadisticas({ centroId: centroData.id });
-
-      // ✅ USAR BATCH EN LUGAR DE LLAMADA INDIVIDUAL
-      let manoObraTotal = 0;
-      try {
-        const resultadoBatch = await centrosService.obtenerManoObraTotalBatch([centroData.id]);
-        if (resultadoBatch.length > 0 && resultadoBatch[0].success) {
-          manoObraTotal = resultadoBatch[0].manoObraTotal;
-        }
-      } catch (error) {
-        console.warn("No se pudo cargar la mano de obra total:", error);
-      }
-
       setCentroEncontrado(centroData);
 
-      // Si hay estadísticas, crear un objeto CentroPorMesCompleto con los datos completos
       if (estadisticas && estadisticas.trabajadores) {
         const centroCompleto: CentroPorMesCompleto = {
           centroId: centroData.id,
           centroNombre: centroData.nombreCentro,
           fechaInicio: centroData.fechaInicio,
           fechaFinal: centroData.fechaFinal,
-          manoObraTotal,
-          cargosUnicos: [], // Se llenará en cargarDatosCompletosCentro
+          manoObraTotal: 0,
+          cargosUnicos: [],
           trabajadores: estadisticas.trabajadores.map((t: EstadisticaTrabajador) => ({
             trabajadorId: t.trabajadorId,
             nombre: t.nombreTrabajador,
@@ -382,26 +280,20 @@ const CentrosPage: React.FC = () => {
           }))
         };
         setCentroSeleccionado(centroCompleto);
-
-        // Cargar datos completos del centro
         await cargarDatosCompletosCentro(centroData, estadisticas);
       } else {
-        // Si no hay estadísticas, crear un objeto básico
         const centroBasico: CentroPorMesCompleto = {
           centroId: centroData.id,
           centroNombre: centroData.nombreCentro,
           fechaInicio: centroData.fechaInicio,
           fechaFinal: centroData.fechaFinal,
-          manoObraTotal,
+          manoObraTotal: 0,
           cargosUnicos: [],
           trabajadores: []
         };
         setCentroSeleccionado(centroBasico);
-
-        // Cargar datos completos del centro
         await cargarDatosCompletosCentro(centroData, null);
       }
-
     } catch (error) {
       console.error("Error al buscar centro:", error);
       setCentroEncontrado(null);
@@ -411,70 +303,148 @@ const CentrosPage: React.FC = () => {
     }
   };
 
-  // ✅ Función optimizada para usar datos precargados
-  const handleSeleccionarCentroDelMes = async (centro: CentroPorMesCompleto) => {
-    setCentroSeleccionado(centro);
-
-    // Obtener datos completos del centro
+  const handleSeleccionarCentroEstado = async (centroId: string) => {
     try {
-      const centroCompleto = await centrosService.getById(centro.centroId);
-      setCentroEncontrado(centroCompleto);
+      setLoading(true);
+      const centroCompleto = centrosPorEstado.find(c => c.centroId === centroId);
+      
+      if (!centroCompleto) {
+        alert("Error: No se encontraron los datos completos del centro");
+        return;
+      }
 
-      // ✅ Usar los datos que ya vienen del endpoint optimizado
-      await cargarDatosCompletosCentro(centroCompleto, null, centro);
+      const centroData: Centro = {
+        id: centroCompleto.centroId,
+        nombreCentro: centroCompleto.centroNombre,
+        fechaInicio: centroCompleto.fechaInicio,
+        fechaFinal: centroCompleto.fechaFinal,
+        clienteId: centroCompleto.clienteId || "",
+        estado: centroCompleto.estado,
+        tipo: centroCompleto.tipo ?? undefined,
+        valorOrden: centroCompleto.valorOrden ?? undefined,
+        fechaFactura: centroCompleto.fechaFactura ?? undefined,
+        interventor: centroCompleto.interventor ?? undefined,
+        vendedor: centroCompleto.vendedor ?? undefined
+      };
+      
+      setCentroEncontrado(centroData);
+
+      const centroParaModal: CentroPorMesCompleto = {
+        centroId: centroCompleto.centroId,
+        centroNombre: centroCompleto.centroNombre,
+        fechaInicio: centroCompleto.fechaInicio,
+        fechaFinal: centroCompleto.fechaFinal,
+        manoObraTotal: centroCompleto.manoObraTotal || 0,
+        cargosUnicos: centroCompleto.cargosUnicos || [],
+        trabajadores: (centroCompleto.trabajadores || []).map(t => ({
+          trabajadorId: t.trabajadorId,
+          nombre: t.nombre,
+          totalHoras: t.totalHoras,
+          horasNormales: t.horasNormales,
+          extrasDiurnas: t.extrasDiurnas,
+          extrasNocturnas: t.extrasNocturnas,
+          extrasDominicalesDiurnas: t.extrasDominicalesDiurnas || 0,
+          extrasDominicalesNocturnas: t.extrasDominicalesNocturnas || 0,
+          cargo: t.cargo
+        })),
+        cliente: centroCompleto.cliente || undefined
+      };
+
+      setCentroSeleccionado(centroParaModal);
+      setDatosCompletos({
+        cliente: centroCompleto.cliente ? {
+          id: centroCompleto.cliente.id,
+          nombreCliente: centroCompleto.cliente.nombre
+        } : null,
+        manoObraTotal: centroCompleto.manoObraTotal || 0,
+        cargosUnicos: centroCompleto.cargosUnicos || ['Trabajador General']
+      });
     } catch (error) {
-      console.error("Error al cargar datos completos del centro:", error);
+      console.error("Error al cargar centro desde vista por estado:", error);
+      alert("Error al cargar los datos del centro");
+    } finally {
+      setLoading(false);
     }
   };
 
-  const cerrarModal = () => {
-    setCentroSeleccionado(null);
-    setVistaActual(null);
-    setCentroAEditar(null);
-    // También cerrar el modal de búsqueda
-    setModalBusqueda(null);
-    setModalEstado(null);
-    setCentroEstadoSeleccionado(null);
-    setDatosCompletos({
-      cliente: null,
-      manoObraTotal: 0,
-      cargosUnicos: []
-    });
+  const handleEditarCentro = async (centroId: string) => {
+    try {
+      setLoading(true);
+      const centroCompleto = await centrosService.getById(centroId);
+      setCentroAEditar(centroCompleto);
+      setVistaActual('editar');
+    } catch (error) {
+      console.error("Error al cargar centro para editar:", error);
+      alert("Error al cargar los datos del centro");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCambiarEstado = async (centroId: string, nuevoEstado: 'abierto' | 'cerrado', nombreCentro: string) => {
+    const estadoActual = nuevoEstado === 'abierto' ? 'cerrado' : 'abierto';
+    const confirmación = window.confirm(
+      `¿Estás seguro de cambiar el estado del centro "${nombreCentro}" de ${estadoActual} a ${nuevoEstado}?`
+    );
+
+    if (!confirmación) return;
+
+    try {
+      setLoading(true);
+      const resultado = await centrosService.cambiarEstado(centroId, nuevoEstado);
+      alert(`✅ ${resultado.mensaje}`);
+
+      if (estadoFiltro !== 'todos') {
+        await cargarCentrosPorEstado(estadoFiltro);
+      }
+      if (mesSeleccionado !== null) {
+        await cargarCentrosDelMes();
+      }
+      await cargarTodosCentros();
+    } catch (error) {
+      console.error("Error al cambiar estado:", error);
+      alert("❌ Error al cambiar el estado del centro");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCentroCreado = () => {
-    // Recargar los centros del mes actual si hay uno seleccionado
     if (mesSeleccionado !== null) {
       cargarCentrosDelMes();
     }
-    // Recargar todos los centros para la búsqueda
     cargarTodosCentros();
     cerrarModal();
   };
 
-  const formatearFecha = (fecha: string) => {
-    return new Date(fecha).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  const handleCentroActualizado = () => {
+    if (mesSeleccionado !== null) {
+      cargarCentrosDelMes();
+    }
+    cargarTodosCentros();
+    if (vistaActual === 'busqueda' && centroEncontrado) {
+      handleBusquedaCentro(centroEncontrado.id);
+    }
+    cerrarModal();
   };
 
-  const formatearHoras = (hours: number) => {
-    if (hours === 0) return "0:00";
-    const h = Math.floor(hours);
-    const m = Math.round((hours - h) * 60);
-    return `${h}:${m.toString().padStart(2, "0")}`;
-  };
+  // ================================
+  // EFFECTS
+  // ================================
+  useEffect(() => {
+    cargarTodosCentros();
+  }, [cargarTodosCentros]);
 
-  const formatearMoneda = (valor: number) => {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(valor);
-  };
+  useEffect(() => {
+    if (mesSeleccionado !== null) {
+      cargarCentrosDelMes();
+    }
+  }, [mesSeleccionado, cargarCentrosDelMes]);
 
+  // ================================
+  // RENDER PRINCIPAL
+  // ================================
+  
   // Si estamos en la vista de información de ejecución
   if (vistaActual === 'ejecucion' && centroSeleccionado) {
     return (
@@ -525,8 +495,7 @@ const CentrosPage: React.FC = () => {
               setVistaActual('busqueda');
               setMesSeleccionado(null);
               setCentroSeleccionado(null);
-              // NUEVO: Limpiar modal de búsqueda
-              setModalBusqueda(null);
+              cerrarModal();
             }}
             style={{
               background: vistaActual === 'busqueda' ?
@@ -548,7 +517,7 @@ const CentrosPage: React.FC = () => {
           >
             🔍 Buscar Centro
           </button>
-          {/* Botón para filtrar por estado */}
+          
           <button
             onClick={() => {
               setVistaActual('estado');
@@ -556,7 +525,7 @@ const CentrosPage: React.FC = () => {
               setCentroSeleccionado(null);
               setCentroBuscado("");
               setCentroEncontrado(null);
-              setModalBusqueda(null);
+              cerrarModal();
               setEstadoFiltro('abierto');
               cargarCentrosPorEstado('abierto');
             }}
@@ -580,13 +549,13 @@ const CentrosPage: React.FC = () => {
           >
             📊 Filtrar por Estado
           </button>
+
           <button
             onClick={() => {
               setVistaActual(null);
               setCentroBuscado("");
               setCentroEncontrado(null);
-              // NUEVO: Limpiar modal de búsqueda
-              setModalBusqueda(null);
+              cerrarModal();
             }}
             style={{
               background: vistaActual === null || mesSeleccionado !== null ?
@@ -673,238 +642,37 @@ const CentrosPage: React.FC = () => {
               )}
 
               {centroEncontrado && centroSeleccionado && (
-                <div style={{
-                  marginTop: '30px'
-                }}>
-                  <div style={{
-                    marginBottom: '25px',
-                    padding: '15px 20px',
-                    background: 'linear-gradient(135deg, #43e97b, #38f9d7)',
-                    color: 'white',
-                    borderRadius: '12px',
-                    textAlign: 'center'
-                  }}>
-                    <h4 style={{ margin: 0, fontSize: '1.2rem' }}>
-                      ✅ Centro Encontrado
-                    </h4>
-                    <p style={{ margin: '5px 0 0 0', fontSize: '0.9rem', opacity: 0.9 }}>
-                      {centroSeleccionado.trabajadores.length > 0 ?
-                        `Total de trabajadores: ${centroSeleccionado.trabajadores.length}` :
-                        'Centro sin trabajadores registrados'
-                      }
-                    </p>
-                  </div>
-
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr',
-                    gap: '20px'
-                  }}>
-                    <div style={{
-                      background: 'linear-gradient(135deg, #f8fafb, #ffffff)',
-                      padding: '25px',
-                      borderRadius: '15px',
-                      border: '2px solid #e1e8ed',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                      transition: 'all 0.3s ease'
+                <div style={{ marginTop: '30px' }}>
+                  <CentroCard
+                    centro={{
+                      centroId: centroSeleccionado.centroId,
+                      centroNombre: centroSeleccionado.centroNombre,
+                      fechaInicio: centroSeleccionado.fechaInicio,
+                      fechaFinal: centroSeleccionado.fechaFinal,
+                      trabajadores: centroSeleccionado.trabajadores,
+                      manoObraTotal: centroSeleccionado.manoObraTotal
                     }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-5px)';
-                        e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.1)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
-                      }}
-                    >
-                      {/* Header del centro */}
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '15px',
-                        marginBottom: '20px'
-                      }}>
-                        <div style={{
-                          background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
-                          color: 'white',
-                          width: '60px',
-                          height: '60px',
-                          borderRadius: '15px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '1.8rem'
-                        }}>
-                          🏢
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <h3 style={{
-                            margin: '0 0 5px 0',
-                            fontSize: '1.3rem',
-                            fontWeight: '700',
-                            color: '#333'
-                          }}>
-                            {centroSeleccionado.centroNombre}
-                          </h3>
-                          <p style={{
-                            margin: 0,
-                            color: '#666',
-                            fontSize: '0.9rem'
-                          }}>
-                            Orden de compra: {centroSeleccionado.centroId}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Información básica */}
-                      <div style={{
-                        background: '#f0f9ff',
-                        padding: '15px',
-                        borderRadius: '10px',
-                        marginBottom: '20px',
-                        border: '1px solid #bfdbfe'
-                      }}>
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr 1fr',
-                          gap: '10px',
-                          fontSize: '0.9rem'
-                        }}>
-                          <div>
-                            <strong style={{ color: '#1d4ed8' }}>📅 Inicio:</strong><br />
-                            {formatearFecha(centroSeleccionado.fechaInicio)}
-                          </div>
-                          <div>
-                            <strong style={{ color: '#1d4ed8' }}>📅 Final:</strong><br />
-                            {centroSeleccionado.fechaFinal ? formatearFecha(centroSeleccionado.fechaFinal) : 'Vigente'}
-                          </div>
-                          <div>
-                            <strong style={{ color: '#1d4ed8' }}>👥 Trabajadores:</strong><br />
-                            {centroSeleccionado.trabajadores.length}
-                          </div>
-                          <div>
-                            <strong style={{ color: '#1d4ed8' }}>⏰ Total Horas:</strong><br />
-                            {centroSeleccionado.trabajadores.length > 0 ?
-                              formatearHoras(centroSeleccionado.trabajadores.reduce((sum, t) => sum + t.totalHoras, 0)) :
-                              '0:00'
-                            }
-                          </div>
-                        </div>
-
-                        {/* Agregar mano de obra total */}
-                        <div style={{
-                          marginTop: '15px',
-                          paddingTop: '15px',
-                          borderTop: '1px solid #bfdbfe'
-                        }}>
-                          <div style={{ textAlign: 'center' }}>
-                            <strong style={{ color: '#1d4ed8' }}>💰 Mano de Obra Total:</strong><br />
-                            <span style={{ fontSize: '1.1rem', fontWeight: '600', color: '#059669' }}>
-                              {formatearMoneda(centroSeleccionado.manoObraTotal || 0)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Botones de acción - MODIFICADO */}
-                      <div style={{
-                        display: 'flex',
-                        gap: '8px',
-                        flexWrap: 'wrap'
-                      }}>
-                        <button
-                          onClick={() => {
-                            setModalBusqueda('info');
-                          }}
-                          style={{
-                            flex: 1,
-                            minWidth: '120px',
-                            background: 'linear-gradient(135deg, #22c55e, #15803d)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontWeight: '600',
-                            fontSize: '0.85rem',
-                            transition: 'all 0.3s ease'
-                          }}
-                        >
-                          📊 Ver Info
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (centroSeleccionado && centroSeleccionado.trabajadores.length > 0) {
-                              setModalBusqueda('cargos');
-                            } else {
-                              alert('Este centro no tiene trabajadores registrados en el sistema.');
-                            }
-                          }}
-                          style={{
-                            flex: 1,
-                            minWidth: '120px',
-                            background: centroSeleccionado.trabajadores.length > 0 ?
-                              'linear-gradient(135deg, #f59e0b, #d97706)' :
-                              'linear-gradient(135deg, #9ca3af, #6b7280)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontWeight: '600',
-                            fontSize: '0.85rem',
-                            transition: 'all 0.3s ease'
-                          }}
-                        >
-                          👷 Ver Cargos
-                        </button>
-                        <button
-                          onClick={() => {
-                            setVistaActual('ejecucion');
-                          }}
-                          style={{
-                            flex: 1,
-                            minWidth: '140px',
-                            background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontWeight: '600',
-                            fontSize: '0.85rem',
-                            transition: 'all 0.3s ease'
-                          }}
-                        >
-                          📈 Info Ejecución
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {centroBuscado && !centroEncontrado && !loadingBusqueda && (
-                <div style={{
-                  marginTop: '30px',
-                  textAlign: 'center',
-                  padding: '40px',
-                  background: '#fef2f2',
-                  borderRadius: '15px',
-                  border: '2px solid #fecaca'
-                }}>
-                  <div style={{ fontSize: '3rem', marginBottom: '15px' }}>❌</div>
-                  <h3 style={{ margin: '0 0 10px 0', color: '#dc2626' }}>
-                    Centro no encontrado
-                  </h3>
-                  <p style={{ margin: 0, color: '#666' }}>
-                    No se encontró ningún centro con el ID "{centroBuscado}"
-                  </p>
+                    onVerInfo={() => {
+                      prepararCentroParaModal(centroSeleccionado, 'busqueda');
+                      abrirModal('info', 'busqueda');
+                    }}
+                    onVerCargos={() => {
+                      if (centroSeleccionado.trabajadores.length > 0) {
+                        prepararCentroParaModal(centroSeleccionado, 'busqueda');
+                        abrirModal('cargos', 'busqueda');
+                      } else {
+                        alert('Este centro no tiene trabajadores registrados en el sistema.');
+                      }
+                    }}
+                    onVerEjecucion={() => setVistaActual('ejecucion')}
+                    showEditButton={false}
+                  />
                 </div>
               )}
             </div>
           </div>
         )}
+
         {/* Vista de filtro por estado */}
         {vistaActual === 'estado' && (
           <div style={{
@@ -973,7 +741,7 @@ const CentrosPage: React.FC = () => {
               </button>
             </div>
 
-            {/* Resultados */}
+            {/* Grid de centros por estado */}
             {loadingEstado ? (
               <div style={{
                 textAlign: 'center',
@@ -984,237 +752,55 @@ const CentrosPage: React.FC = () => {
                 🔄 Cargando centros...
               </div>
             ) : centrosPorEstado.length > 0 ? (
-              <div>
-                <div style={{
-                  marginBottom: '25px',
-                  padding: '15px 20px',
-                  background: estadoFiltro === 'abierto' ?
-                    'linear-gradient(135deg, #22c55e, #15803d)' :
-                    'linear-gradient(135deg, #ef4444, #dc2626)',
-                  color: 'white',
-                  borderRadius: '12px',
-                  textAlign: 'center'
-                }}>
-                  <h4 style={{ margin: 0, fontSize: '1.2rem' }}>
-                    {estadoFiltro === 'abierto' ? '🟢' : '🔴'} {centrosPorEstado.length} Centro{centrosPorEstado.length !== 1 ? 's' : ''} {estadoFiltro === 'abierto' ? 'Abierto' : 'Cerrado'}{centrosPorEstado.length !== 1 ? 's' : ''}
-                  </h4>
-                </div>
-
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-                  gap: '20px'
-                }}>
-                  {centrosPorEstado.map((centro) => (
-                    <div key={centro.centroId} style={{
-                      background: 'linear-gradient(135deg, #f8fafb, #ffffff)',
-                      padding: '25px',
-                      borderRadius: '15px',
-                      border: '2px solid #e1e8ed',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.05)'
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '15px',
-                        marginBottom: '20px'
-                      }}>
-                        <div style={{
-                          background: centro.estado === 'Abierto' ?
-                            'linear-gradient(135deg, #22c55e, #15803d)' :
-                            'linear-gradient(135deg, #ef4444, #dc2626)',
-                          color: 'white',
-                          width: '60px',
-                          height: '60px',
-                          borderRadius: '15px',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '1.8rem'
-                        }}>
-                          {centro.estado === 'Abierto' ? '🟢' : '🔴'}
-                        </div>
-                        <div style={{ flex: 1 }}>
-                          <h3 style={{
-                            margin: '0 0 5px 0',
-                            fontSize: '1.3rem',
-                            fontWeight: '700',
-                            color: '#333'
-                          }}>
-                            {centro.centroNombre}
-                          </h3>
-                          <p style={{
-                            margin: '0 0 5px 0',
-                            color: '#666',
-                            fontSize: '0.9rem'
-                          }}>
-                            ID: {centro.centroId}
-                          </p>
-                          <span style={{
-                            background: centro.estado === 'Abierto' ? '#dcfce7' : '#fee2e2',
-                            color: centro.estado === 'Abierto' ? '#15803d' : '#dc2626',
-                            padding: '4px 8px',
-                            borderRadius: '6px',
-                            fontSize: '0.8rem',
-                            fontWeight: '600'
-                          }}>
-                            {centro.estado}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div style={{
-                        background: '#f0f9ff',
-                        padding: '15px',
-                        borderRadius: '10px',
-                        marginBottom: '20px',
-                        border: '1px solid #bfdbfe'
-                      }}>
-                        <div style={{
-                          display: 'grid',
-                          gridTemplateColumns: '1fr',
-                          gap: '10px',
-                          fontSize: '0.9rem'
-                        }}>
-                          <div>
-                            <strong style={{ color: '#1d4ed8' }}>Cliente:</strong><br />
-                            {centro.clienteNombre}
-                          </div>
-                          <div>
-                            <strong style={{ color: '#1d4ed8' }}>Fecha Inicio:</strong><br />
-                            {new Date(centro.fechaInicio).toLocaleDateString('es-ES')}
-                          </div>
-                          {centro.fechaFinal && (
-                            <div>
-                              <strong style={{ color: '#1d4ed8' }}>Fecha Final:</strong><br />
-                              {new Date(centro.fechaFinal).toLocaleDateString('es-ES')}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div style={{
-                        display: 'flex',
-                        gap: '10px',
-                        flexWrap: 'wrap'
-                      }}>
-                        <button
-                          onClick={() => handleSeleccionarCentroEstado(centro.centroId)}
-                          style={{
-                            flex: 1,
-                            minWidth: '120px',
-                            background: 'linear-gradient(135deg, #22c55e, #15803d)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontWeight: '600',
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          📊 Ver Info
-                        </button>
-
-                        {/* Botón Ver Cargos */}
-                        <button
-                          onClick={() => {
-                            handleSeleccionarCentroEstado(centro.centroId);
-                            setModalEstado('cargos');
-                          }}
-                          style={{
-                            flex: 1,
-                            minWidth: '120px',
-                            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontWeight: '600',
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          👷 Ver Cargos
-                        </button>
-
-                        {/* Botón Info Ejecución */}
-                        <button
-                          onClick={() => {
-                            setCentroSeleccionado({
-                              centroId: centro.centroId,
-                              centroNombre: centro.centroNombre,
-                              fechaInicio: centro.fechaInicio,
-                              fechaFinal: centro.fechaFinal,
-                              manoObraTotal: 0,
-                              cargosUnicos: [],
-                              trabajadores: []
-                            } as CentroPorMesCompleto);
-                            setVistaActual('ejecucion');
-                          }}
-                          style={{
-                            flex: 1,
-                            minWidth: '140px',
-                            background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontWeight: '600',
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          📈 Ejecución
-                        </button>
-
-                        {/* Botón Editar */}
-                        <button
-                          onClick={() => handleEditarCentro(centro.centroId)}
-                          style={{
-                            flex: 1,
-                            minWidth: '120px',
-                            background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontWeight: '600',
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          ✏️ Editar
-                        </button>
-
-                        {/* Botón Cambiar Estado (ya existente) */}
-                        <button
-                          onClick={() => handleCambiarEstado(
-                            centro.centroId,
-                            centro.estado === 'Abierto' ? 'cerrado' : 'abierto',
-                            centro.centroNombre
-                          )}
-                          style={{
-                            flex: 1,
-                            minWidth: '140px',
-                            background: centro.estado === 'Abierto' ?
-                              'linear-gradient(135deg, #ef4444, #dc2626)' :
-                              'linear-gradient(135deg, #22c55e, #15803d)',
-                            color: 'white',
-                            border: 'none',
-                            padding: '10px 12px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            fontWeight: '600',
-                            fontSize: '0.85rem'
-                          }}
-                        >
-                          {centro.estado === 'Abierto' ? '🔴 Cerrar' : '🟢 Abrir'}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
+                gap: '20px'
+              }}>
+                {centrosPorEstado.map((centro) => (
+                  <CentroCard
+                    key={centro.centroId}
+                    centro={{
+                      centroId: centro.centroId,
+                      centroNombre: centro.centroNombre,
+                      fechaInicio: centro.fechaInicio,
+                      fechaFinal: centro.fechaFinal,
+                      trabajadores: centro.trabajadores || [],
+                      manoObraTotal: centro.manoObraTotal,
+                      estado: centro.estado,
+                      clienteNombre: centro.clienteNombre
+                    }}
+                    onVerInfo={() => {
+                      handleSeleccionarCentroEstado(centro.centroId);
+                      abrirModal('info', 'estado');
+                    }}
+                    onVerCargos={() => {
+                      handleSeleccionarCentroEstado(centro.centroId);
+                      abrirModal('cargos', 'estado');
+                    }}
+                    onVerEjecucion={() => {
+                      setCentroSeleccionado({
+                        centroId: centro.centroId,
+                        centroNombre: centro.centroNombre,
+                        fechaInicio: centro.fechaInicio,
+                        fechaFinal: centro.fechaFinal,
+                        manoObraTotal: 0,
+                        cargosUnicos: [],
+                        trabajadores: []
+                      } as CentroPorMesCompleto);
+                      setVistaActual('ejecucion');
+                    }}
+                    onEditar={() => handleEditarCentro(centro.centroId)}
+                    onCambiarEstado={() => handleCambiarEstado(
+                      centro.centroId,
+                      centro.estado === 'Abierto' ? 'cerrado' : 'abierto',
+                      centro.centroNombre
+                    )}
+                    showEditButton={true}
+                    showStateButton={true}
+                    showClientInfo={true}
+                  />
+                ))}
               </div>
             ) : (
               <div style={{
@@ -1222,19 +808,13 @@ const CentrosPage: React.FC = () => {
                 padding: '60px',
                 color: '#666'
               }}>
-                <div style={{ fontSize: '4rem', marginBottom: '20px' }}>
-                  {estadoFiltro === 'abierto' ? '🟢' : '🔴'}
-                </div>
-                <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>
-                  No hay centros {estadoFiltro}s
-                </h3>
+                <h3>No hay centros {estadoFiltro}s</h3>
               </div>
             )}
           </div>
         )}
 
         {/* Vista por meses */}
-
         {vistaActual !== 'busqueda' && vistaActual !== 'estado' && (
           <>
             {/* Selector de año */}
@@ -1252,9 +832,7 @@ const CentrosPage: React.FC = () => {
                   fontWeight: '600',
                   color: '#333',
                   marginBottom: '15px',
-                  fontSize: '1.2rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.5px'
+                  fontSize: '1.2rem'
                 }}>
                   📅 Selecciona el Año
                 </label>
@@ -1306,7 +884,7 @@ const CentrosPage: React.FC = () => {
                   gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
                   gap: '20px'
                 }}>
-                  {meses.map((mes, index) => (
+                  {MESES.map((mes, index) => (
                     <button
                       key={index}
                       onClick={() => setMesSeleccionado(index + 1)}
@@ -1319,17 +897,7 @@ const CentrosPage: React.FC = () => {
                         fontSize: '1.1rem',
                         fontWeight: '600',
                         cursor: 'pointer',
-                        transition: 'all 0.3s ease',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.5px'
-                      }}
-                      onMouseOver={(e) => {
-                        e.currentTarget.style.transform = 'translateY(-5px)';
-                        e.currentTarget.style.boxShadow = '0 15px 35px rgba(102,126,234,0.3)';
-                      }}
-                      onMouseOut={(e) => {
-                        e.currentTarget.style.transform = 'translateY(0)';
-                        e.currentTarget.style.boxShadow = 'none';
+                        transition: 'all 0.3s ease'
                       }}
                     >
                       {mes}
@@ -1361,16 +929,7 @@ const CentrosPage: React.FC = () => {
                     fontSize: '1.8rem',
                     fontWeight: '600'
                   }}>
-                    🏢 Centros Activos - {meses[mesSeleccionado - 1]} {añoSeleccionado}
-                    {loading && (
-                      <span style={{
-                        fontSize: '1rem',
-                        color: '#666',
-                        marginLeft: '10px'
-                      }}>
-                        🔄 Cargando...
-                      </span>
-                    )}
+                    🏢 Centros Activos - {MESES[mesSeleccionado - 1]} {añoSeleccionado}
                   </h2>
                   <button
                     onClick={() => setMesSeleccionado(null)}
@@ -1400,6 +959,7 @@ const CentrosPage: React.FC = () => {
                   </div>
                 ) : centrosDelMes.length > 0 ? (
                   <div>
+                    {/* Resumen */}
                     <div style={{
                       marginBottom: '25px',
                       padding: '15px 20px',
@@ -1427,215 +987,38 @@ const CentrosPage: React.FC = () => {
                       </div>
                     </div>
 
+                    {/* Grid de centros */}
                     <div style={{
                       display: 'grid',
                       gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
                       gap: '20px'
                     }}>
                       {centrosDelMes.map((centro) => (
-                        <div key={centro.centroId} style={{
-                          background: 'linear-gradient(135deg, #f8fafb, #ffffff)',
-                          padding: '25px',
-                          borderRadius: '15px',
-                          border: '2px solid #e1e8ed',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                          transition: 'all 0.3s ease'
-                        }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-5px)';
-                            e.currentTarget.style.boxShadow = '0 10px 25px rgba(0,0,0,0.1)';
+                        <CentroCard
+                          key={centro.centroId}
+                          centro={{
+                            centroId: centro.centroId,
+                            centroNombre: centro.centroNombre,
+                            fechaInicio: centro.fechaInicio,
+                            fechaFinal: centro.fechaFinal,
+                            trabajadores: centro.trabajadores,
+                            manoObraTotal: centro.manoObraTotal
                           }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
+                          onVerInfo={() => {
+                            prepararCentroParaModal(centro, 'meses');
+                            abrirModal('info', 'meses');
                           }}
-                        >
-                          {/* Header del centro */}
-                          <div style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '15px',
-                            marginBottom: '20px'
-                          }}>
-                            <div style={{
-                              background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
-                              color: 'white',
-                              width: '60px',
-                              height: '60px',
-                              borderRadius: '15px',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '1.8rem'
-                            }}>
-                              🏢
-                            </div>
-                            <div style={{ flex: 1 }}>
-                              <h3 style={{
-                                margin: '0 0 5px 0',
-                                fontSize: '1.3rem',
-                                fontWeight: '700',
-                                color: '#333'
-                              }}>
-                                {centro.centroNombre}
-                              </h3>
-                              <p style={{
-                                margin: 0,
-                                color: '#666',
-                                fontSize: '0.9rem'
-                              }}>
-                                Orden de compra: {centro.centroId}
-                              </p>
-                            </div>
-                          </div>
-
-                          {/* Información básica */}
-                          <div style={{
-                            background: '#f0f9ff',
-                            padding: '15px',
-                            borderRadius: '10px',
-                            marginBottom: '20px',
-                            border: '1px solid #bfdbfe'
-                          }}>
-                            <div style={{
-                              display: 'grid',
-                              gridTemplateColumns: '1fr 1fr',
-                              gap: '10px',
-                              fontSize: '0.9rem'
-                            }}>
-                              <div>
-                                <strong style={{ color: '#1d4ed8' }}>📅 Inicio:</strong><br />
-                                {formatearFecha(centro.fechaInicio)}
-                              </div>
-                              <div>
-                                <strong style={{ color: '#1d4ed8' }}>📅 Final:</strong><br />
-                                {centro.fechaFinal ? formatearFecha(centro.fechaFinal) : 'Vigente'}
-                              </div>
-                              <div>
-                                <strong style={{ color: '#1d4ed8' }}>👥 Trabajadores:</strong><br />
-                                {centro.trabajadores.length}
-                              </div>
-                              <div>
-                                <strong style={{ color: '#1d4ed8' }}>⏰ Total Horas:</strong><br />
-                                {formatearHoras(centro.trabajadores.reduce((sum, t) => sum + t.totalHoras, 0))}
-                              </div>
-                            </div>
-
-                            {/* Mano de obra total */}
-                            <div style={{
-                              marginTop: '15px',
-                              paddingTop: '15px',
-                              borderTop: '1px solid #bfdbfe',
-                              textAlign: 'center'
-                            }}>
-                              <strong style={{ color: '#1d4ed8' }}>💰 Mano de Obra Total:</strong><br />
-                              <span style={{
-                                fontSize: '1.1rem',
-                                fontWeight: '600',
-                                color: '#059669',
-                                background: '#f0fdf4',
-                                padding: '4px 8px',
-                                borderRadius: '6px',
-                                display: 'inline-block',
-                                marginTop: '5px'
-                              }}>
-                                {formatearMoneda(centro.manoObraTotal || 0)}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Botones de acción */}
-                          <div style={{
-                            display: 'flex',
-                            gap: '8px',
-                            flexWrap: 'wrap'
-                          }}>
-                            <button
-                              onClick={() => {
-                                handleSeleccionarCentroDelMes(centro);
-                                setVistaActual('info');
-                              }}
-                              style={{
-                                flex: 1,
-                                minWidth: '120px',
-                                background: 'linear-gradient(135deg, #22c55e, #15803d)',
-                                color: 'white',
-                                border: 'none',
-                                padding: '10px 12px',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                fontWeight: '600',
-                                fontSize: '0.85rem',
-                                transition: 'all 0.3s ease'
-                              }}
-                            >
-                              📊 Ver Info
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                handleSeleccionarCentroDelMes(centro);
-                                setVistaActual('cargos');
-                              }}
-                              style={{
-                                flex: 1,
-                                minWidth: '120px',
-                                background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                                color: 'white',
-                                border: 'none',
-                                padding: '10px 12px',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                fontWeight: '600',
-                                fontSize: '0.85rem',
-                                transition: 'all 0.3s ease'
-                              }}
-                            >
-                              👷 Ver Cargos
-                            </button>
-                            <button
-                              onClick={() => {
-                                handleSeleccionarCentroDelMes(centro);
-                                setVistaActual('ejecucion');
-                              }}
-                              style={{
-                                flex: 1,
-                                minWidth: '140px',
-                                background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                                color: 'white',
-                                border: 'none',
-                                padding: '10px 12px',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                fontWeight: '600',
-                                fontSize: '0.85rem',
-                                transition: 'all 0.3s ease'
-                              }}
-                            >
-                              📈 Info Ejecución
-                            </button>
-                            <button
-                              onClick={() => {
-                                handleEditarCentro(centro.centroId);
-                              }}
-                              style={{
-                                flex: 1,
-                                minWidth: '120px',
-                                background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                                color: 'white',
-                                border: 'none',
-                                padding: '10px 12px',
-                                borderRadius: '8px',
-                                cursor: 'pointer',
-                                fontWeight: '600',
-                                fontSize: '0.85rem',
-                                transition: 'all 0.3s ease'
-                              }}
-                            >
-                              ✏️ Editar
-                            </button>
-                          </div>
-                        </div>
+                          onVerCargos={() => {
+                            prepararCentroParaModal(centro, 'meses');
+                            abrirModal('cargos', 'meses');
+                          }}
+                          onVerEjecucion={() => {
+                            setCentroSeleccionado(centro);
+                            setVistaActual('ejecucion');
+                          }}
+                          onEditar={() => handleEditarCentro(centro.centroId)}
+                          showEditButton={true}
+                        />
                       ))}
                     </div>
                   </div>
@@ -1650,7 +1033,7 @@ const CentrosPage: React.FC = () => {
                       No hay centros activos
                     </h3>
                     <p style={{ marginBottom: '0', color: '#666' }}>
-                      No se encontraron centros con actividad en {meses[mesSeleccionado - 1]} {añoSeleccionado}
+                      No se encontraron centros con actividad en {MESES[mesSeleccionado - 1]} {añoSeleccionado}
                     </p>
                   </div>
                 )}
@@ -1659,1249 +1042,18 @@ const CentrosPage: React.FC = () => {
           </>
         )}
 
-        {/* Modal de información del centro desde vista por meses */}
-        {centroSeleccionado && vistaActual && vistaActual !== 'crear' && vistaActual !== 'ejecucion' && vistaActual !== 'busqueda' && vistaActual !== 'editar' && (<div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          background: 'rgba(0,0,0,0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000,
-          padding: '20px'
-        }}>
-          <div style={{
-            background: 'white',
-            borderRadius: '20px',
-            padding: '30px',
-            maxWidth: '900px',
-            width: '100%',
-            maxHeight: '85vh',
-            overflowY: 'auto',
-            boxShadow: '0 20px 50px rgba(0,0,0,0.3)'
-          }}>
-            <div style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              marginBottom: '25px',
-              paddingBottom: '15px',
-              borderBottom: '2px solid #f0f0f0'
-            }}>
-              <div>
-                <h3 style={{
-                  margin: '0 0 5px 0',
-                  fontSize: '1.5rem',
-                  fontWeight: '600',
-                  color: '#333'
-                }}>
-                  🏢 {centroSeleccionado.centroNombre}
-                </h3>
-                <p style={{
-                  margin: 0,
-                  fontSize: '0.9rem',
-                  color: '#666'
-                }}>
-                  {vistaActual === 'info' ? '📊 Información Completa' : '👷 Cargos de Trabajadores'}
-                </p>
-              </div>
-              <button
-                onClick={cerrarModal}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.5rem',
-                  cursor: 'pointer',
-                  color: '#666'
-                }}
-              >
-                ❌
-              </button>
-            </div>
-
-            {vistaActual === 'info' ? (
-              // Vista de información completa
-              <div>
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                  gap: '20px',
-                  marginBottom: '30px'
-                }}>
-                  <div style={{
-                    background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
-                    color: 'white',
-                    padding: '20px',
-                    borderRadius: '15px',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🏢</div>
-                    <h4 style={{ margin: '0 0 5px 0' }}>Orden de Compra</h4>
-                    <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-                      {centroSeleccionado.centroId}
-                    </p>
-                  </div>
-
-                  <div style={{
-                    background: 'linear-gradient(135deg, #22c55e, #15803d)',
-                    color: 'white',
-                    padding: '20px',
-                    borderRadius: '15px',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '2rem', marginBottom: '10px' }}>👥</div>
-                    <h4 style={{ margin: '0 0 5px 0' }}>Total Trabajadores</h4>
-                    <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-                      {centroSeleccionado.trabajadores.length}
-                    </p>
-                  </div>
-
-                  <div style={{
-                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                    color: 'white',
-                    padding: '20px',
-                    borderRadius: '15px',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏰</div>
-                    <h4 style={{ margin: '0 0 5px 0' }}>Total Horas</h4>
-                    <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-                      {formatearHoras(centroSeleccionado.trabajadores.reduce((sum, t) => sum + t.totalHoras, 0))}
-                    </p>
-                  </div>
-
-                  <div style={{
-                    background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                    color: 'white',
-                    padding: '20px',
-                    borderRadius: '15px',
-                    textAlign: 'center'
-                  }}>
-                    <div style={{ fontSize: '2rem', marginBottom: '10px' }}>💰</div>
-                    <h4 style={{ margin: '0 0 5px 0' }}>Mano de Obra</h4>
-                    <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-                      {formatearMoneda(centroSeleccionado.manoObraTotal || datosCompletos.manoObraTotal)}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Información del proyecto */}
-                <div style={{
-                  background: '#f8fafb',
-                  padding: '20px',
-                  borderRadius: '15px',
-                  border: '2px solid #e1e8ed',
-                  marginBottom: '20px'
-                }}>
-                  <h4 style={{
-                    margin: '0 0 15px 0',
-                    color: '#333',
-                    fontSize: '1.2rem'
-                  }}>
-                    📋 Información del Proyecto
-                  </h4>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                    gap: '15px'
-                  }}>
-                    <div>
-                      <strong style={{ color: '#22c55e' }}>Cliente:</strong><br />
-                      <span style={{ fontSize: '1.1rem' }}>
-                        {datosCompletos.cliente ? datosCompletos.cliente.nombreCliente : 'Sin cliente asignado'}
-                      </span>
-                    </div>
-                    <div>
-                      <strong style={{ color: '#22c55e' }}>Estado:</strong><br />
-                      <span style={{ fontSize: '1.1rem' }}>
-                        {centroEncontrado?.estado ? (centroEncontrado.estado ? 'Abierto' : 'Cerrado') : 'No especificado'}
-                      </span>
-                    </div>
-                    <div>
-                      <strong style={{ color: '#22c55e' }}>Tipo:</strong><br />
-                      <span style={{ fontSize: '1.1rem' }}>
-                        {centroEncontrado?.tipo || 'No especificado'}
-                      </span>
-                    </div>
-                    <div>
-                      <strong style={{ color: '#22c55e' }}>Valor de la Orden:</strong><br />
-                      <span style={{ fontSize: '1.1rem' }}>
-                        {centroEncontrado?.valorOrden ? formatearMoneda(centroEncontrado.valorOrden) : 'No especificado'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Personal del proyecto */}
-                <div style={{
-                  background: '#f0f9ff',
-                  padding: '20px',
-                  borderRadius: '15px',
-                  border: '2px solid #bfdbfe',
-                  marginBottom: '20px'
-                }}>
-                  <h4 style={{
-                    margin: '0 0 15px 0',
-                    color: '#333',
-                    fontSize: '1.2rem'
-                  }}>
-                    👥 Personal del Proyecto
-                  </h4>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: '1fr 1fr',
-                    gap: '15px'
-                  }}>
-                    <div>
-                      <strong style={{ color: '#1d4ed8' }}>Interventor:</strong><br />
-                      <span style={{ fontSize: '1.1rem' }}>
-                        {centroEncontrado?.interventor || 'No asignado'}
-                      </span>
-                    </div>
-                    <div>
-                      <strong style={{ color: '#1d4ed8' }}>Vendedor:</strong><br />
-                      <span style={{ fontSize: '1.1rem' }}>
-                        {centroEncontrado?.vendedor || 'No asignado'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Fechas del proyecto */}
-                <div style={{
-                  background: '#fef3c7',
-                  padding: '20px',
-                  borderRadius: '15px',
-                  border: '2px solid #fde68a'
-                }}>
-                  <h4 style={{
-                    margin: '0 0 15px 0',
-                    color: '#333',
-                    fontSize: '1.2rem'
-                  }}>
-                    📅 Fechas del Proyecto
-                  </h4>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                    gap: '15px'
-                  }}>
-                    <div>
-                      <strong style={{ color: '#d97706' }}>Fecha de Inicio:</strong><br />
-                      <span style={{ fontSize: '1.1rem' }}>
-                        {formatearFecha(centroSeleccionado.fechaInicio)}
-                      </span>
-                    </div>
-                    <div>
-                      <strong style={{ color: '#d97706' }}>Fecha Final:</strong><br />
-                      <span style={{ fontSize: '1.1rem' }}>
-                        {centroSeleccionado.fechaFinal ? formatearFecha(centroSeleccionado.fechaFinal) : '🟢 Vigente'}
-                      </span>
-                    </div>
-                    <div>
-                      <strong style={{ color: '#d97706' }}>Fecha de Factura:</strong><br />
-                      <span style={{ fontSize: '1.1rem' }}>
-                        {centroEncontrado?.fechaFactura ? formatearFecha(centroEncontrado.fechaFactura) : 'No especificada'}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Mostrar botón para ver cargos o mensaje informativo */}
-                <div style={{
-                  marginTop: '20px',
-                  textAlign: 'center'
-                }}>
-                  {centroSeleccionado.trabajadores.length > 0 ? (
-                    <button
-                      onClick={() => setVistaActual('cargos')}
-                      style={{
-                        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                        color: 'white',
-                        border: 'none',
-                        padding: '15px 30px',
-                        borderRadius: '10px',
-                        cursor: 'pointer',
-                        fontWeight: '600',
-                        fontSize: '1rem'
-                      }}
-                    >
-                      👷 Ver Cargos de Trabajadores ({centroSeleccionado.trabajadores.length})
-                    </button>
-                  ) : (
-                    <div style={{
-                      padding: '20px',
-                      background: '#f3f4f6',
-                      borderRadius: '12px',
-                      border: '2px solid #d1d5db'
-                    }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '10px' }}>📋</div>
-                      <h4 style={{ margin: '0 0 10px 0', color: '#374151' }}>
-                        Centro sin Trabajadores Registrados
-                      </h4>
-                      <p style={{ margin: 0, color: '#6b7280', fontSize: '0.95rem' }}>
-                        Este centro no tiene trabajadores registrados en el sistema.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              // Vista de cargos
-              <div>
-                <div style={{
-                  marginBottom: '20px',
-                  padding: '15px 20px',
-                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                  color: 'white',
-                  borderRadius: '12px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <h4 style={{ margin: 0, fontSize: '1.2rem' }}>
-                    👷 Cargos en el Centro
-                  </h4>
-                  <button
-                    onClick={() => setVistaActual('info')}
-                    style={{
-                      background: 'rgba(255,255,255,0.2)',
-                      color: 'white',
-                      border: '1px solid rgba(255,255,255,0.3)',
-                      padding: '8px 16px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '0.9rem'
-                    }}
-                  >
-                    📊 Ver Información
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (centroSeleccionado) {
-                        handleEditarCentro(centroSeleccionado.centroId);
-                      }
-                    }}
-                    style={{
-                      flex: 1,
-                      minWidth: '120px',
-                      background: 'linear-gradient(135deg, #6366f1, #4f46e5)',
-                      color: 'white',
-                      border: 'none',
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontWeight: '600',
-                      fontSize: '0.85rem',
-                      transition: 'all 0.3s ease'
-                    }}
-                  >
-                    ✏️ Editar
-                  </button>
-                </div>
-
-                {datosCompletos.cargosUnicos.length > 0 ? (
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                    gap: '15px',
-                    maxHeight: '500px',
-                    overflowY: 'auto',
-                    padding: '10px'
-                  }}>
-                    {datosCompletos.cargosUnicos.map((cargo, index) => (
-                      <div key={index} style={{
-                        background: 'linear-gradient(135deg, #f8fafb, #ffffff)',
-                        padding: '25px',
-                        borderRadius: '15px',
-                        border: '2px solid #e1e8ed',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                        textAlign: 'center',
-                        transition: 'all 0.3s ease'
-                      }}
-                        onMouseOver={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-3px)';
-                          e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.1)';
-                        }}
-                        onMouseOut={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)';
-                          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
-                        }}
-                      >
-                        <div style={{
-                          background: 'linear-gradient(135deg, #22c55e, #15803d)',
-                          color: 'white',
-                          width: '80px',
-                          height: '80px',
-                          borderRadius: '50%',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          fontSize: '2rem',
-                          margin: '0 auto 15px'
-                        }}>
-                          👷
-                        </div>
-                        <h5 style={{
-                          margin: '0 0 10px 0',
-                          fontSize: '1.2rem',
-                          fontWeight: '600',
-                          color: '#333'
-                        }}>
-                          {cargo}
-                        </h5>
-                        <div style={{
-                          background: '#f0fdf4',
-                          color: '#15803d',
-                          padding: '8px 12px',
-                          borderRadius: '8px',
-                          fontSize: '0.9rem',
-                          fontWeight: '600'
-                        }}>
-                          Presente en el proyecto
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div style={{
-                    textAlign: 'center',
-                    padding: '60px',
-                    color: '#666'
-                  }}>
-                    <div style={{ fontSize: '4rem', marginBottom: '20px' }}>👷</div>
-                    <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>
-                      No hay información de cargos
-                    </h3>
-                    <p style={{ margin: 0, color: '#666' }}>
-                      No se encontró información detallada de los cargos para este centro.
-                    </p>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-        )}
-
-        {/* NUEVO: Modal de información del centro desde vista de búsqueda */}
-        {centroSeleccionado && modalBusqueda && vistaActual === 'busqueda' && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: '20px'
-          }}>
-            <div style={{
-              background: 'white',
-              borderRadius: '20px',
-              padding: '30px',
-              maxWidth: '900px',
-              width: '100%',
-              maxHeight: '85vh',
-              overflowY: 'auto',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.3)'
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '25px',
-                paddingBottom: '15px',
-                borderBottom: '2px solid #f0f0f0'
-              }}>
-                <div>
-                  <h3 style={{
-                    margin: '0 0 5px 0',
-                    fontSize: '1.5rem',
-                    fontWeight: '600',
-                    color: '#333'
-                  }}>
-                    🏢 {centroSeleccionado.centroNombre}
-                  </h3>
-                  <p style={{
-                    margin: 0,
-                    fontSize: '0.9rem',
-                    color: '#666'
-                  }}>
-                    {modalBusqueda === 'info' ? '📊 Información Completa' : '👷 Cargos de Trabajadores'} (Desde Búsqueda)
-                  </p>
-                </div>
-                <button
-                  onClick={() => setModalBusqueda(null)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '1.5rem',
-                    cursor: 'pointer',
-                    color: '#666'
-                  }}
-                >
-                  ❌
-                </button>
-              </div>
-
-              {modalBusqueda === 'info' ? (
-                // Vista de información completa
-                <div>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                    gap: '20px',
-                    marginBottom: '30px'
-                  }}>
-                    <div style={{
-                      background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
-                      color: 'white',
-                      padding: '20px',
-                      borderRadius: '15px',
-                      textAlign: 'center'
-                    }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🏢</div>
-                      <h4 style={{ margin: '0 0 5px 0' }}>Orden de Compra</h4>
-                      <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-                        {centroSeleccionado.centroId}
-                      </p>
-                    </div>
-
-                    <div style={{
-                      background: 'linear-gradient(135deg, #22c55e, #15803d)',
-                      color: 'white',
-                      padding: '20px',
-                      borderRadius: '15px',
-                      textAlign: 'center'
-                    }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '10px' }}>👥</div>
-                      <h4 style={{ margin: '0 0 5px 0' }}>Total Trabajadores</h4>
-                      <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-                        {centroSeleccionado.trabajadores.length}
-                      </p>
-                    </div>
-
-                    <div style={{
-                      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                      color: 'white',
-                      padding: '20px',
-                      borderRadius: '15px',
-                      textAlign: 'center'
-                    }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏰</div>
-                      <h4 style={{ margin: '0 0 5px 0' }}>Total Horas</h4>
-                      <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-                        {formatearHoras(centroSeleccionado.trabajadores.reduce((sum, t) => sum + t.totalHoras, 0))}
-                      </p>
-                    </div>
-
-                    <div style={{
-                      background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                      color: 'white',
-                      padding: '20px',
-                      borderRadius: '15px',
-                      textAlign: 'center'
-                    }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '10px' }}>💰</div>
-                      <h4 style={{ margin: '0 0 5px 0' }}>Mano de Obra</h4>
-                      <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-                        {formatearMoneda(centroSeleccionado.manoObraTotal || datosCompletos.manoObraTotal)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Información del proyecto */}
-                  <div style={{
-                    background: '#f8fafb',
-                    padding: '20px',
-                    borderRadius: '15px',
-                    border: '2px solid #e1e8ed',
-                    marginBottom: '20px'
-                  }}>
-                    <h4 style={{
-                      margin: '0 0 15px 0',
-                      color: '#333',
-                      fontSize: '1.2rem'
-                    }}>
-                      📋 Información del Proyecto
-                    </h4>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                      gap: '15px'
-                    }}>
-                      <div>
-                        <strong style={{ color: '#22c55e' }}>Cliente:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {datosCompletos.cliente ? datosCompletos.cliente.nombreCliente : 'Sin cliente asignado'}
-                        </span>
-                      </div>
-                      <div>
-                        <strong style={{ color: '#22c55e' }}>Estado:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {centroEncontrado?.estado ? (centroEncontrado.estado ? 'Abierto' : 'Cerrado') : 'No especificado'}
-                        </span>
-                      </div>
-                      <div>
-                        <strong style={{ color: '#22c55e' }}>Tipo:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {centroEncontrado?.tipo || 'No especificado'}
-                        </span>
-                      </div>
-                      <div>
-                        <strong style={{ color: '#22c55e' }}>Valor de la Orden:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {centroEncontrado?.valorOrden ? formatearMoneda(centroEncontrado.valorOrden) : 'No especificado'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Personal del proyecto */}
-                  <div style={{
-                    background: '#f0f9ff',
-                    padding: '20px',
-                    borderRadius: '15px',
-                    border: '2px solid #bfdbfe',
-                    marginBottom: '20px'
-                  }}>
-                    <h4 style={{
-                      margin: '0 0 15px 0',
-                      color: '#333',
-                      fontSize: '1.2rem'
-                    }}>
-                      👥 Personal del Proyecto
-                    </h4>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: '15px'
-                    }}>
-                      <div>
-                        <strong style={{ color: '#1d4ed8' }}>Interventor:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {centroEncontrado?.interventor || 'No asignado'}
-                        </span>
-                      </div>
-                      <div>
-                        <strong style={{ color: '#1d4ed8' }}>Vendedor:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {centroEncontrado?.vendedor || 'No asignado'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Fechas del proyecto */}
-                  <div style={{
-                    background: '#fef3c7',
-                    padding: '20px',
-                    borderRadius: '15px',
-                    border: '2px solid #fde68a'
-                  }}>
-                    <h4 style={{
-                      margin: '0 0 15px 0',
-                      color: '#333',
-                      fontSize: '1.2rem'
-                    }}>
-                      📅 Fechas del Proyecto
-                    </h4>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                      gap: '15px'
-                    }}>
-                      <div>
-                        <strong style={{ color: '#d97706' }}>Fecha de Inicio:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {formatearFecha(centroSeleccionado.fechaInicio)}
-                        </span>
-                      </div>
-                      <div>
-                        <strong style={{ color: '#d97706' }}>Fecha Final:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {centroSeleccionado.fechaFinal ? formatearFecha(centroSeleccionado.fechaFinal) : '🟢 Vigente'}
-                        </span>
-                      </div>
-                      <div>
-                        <strong style={{ color: '#d97706' }}>Fecha de Factura:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {centroEncontrado?.fechaFactura ? formatearFecha(centroEncontrado.fechaFactura) : 'No especificada'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Mostrar botón para ver cargos o mensaje informativo */}
-                  <div style={{
-                    marginTop: '20px',
-                    textAlign: 'center'
-                  }}>
-                    {centroSeleccionado.trabajadores.length > 0 ? (
-                      <button
-                        onClick={() => setModalBusqueda('cargos')}
-                        style={{
-                          background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                          color: 'white',
-                          border: 'none',
-                          padding: '15px 30px',
-                          borderRadius: '10px',
-                          cursor: 'pointer',
-                          fontWeight: '600',
-                          fontSize: '1rem'
-                        }}
-                      >
-                        👷 Ver Cargos de Trabajadores ({centroSeleccionado.trabajadores.length})
-                      </button>
-                    ) : (
-                      <div style={{
-                        padding: '20px',
-                        background: '#f3f4f6',
-                        borderRadius: '12px',
-                        border: '2px solid #d1d5db'
-                      }}>
-                        <div style={{ fontSize: '2rem', marginBottom: '10px' }}>📋</div>
-                        <h4 style={{ margin: '0 0 10px 0', color: '#374151' }}>
-                          Centro sin Trabajadores Registrados
-                        </h4>
-                        <p style={{ margin: 0, color: '#6b7280', fontSize: '0.95rem' }}>
-                          Este centro no tiene trabajadores registrados en el sistema.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                // Vista de cargos
-                <div>
-                  <div style={{
-                    marginBottom: '20px',
-                    padding: '15px 20px',
-                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                    color: 'white',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <h4 style={{ margin: 0, fontSize: '1.2rem' }}>
-                      👷 Cargos en el Centro
-                    </h4>
-                    <button
-                      onClick={() => setModalBusqueda('info')}
-                      style={{
-                        background: 'rgba(255,255,255,0.2)',
-                        color: 'white',
-                        border: '1px solid rgba(255,255,255,0.3)',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontWeight: '600',
-                        fontSize: '0.9rem'
-                      }}
-                    >
-                      📊 Ver Información
-                    </button>
-                  </div>
-
-                  {datosCompletos.cargosUnicos.length > 0 ? (
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                      gap: '15px',
-                      maxHeight: '500px',
-                      overflowY: 'auto',
-                      padding: '10px'
-                    }}>
-                      {datosCompletos.cargosUnicos.map((cargo, index) => (
-                        <div key={index} style={{
-                          background: 'linear-gradient(135deg, #f8fafb, #ffffff)',
-                          padding: '25px',
-                          borderRadius: '15px',
-                          border: '2px solid #e1e8ed',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                          textAlign: 'center',
-                          transition: 'all 0.3s ease'
-                        }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-3px)';
-                            e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.1)';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
-                          }}
-                        >
-                          <div style={{
-                            background: 'linear-gradient(135deg, #22c55e, #15803d)',
-                            color: 'white',
-                            width: '80px',
-                            height: '80px',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '2rem',
-                            margin: '0 auto 15px'
-                          }}>
-                            👷
-                          </div>
-                          <h5 style={{
-                            margin: '0 0 10px 0',
-                            fontSize: '1.2rem',
-                            fontWeight: '600',
-                            color: '#333'
-                          }}>
-                            {cargo}
-                          </h5>
-                          <div style={{
-                            background: '#f0fdf4',
-                            color: '#15803d',
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            fontSize: '0.9rem',
-                            fontWeight: '600'
-                          }}>
-                            Presente en el proyecto
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{
-                      textAlign: 'center',
-                      padding: '60px',
-                      color: '#666'
-                    }}>
-                      <div style={{ fontSize: '4rem', marginBottom: '20px' }}>👷</div>
-                      <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>
-                        No hay información de cargos
-                      </h3>
-                      <p style={{ margin: 0, color: '#666' }}>
-                        No se encontró información detallada de los cargos para este centro.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-        {/* ✅ NUEVO: Modal de información del centro desde vista por estado */}
-        {/* ✅ NUEVO: Modal de información del centro desde vista por estado */}
-        {centroEstadoSeleccionado && modalEstado && vistaActual === 'estado' && (
-          <div style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.7)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1000,
-            padding: '20px'
-          }}>
-            <div style={{
-              background: 'white',
-              borderRadius: '20px',
-              padding: '30px',
-              maxWidth: '900px',
-              width: '100%',
-              maxHeight: '85vh',
-              overflowY: 'auto',
-              boxShadow: '0 20px 50px rgba(0,0,0,0.3)'
-            }}>
-              <div style={{
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                marginBottom: '25px',
-                paddingBottom: '15px',
-                borderBottom: '2px solid #f0f0f0'
-              }}>
-                <div>
-                  <h3 style={{
-                    margin: '0 0 5px 0',
-                    fontSize: '1.5rem',
-                    fontWeight: '600',
-                    color: '#333'
-                  }}>
-                    🏢 {centroEstadoSeleccionado.centroNombre}
-                  </h3>
-                  <p style={{
-                    margin: 0,
-                    fontSize: '0.9rem',
-                    color: '#666'
-                  }}>
-                    {modalEstado === 'info' ? '📊 Información Completa' : '👷 Cargos de Trabajadores'} (Desde Estado)
-                  </p>
-                </div>
-                <button
-                  onClick={() => setModalEstado(null)}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    fontSize: '1.5rem',
-                    cursor: 'pointer',
-                    color: '#666'
-                  }}
-                >
-                  ❌
-                </button>
-              </div>
-
-              {modalEstado === 'info' ? (
-                // Vista de información completa
-                <div>
-                  <div style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-                    gap: '20px',
-                    marginBottom: '30px'
-                  }}>
-                    <div style={{
-                      background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
-                      color: 'white',
-                      padding: '20px',
-                      borderRadius: '15px',
-                      textAlign: 'center'
-                    }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🏢</div>
-                      <h4 style={{ margin: '0 0 5px 0' }}>Orden de Compra</h4>
-                      <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-                        {centroEstadoSeleccionado.centroId}
-                      </p>
-                    </div>
-
-                    <div style={{
-                      background: 'linear-gradient(135deg, #22c55e, #15803d)',
-                      color: 'white',
-                      padding: '20px',
-                      borderRadius: '15px',
-                      textAlign: 'center'
-                    }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '10px' }}>👥</div>
-                      <h4 style={{ margin: '0 0 5px 0' }}>Total Trabajadores</h4>
-                      <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-                        {centroEstadoSeleccionado.trabajadores.length}
-                      </p>
-                    </div>
-
-                    <div style={{
-                      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                      color: 'white',
-                      padding: '20px',
-                      borderRadius: '15px',
-                      textAlign: 'center'
-                    }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏰</div>
-                      <h4 style={{ margin: '0 0 5px 0' }}>Total Horas</h4>
-                      <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-                        {formatearHoras(centroEstadoSeleccionado.trabajadores.reduce((sum, t) => sum + t.totalHoras, 0))}
-                      </p>
-                    </div>
-
-                    <div style={{
-                      background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
-                      color: 'white',
-                      padding: '20px',
-                      borderRadius: '15px',
-                      textAlign: 'center'
-                    }}>
-                      <div style={{ fontSize: '2rem', marginBottom: '10px' }}>💰</div>
-                      <h4 style={{ margin: '0 0 5px 0' }}>Mano de Obra</h4>
-                      <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-                        {formatearMoneda(centroEstadoSeleccionado.manoObraTotal || datosCompletos.manoObraTotal)}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Información del proyecto */}
-                  <div style={{
-                    background: '#f8fafb',
-                    padding: '20px',
-                    borderRadius: '15px',
-                    border: '2px solid #e1e8ed',
-                    marginBottom: '20px'
-                  }}>
-                    <h4 style={{
-                      margin: '0 0 15px 0',
-                      color: '#333',
-                      fontSize: '1.2rem'
-                    }}>
-                      📋 Información del Proyecto
-                    </h4>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                      gap: '15px'
-                    }}>
-                      <div>
-                        <strong style={{ color: '#22c55e' }}>Cliente:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {datosCompletos.cliente ? datosCompletos.cliente.nombreCliente : 'Sin cliente asignado'}
-                        </span>
-                      </div>
-                      <div>
-                        <strong style={{ color: '#22c55e' }}>Estado:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {centroEncontrado?.estado ? (centroEncontrado.estado ? 'Abierto' : 'Cerrado') : 'No especificado'}
-                        </span>
-                      </div>
-                      <div>
-                        <strong style={{ color: '#22c55e' }}>Tipo:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {centroEncontrado?.tipo || 'No especificado'}
-                        </span>
-                      </div>
-                      <div>
-                        <strong style={{ color: '#22c55e' }}>Valor de la Orden:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {centroEncontrado?.valorOrden ? formatearMoneda(centroEncontrado.valorOrden) : 'No especificado'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Personal del proyecto */}
-                  <div style={{
-                    background: '#f0f9ff',
-                    padding: '20px',
-                    borderRadius: '15px',
-                    border: '2px solid #bfdbfe',
-                    marginBottom: '20px'
-                  }}>
-                    <h4 style={{
-                      margin: '0 0 15px 0',
-                      color: '#333',
-                      fontSize: '1.2rem'
-                    }}>
-                      👥 Personal del Proyecto
-                    </h4>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: '1fr 1fr',
-                      gap: '15px'
-                    }}>
-                      <div>
-                        <strong style={{ color: '#1d4ed8' }}>Interventor:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {centroEncontrado?.interventor || 'No asignado'}
-                        </span>
-                      </div>
-                      <div>
-                        <strong style={{ color: '#1d4ed8' }}>Vendedor:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {centroEncontrado?.vendedor || 'No asignado'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Fechas del proyecto */}
-                  <div style={{
-                    background: '#fef3c7',
-                    padding: '20px',
-                    borderRadius: '15px',
-                    border: '2px solid #fde68a'
-                  }}>
-                    <h4 style={{
-                      margin: '0 0 15px 0',
-                      color: '#333',
-                      fontSize: '1.2rem'
-                    }}>
-                      📅 Fechas del Proyecto
-                    </h4>
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-                      gap: '15px'
-                    }}>
-                      <div>
-                        <strong style={{ color: '#d97706' }}>Fecha de Inicio:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {formatearFecha(centroEstadoSeleccionado.fechaInicio)}
-                        </span>
-                      </div>
-                      <div>
-                        <strong style={{ color: '#d97706' }}>Fecha Final:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {centroEstadoSeleccionado.fechaFinal ? formatearFecha(centroEstadoSeleccionado.fechaFinal) : '🟢 Vigente'}
-                        </span>
-                      </div>
-                      <div>
-                        <strong style={{ color: '#d97706' }}>Fecha de Factura:</strong><br />
-                        <span style={{ fontSize: '1.1rem' }}>
-                          {centroEncontrado?.fechaFactura ? formatearFecha(centroEncontrado.fechaFactura) : 'No especificada'}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Mostrar botón para ver cargos o mensaje informativo */}
-                  <div style={{
-                    marginTop: '20px',
-                    textAlign: 'center'
-                  }}>
-                    {centroEstadoSeleccionado.trabajadores.length > 0 ? (
-                      <button
-                        onClick={() => setModalEstado('cargos')}
-                        style={{
-                          background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                          color: 'white',
-                          border: 'none',
-                          padding: '15px 30px',
-                          borderRadius: '10px',
-                          cursor: 'pointer',
-                          fontWeight: '600',
-                          fontSize: '1rem'
-                        }}
-                      >
-                        👷 Ver Cargos de Trabajadores ({centroEstadoSeleccionado.trabajadores.length})
-                      </button>
-                    ) : (
-                      <div style={{
-                        padding: '20px',
-                        background: '#f3f4f6',
-                        borderRadius: '12px',
-                        border: '2px solid #d1d5db'
-                      }}>
-                        <div style={{ fontSize: '2rem', marginBottom: '10px' }}>📋</div>
-                        <h4 style={{ margin: '0 0 10px 0', color: '#374151' }}>
-                          Centro sin Trabajadores Registrados
-                        </h4>
-                        <p style={{ margin: 0, color: '#6b7280', fontSize: '0.95rem' }}>
-                          Este centro no tiene trabajadores registrados en el sistema.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                // Vista de cargos
-                <div>
-                  <div style={{
-                    marginBottom: '20px',
-                    padding: '15px 20px',
-                    background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                    color: 'white',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center'
-                  }}>
-                    <h4 style={{ margin: 0, fontSize: '1.2rem' }}>
-                      👷 Cargos en el Centro
-                    </h4>
-                    <button
-                      onClick={() => setModalEstado('info')}
-                      style={{
-                        background: 'rgba(255,255,255,0.2)',
-                        color: 'white',
-                        border: '1px solid rgba(255,255,255,0.3)',
-                        padding: '8px 16px',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontWeight: '600',
-                        fontSize: '0.9rem'
-                      }}
-                    >
-                      📊 Ver Información
-                    </button>
-                  </div>
-
-                  {datosCompletos.cargosUnicos.length > 0 ? (
-                    <div style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                      gap: '15px',
-                      maxHeight: '500px',
-                      overflowY: 'auto',
-                      padding: '10px'
-                    }}>
-                      {datosCompletos.cargosUnicos.map((cargo, index) => (
-                        <div key={index} style={{
-                          background: 'linear-gradient(135deg, #f8fafb, #ffffff)',
-                          padding: '25px',
-                          borderRadius: '15px',
-                          border: '2px solid #e1e8ed',
-                          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
-                          textAlign: 'center',
-                          transition: 'all 0.3s ease'
-                        }}
-                          onMouseOver={(e) => {
-                            e.currentTarget.style.transform = 'translateY(-3px)';
-                            e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.1)';
-                          }}
-                          onMouseOut={(e) => {
-                            e.currentTarget.style.transform = 'translateY(0)';
-                            e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.05)';
-                          }}
-                        >
-                          <div style={{
-                            background: 'linear-gradient(135deg, #22c55e, #15803d)',
-                            color: 'white',
-                            width: '80px',
-                            height: '80px',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '2rem',
-                            margin: '0 auto 15px'
-                          }}>
-                            👷
-                          </div>
-                          <h5 style={{
-                            margin: '0 0 10px 0',
-                            fontSize: '1.2rem',
-                            fontWeight: '600',
-                            color: '#333'
-                          }}>
-                            {cargo}
-                          </h5>
-                          <div style={{
-                            background: '#f0fdf4',
-                            color: '#15803d',
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            fontSize: '0.9rem',
-                            fontWeight: '600'
-                          }}>
-                            Presente en el proyecto
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={{
-                      textAlign: 'center',
-                      padding: '60px',
-                      color: '#666'
-                    }}>
-                      <div style={{ fontSize: '4rem', marginBottom: '20px' }}>👷</div>
-                      <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>
-                        No hay información de cargos
-                      </h3>
-                      <p style={{ margin: 0, color: '#666' }}>
-                        No se encontró información detallada de los cargos para este centro.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
+        {/* Modal Universal - UNA SOLA INSTANCIA */}
+        {centroSeleccionado && (
+          <CentroModalUniversal
+            isOpen={modal.isOpen}
+            onClose={cerrarModal}
+            centro={centroSeleccionado}
+            datosCompletos={datosCompletos}
+            centroEncontrado={centroEncontrado}
+            modalType={modal.type}
+            onToggleModal={toggleModalType}
+            source={modal.source}
+          />
         )}
 
         {/* Modal de crear centro */}
@@ -2969,6 +1121,7 @@ const CentrosPage: React.FC = () => {
             </div>
           </div>
         )}
+
         {/* Modal de editar centro */}
         {vistaActual === 'editar' && centroAEditar && (
           <div style={{

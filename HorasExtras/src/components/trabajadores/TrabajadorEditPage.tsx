@@ -42,6 +42,7 @@ const TrabajadorEditPage: React.FC = () => {
     auxilioTransporte: 0,
     valorHora: 0,
     fechaContratacion: "",
+    fechaTerminacion: "", // NUEVO: Campo editable para fecha de terminación
     tipoContratacion: "",
     correo: "",
 
@@ -67,63 +68,66 @@ const TrabajadorEditPage: React.FC = () => {
     clinicaFechaInicio: "",
     clinicaFechaFin: ""
   });
+
   const handleImageUpload = async (file: File) => {
-  // Validar archivo
-  const validationError = getImageValidationError(file);
-  if (validationError) {
-    alert(validationError);
-    return;
-  }
+    // Validar archivo
+    const validationError = getImageValidationError(file);
+    if (validationError) {
+      alert(validationError);
+      return;
+    }
 
-  try {
-    setUploadingImage(true);
-    
-    // Mostrar preview mientras se sube
-    const preview = await fileToBase64(file);
-    setImagePreview(preview);
+    try {
+      setUploadingImage(true);
+      
+      // Mostrar preview mientras se sube
+      const preview = await fileToBase64(file);
+      setImagePreview(preview);
 
-    // Subir imagen
-    const result = await trabajadoresService.subirImagen(trabajador!.id, file);
-    
-    // Actualizar el trabajador local - CORREGIDO: usar undefined en lugar de null
-    setTrabajador(prev => prev ? { ...prev, imagen_Url: result.imagenUrl } : null);
-    setImagePreview(null);
-    setImageError(false);
-    
-    alert("Imagen actualizada correctamente");
-  } catch (error) {
-    console.error("Error al subir imagen:", error);
-    // CORREGIDO: tipo más específico para error
-    const errorMessage = error instanceof Error ? error.message : "Error desconocido";
-    alert("Error al subir la imagen: " + errorMessage);
-    setImagePreview(null);
-  } finally {
-    setUploadingImage(false);
-  }
-};
+      // Subir imagen
+      const result = await trabajadoresService.subirImagen(trabajador!.id, file);
+      
+      // Actualizar el trabajador local - CORREGIDO: usar undefined en lugar de null
+      setTrabajador(prev => prev ? { ...prev, imagen_Url: result.imagenUrl } : null);
+      setImagePreview(null);
+      setImageError(false);
+      
+      alert("Imagen actualizada correctamente");
+    } catch (error) {
+      console.error("Error al subir imagen:", error);
+      // CORREGIDO: tipo más específico para error
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+      alert("Error al subir la imagen: " + errorMessage);
+      setImagePreview(null);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleImageDelete = async () => {
-  if (!trabajador?.imagen_Url) return;
-  
-  if (!confirm("¿Estás seguro de que quieres eliminar la imagen?")) return;
+    if (!trabajador?.imagen_Url) return;
+    
+    if (!confirm("¿Estás seguro de que quieres eliminar la imagen?")) return;
 
-  try {
-    setUploadingImage(true);
-    await trabajadoresService.eliminarImagen(trabajador.id);
-    
-    // CORREGIDO: usar undefined en lugar de null para imagen_Url
-    setTrabajador(prev => prev ? { ...prev, imagen_Url: undefined } : null);
-    setImageError(false);
-    
-    alert("Imagen eliminada correctamente");
-  } catch (error) {
-    console.error("Error al eliminar imagen:", error);
-    // CORREGIDO: tipo más específico para error
-    const errorMessage = error instanceof Error ? error.message : "Error desconocido";
-    alert("Error al eliminar la imagen: " + errorMessage);
-  } finally {
-    setUploadingImage(false);
-  }
-};
+    try {
+      setUploadingImage(true);
+      await trabajadoresService.eliminarImagen(trabajador.id);
+      
+      // CORREGIDO: usar undefined en lugar de null para imagen_Url
+      setTrabajador(prev => prev ? { ...prev, imagen_Url: undefined } : null);
+      setImageError(false);
+      
+      alert("Imagen eliminada correctamente");
+    } catch (error) {
+      console.error("Error al eliminar imagen:", error);
+      // CORREGIDO: tipo más específico para error
+      const errorMessage = error instanceof Error ? error.message : "Error desconocido";
+      alert("Error al eliminar la imagen: " + errorMessage);
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -132,6 +136,7 @@ const TrabajadorEditPage: React.FC = () => {
     // Limpiar input
     e.target.value = '';
   };
+
   const getInitials = (name: string) => {
     return name
       .split(' ')
@@ -253,6 +258,7 @@ const TrabajadorEditPage: React.FC = () => {
         auxilioTransporte: trabajadorData.auxilioTransporte || 0,
         valorHora: trabajadorData.valorHora || 0,
         fechaContratacion: trabajadorData.fechaContratacion ? trabajadorData.fechaContratacion.split('T')[0] : "",
+        fechaTerminacion: trabajadorData.fechaTerminacion ? trabajadorData.fechaTerminacion.split('T')[0] : "", // NUEVO: Cargar fecha de terminación
         tipoContratacion: trabajadorData.tipoContratacion || "",
         correo: trabajadorData.correo || "",
         personaContacto: trabajadorData.personaContacto || "",
@@ -368,6 +374,16 @@ const TrabajadorEditPage: React.FC = () => {
     if (!formData.tipoContratacion) newErrors.tipoContratacion = "El tipo de contratación es requerido";
     if (formData.salario <= 0) newErrors.salario = "El salario debe ser mayor a 0";
 
+    // NUEVA VALIDACIÓN: Fecha de terminación no puede ser anterior a fecha de contratación
+    if (formData.fechaTerminacion && formData.fechaContratacion) {
+      const fechaContratacion = new Date(formData.fechaContratacion);
+      const fechaTerminacion = new Date(formData.fechaTerminacion);
+      
+      if (fechaTerminacion < fechaContratacion) {
+        newErrors.fechaTerminacion = "La fecha de terminación no puede ser anterior a la fecha de contratación";
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -376,7 +392,7 @@ const TrabajadorEditPage: React.FC = () => {
     e.preventDefault();
 
     if (!validateForm()) {
-      alert("Por favor completa todos los campos requeridos");
+      alert("Por favor completa todos los campos requeridos y corrige los errores");
       return;
     }
 
@@ -400,6 +416,7 @@ const TrabajadorEditPage: React.FC = () => {
         auxilioTransporte: formData.auxilioTransporte,
         valorHora: formData.valorHora,
         fechaContratacion: formData.fechaContratacion,
+        fechaTerminacion: formData.fechaTerminacion, // NUEVO: Incluir fecha de terminación
         correo: formData.correo,
         personaContacto: formData.personaContacto,
         telefonoContacto: formData.telefonoContacto,
@@ -443,7 +460,7 @@ const TrabajadorEditPage: React.FC = () => {
   const expandAll = () => {
     setExpandedSections({
       personal: true,
-       imagen: false,
+      imagen: false,
       laboral: true,
       contacto: true,
       eps: true,
@@ -457,7 +474,7 @@ const TrabajadorEditPage: React.FC = () => {
   const collapseAll = () => {
     setExpandedSections({
       personal: true,
-       imagen: true,
+      imagen: true,
       laboral: true,
       contacto: true,
       eps: false,
@@ -714,6 +731,7 @@ const TrabajadorEditPage: React.FC = () => {
               </div>
             )}
           </div>
+
           {/* NUEVA SECCIÓN: Imagen del Trabajador */}
           <div className="form-section">
             <div
@@ -817,7 +835,8 @@ const TrabajadorEditPage: React.FC = () => {
               </div>
             )}
           </div>
-          {/* Sección 2: Información Laboral - ACTUALIZADA CON FECHA DE TERMINACIÓN */}
+
+          {/* Sección 2: Información Laboral - ACTUALIZADA CON CAMPO EDITABLE DE FECHA DE TERMINACIÓN */}
           <div className="form-section">
             <div
               className="section-header"
@@ -873,7 +892,7 @@ const TrabajadorEditPage: React.FC = () => {
                     {errors.tipoContratacion && <span className="error-text">{errors.tipoContratacion}</span>}
                   </div>
 
-                  {/* NUEVA SECCIÓN: Estado Laboral */}
+                  {/* Estado Laboral - Solo vista */}
                   <div className="form-group">
                     <label className="form-label">Estado Laboral</label>
                     <div
@@ -899,34 +918,6 @@ const TrabajadorEditPage: React.FC = () => {
                       * El estado se cambia desde la lista de trabajadores
                     </small>
                   </div>
-
-                  {/* MOSTRAR FECHA DE TERMINACIÓN SOLO SI ESTÁ NO VIGENTE */}
-                  {trabajador.estado === "No Vigente" && trabajador.fechaTerminacion && (
-                    <div className="form-group">
-                      <label className="form-label">Fecha de Terminación</label>
-                      <div
-                        className="form-input"
-                        style={{
-                          backgroundColor: '#FEF2F2',
-                          color: '#EF4444',
-                          border: '2px solid #FCA5A5',
-                          fontWeight: '600',
-                          textAlign: 'center'
-                        }}
-                      >
-                        {formatDate(trabajador.fechaTerminacion)}
-                      </div>
-                      <small style={{
-                        color: '#B91C1C',
-                        fontSize: '0.8rem',
-                        display: 'block',
-                        marginTop: '4px',
-                        fontStyle: 'italic'
-                      }}>
-                        * Fecha cuando se cambió a estado "No Vigente"
-                      </small>
-                    </div>
-                  )}
 
                   <div className="form-group">
                     <label className="form-label">
@@ -957,7 +948,7 @@ const TrabajadorEditPage: React.FC = () => {
                     />
                   </div>
 
-                  {/* Campo de Valor Hora Actualizado */}
+                  {/* Campo de Valor Hora */}
                   <div className="form-group">
                     <label className="form-label">Valor Hora</label>
                     <input
@@ -973,7 +964,6 @@ const TrabajadorEditPage: React.FC = () => {
                       }}
                     />
 
-                    {/* Información actualizada con nueva regla */}
                     <div style={{ marginTop: '8px' }}>
                       <small style={{
                         color: 'var(--text-secondary)',
@@ -984,7 +974,6 @@ const TrabajadorEditPage: React.FC = () => {
                         📊 <strong>Fórmula:</strong> (Salario × 1.6544 + Auxilio*) ÷ {new Date() >= new Date(2025, 7, 1) ? '176' : '184'}
                       </small>
 
-                      {/* Mostrar si aplica auxilio según el salario actual */}
                       {formData.salario > 0 && (
                         <small style={{
                           color: verificarAplicaAuxilio(formData.salario) ? 'var(--success-color, #22c55e)' : 'var(--warning-color, #f59e0b)',
@@ -1007,7 +996,7 @@ const TrabajadorEditPage: React.FC = () => {
                         display: 'block',
                         fontStyle: 'italic'
                       }}>
-                        * El auxilio de transporte solo se incluye si el salario no supera dos salarios mínimos (${formatearNumero(DOS_SALARIOS_MINIMOS.toString())} en 2025)
+                        * El auxilio de transporte solo se incluye si el salario no supera dos salarios mínimos
                       </small>
                     </div>
                   </div>
@@ -1023,12 +1012,46 @@ const TrabajadorEditPage: React.FC = () => {
                       disabled={saving}
                     />
                   </div>
+
+                  {/* NUEVO CAMPO EDITABLE: Fecha de Terminación */}
+                  <div className="form-group">
+                    <label className="form-label">
+                      Fecha de Terminación
+                      {trabajador.estado === "No Vigente" && (
+                        <span style={{ color: '#EF4444', fontWeight: 'bold' }}> *</span>
+                      )}
+                    </label>
+                    <input
+                      type="date"
+                      name="fechaTerminacion"
+                      value={formData.fechaTerminacion}
+                      onChange={handleFormChange}
+                      className={`form-input ${errors.fechaTerminacion ? 'error' : ''}`}
+                      disabled={saving}
+                      style={trabajador.estado === "No Vigente" ? {
+                        borderColor: '#EF4444',
+                        backgroundColor: '#FEF2F2'
+                      } : {}}
+                    />
+                    {errors.fechaTerminacion && <span className="error-text">{errors.fechaTerminacion}</span>}
+                    <small style={{
+                      color: trabajador.estado === "No Vigente" ? '#B91C1C' : 'var(--text-secondary)',
+                      fontSize: '0.8rem',
+                      display: 'block',
+                      marginTop: '4px',
+                      fontStyle: 'italic'
+                    }}>
+                      {trabajador.estado === "No Vigente" 
+                        ? "* Campo importante para trabajadores en estado No Vigente"
+                        : "Opcional - Solo llenar si el trabajador ya terminó su relación laboral"
+                      }
+                    </small>
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
-          {/* Resto de las secciones permanecen igual... */}
           {/* Sección 3: Contacto de Emergencia */}
           <div className="form-section">
             <div
@@ -1110,8 +1133,8 @@ const TrabajadorEditPage: React.FC = () => {
             )}
           </div>
 
-          {/* Las demás secciones (EPS, ARL, Pensión, Banco, Clínica) permanecen igual... */}
-          {/* Por brevedad, las omito aquí, pero en el código real deben estar todas */}
+          {/* Secciones adicionales de EPS, ARL, Pensión, Banco, Clínica - se mantienen iguales */}
+          {/* Aquí irían las demás secciones que se omitieron por brevedad pero deben incluirse */}
 
           {/* Botón de envío */}
           <div className="form-actions-unified">
