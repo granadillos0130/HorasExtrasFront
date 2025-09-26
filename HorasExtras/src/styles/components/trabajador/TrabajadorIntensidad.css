@@ -1,5 +1,349 @@
 /* TrabajadorIntensidad.css - Estilos completos */
+/* TrabajadorIntensidad.css - Agregar estos estilos al final del archivo */
 
+/* ===============================================
+   ESTILOS PARA COMPENSADOS
+   =============================================== */
+
+.compensados-seccion {
+  margin: 20px 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+
+.compensados-header {
+  padding: 15px 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.compensados-header:hover {
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  transform: translateY(-1px);
+}
+
+.compensados-titulo {
+  font-weight: 600;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.compensados-toggle {
+  font-size: 14px;
+  transition: transform 0.3s ease;
+}
+
+.compensados-resumen {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.compensados-cantidad {
+  font-weight: 600;
+  font-size: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 8px;
+  border-radius: 12px;
+}
+
+.compensados-horas {
+  font-size: 12px;
+  opacity: 0.9;
+}
+
+.compensados-detalle {
+  padding: 0;
+  background: white;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.compensado-card {
+  border-bottom: 1px solid #e2e8f0;
+  transition: all 0.3s ease;
+}
+
+.compensado-card:last-child {
+  border-bottom: none;
+}
+
+.compensado-card:hover {
+  background: #f1f5f9;
+}
+
+.compensado-header {
+  padding: 15px 20px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.compensado-fecha,
+.compensado-centro,
+.compensado-horas {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #374151;
+}
+
+.compensado-fecha {
+  font-weight: 600;
+  color: #1f2937;
+  min-width: 120px;
+}
+
+.compensado-centro {
+  flex: 1;
+  min-width: 200px;
+}
+
+.compensado-horas {
+  font-weight: 600;
+  color: #059669;
+  background: #d1fae5;
+  padding: 6px 12px;
+  border-radius: 16px;
+  min-width: 80px;
+  justify-content: center;
+}
+
+.compensado-detalle-btn {
+  background: #3b82f6;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.compensado-detalle-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.compensado-info-expandida {
+  padding: 20px;
+  background: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.compensado-horario,
+.compensado-origen,
+.compensado-descripcion,
+.compensado-meta {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.compensado-meta {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.info-item:last-child {
+  margin-bottom: 0;
+}
+
+.info-label {
+  font-weight: 600;
+  color: #374151;
+  min-width: 140px;
+  font-size: 13px;
+}
+
+.info-value {
+  color: #1f2937;
+  font-size: 14px;
+}
+
+.compensado-disponibilidad {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  flex-wrap: wrap;
+  background: white;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  margin-bottom: 16px;
+}
+
+.disponibilidad-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 140px;
+}
+
+.disp-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: #6b7280;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.disp-valor {
+  font-size: 16px;
+  font-weight: 700;
+  padding: 8px 12px;
+  border-radius: 6px;
+  text-align: center;
+  min-width: 70px;
+}
+
+.disp-valor.antes {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.disp-valor.despues {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+.disp-valor.actual.disponible {
+  background: #d1fae5;
+  color: #059669;
+}
+
+.disp-valor.actual.agotado {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.disponibilidad-flecha {
+  font-size: 18px;
+  color: #6b7280;
+  font-weight: bold;
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 20px;
+  margin-bottom: 8px;
+}
+
+.meta-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.meta-value {
+  font-size: 12px;
+  color: #374151;
+  background: #f3f4f6;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+/* ===============================================
+   RESPONSIVE DESIGN PARA COMPENSADOS
+   =============================================== */
+
+@media (max-width: 768px) {
+  .compensados-header {
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+
+  .compensados-resumen {
+    align-items: center;
+  }
+
+  .compensado-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .compensado-fecha,
+  .compensado-centro,
+  .compensado-horas {
+    min-width: auto;
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .compensado-detalle-btn {
+    align-self: stretch;
+    text-align: center;
+  }
+
+  .compensado-disponibilidad {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .disponibilidad-flecha {
+    transform: rotate(90deg);
+  }
+
+  .meta-item {
+    display: block;
+    margin-right: 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .compensados-detalle {
+    max-height: 400px;
+  }
+
+  .compensado-info-expandida {
+    padding: 15px;
+  }
+
+  .disponibilidad-item {
+    min-width: auto;
+    width: 100%;
+  }
+}
 .trabajador-intensidad-page {
   min-height: 100vh;
   background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);

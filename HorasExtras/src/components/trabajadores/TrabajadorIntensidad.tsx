@@ -60,6 +60,8 @@ const TrabajadorIntensidad: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [loadingRegistros, setLoadingRegistros] = useState(false);
   const [error, setError] = useState("");
+  const [compensadosExpandido, setCompensadosExpandido] = useState(false);
+  const [compensadoDetalleVisible, setCompensadoDetalleVisible] = useState<number | null>(null);
 
   // Estado para metadatos de vista (DENTRO del componente)
   const [metadatosVista, setMetadatosVista] = useState<{
@@ -151,37 +153,59 @@ const TrabajadorIntensidad: React.FC = () => {
 
   // Función para obtener información del banco de horas (CORREGIDA con nombres correctos)
   const getBancoHorasInfo = () => {
-  if (!metadatosVista?.informacionAdicional) return null;
+    if (!metadatosVista?.informacionAdicional) return null;
 
-  if (metadatosVista.tipoVista === "Semanal" && metadatosVista.informacionAdicional.semanaEspecifica) {
-    const semana = metadatosVista.informacionAdicional.semanaEspecifica;
-    const contexto = metadatosVista.informacionAdicional.contextoBanco;
+    if (metadatosVista.tipoVista === "Semanal" && metadatosVista.informacionAdicional.semanaEspecifica) {
+      const semana = metadatosVista.informacionAdicional.semanaEspecifica;
+      const contexto = metadatosVista.informacionAdicional.contextoBanco;
 
-    return {
-      tipo: "semanal" as const,
-      horasBase: semana.horasBase,
-      horasTrabajadas: semana.horasTrabajadas,
-      excesoDeficit: semana.excesoDeficit,
-      estado: semana.estado,
-      totalSegunExcel: contexto?.totalHorasSegunExcel || 0,
-      horasSobrantes: contexto?.horasSobrantes || 0,
-      horasFaltantes: contexto?.horasFaltantes || 0,
-      mensaje: contexto?.mensaje || ''
-    };
-  }
+      return {
+        tipo: "semanal" as const,
+        horasBase: semana.horasBase,
+        horasTrabajadas: semana.horasTrabajadas,
+        excesoDeficit: semana.excesoDeficit,
+        estado: semana.estado,
+        totalSegunExcel: contexto?.totalHorasSegunExcel || 0,
+        horasSobrantes: contexto?.horasSobrantes || 0,
+        horasFaltantes: contexto?.horasFaltantes || 0,
+        mensaje: contexto?.mensaje || ''
+      };
+    }
 
-  if (metadatosVista.tipoVista === "Mensual" && metadatosVista.informacionAdicional.bancoHoras) {
-    return {
-      tipo: "mensual" as const,
-      bancoHoras: metadatosVista.informacionAdicional.bancoHoras,
-      // Añadir las nuevas propiedades
-      desgloseSemanas: metadatosVista.informacionAdicional.desgloseSemanas,
-      resumenPeriodo: metadatosVista.informacionAdicional.resumenPeriodo
-    };
-  }
+    if (metadatosVista.tipoVista === "Mensual" && metadatosVista.informacionAdicional.bancoHoras) {
+      return {
+        tipo: "mensual" as const,
+        bancoHoras: metadatosVista.informacionAdicional.bancoHoras,
+        // Añadir las nuevas propiedades
+        desgloseSemanas: metadatosVista.informacionAdicional.desgloseSemanas,
+        resumenPeriodo: metadatosVista.informacionAdicional.resumenPeriodo
+      };
+    }
 
-  return null;
-};
+    return null;
+  };
+  const getCompensadosInfo = () => {
+    if (!metadatosVista?.informacionAdicional?.compensados) return null;
+    return metadatosVista.informacionAdicional.compensados;
+  };
+
+  // NUEVA FUNCIÓN: Formatear fecha legible para compensados
+  const formatFechaCompensado = (fechaStr: string) => {
+    const fecha = new Date(fechaStr + 'T00:00:00');
+    return fecha.toLocaleDateString('es-CO', {
+      weekday: 'short',
+      day: '2-digit',
+      month: '2-digit',
+      year: '2-digit'
+    });
+  };
+
+  // NUEVA FUNCIÓN: Formatear período origen
+  const formatPeriodoOrigen = (inicio: string, fin: string) => {
+    const fechaInicio = new Date(inicio + 'T00:00:00');
+    const fechaFin = new Date(fin + 'T00:00:00');
+    return `${fechaInicio.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' })} - ${fechaFin.toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: '2-digit' })}`;
+  };
 
   const exportarExcel = async () => {
     if (!trabajadorActual || registros.length === 0) return;
@@ -807,6 +831,8 @@ const TrabajadorIntensidad: React.FC = () => {
 
                     {(() => {
                       const bancoInfo = getBancoHorasInfo();
+                      const compensadosInfo = getCompensadosInfo();
+
                       if (!bancoInfo) return null;
 
                       return (
@@ -842,7 +868,133 @@ const TrabajadorIntensidad: React.FC = () => {
                             <div className="banco-mensual">
                               <div className="banco-titulo">🏦 Estado del Banco de Horas</div>
 
-                              {/* Nueva sección: Desglose de semanas */}
+                              {/* NUEVA SECCIÓN: Compensados (mostrar antes del desglose de semanas) */}
+                              {compensadosInfo && compensadosInfo.total > 0 && (
+                                <div className="compensados-seccion">
+                                  <div
+                                    className="compensados-header"
+                                    onClick={() => setCompensadosExpandido(!compensadosExpandido)}
+                                    style={{ cursor: 'pointer' }}
+                                  >
+                                    <div className="compensados-titulo">
+                                      🔄 Días Compensados en este Período
+                                      <span className="compensados-toggle">
+                                        {compensadosExpandido ? '▼' : '▶'}
+                                      </span>
+                                    </div>
+                                    <div className="compensados-resumen">
+                                      <span className="compensados-cantidad">
+                                        {compensadosInfo.total} día{compensadosInfo.total !== 1 ? 's' : ''}
+                                      </span>
+                                      <span className="compensados-horas">
+                                        {compensadosInfo.totalHorasCompensadas.toFixed(2)} horas usadas
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  {compensadosExpandido && (
+                                    <div className="compensados-detalle">
+                                      {compensadosInfo.detalle.map((compensado) => (
+                                        <div key={compensado.id} className="compensado-card">
+                                          <div className="compensado-header">
+                                            <div className="compensado-fecha">
+                                              📅 {formatFechaCompensado(compensado.fecha)}
+                                            </div>
+                                            <div className="compensado-centro">
+                                              🏢 {compensado.centroNombre}
+                                            </div>
+                                            <div className="compensado-horas">
+                                              ⏰ {compensado.horasCompensadas.toFixed(2)}h
+                                            </div>
+                                            <button
+                                              className="compensado-detalle-btn"
+                                              onClick={() => setCompensadoDetalleVisible(
+                                                compensadoDetalleVisible === compensado.id ? null : compensado.id
+                                              )}
+                                            >
+                                              {compensadoDetalleVisible === compensado.id ? 'Ocultar' : 'Ver más'}
+                                            </button>
+                                          </div>
+
+                                          {compensadoDetalleVisible === compensado.id && (
+                                            <div className="compensado-info-expandida">
+                                              <div className="compensado-horario">
+                                                <div className="info-item">
+                                                  <span className="info-label">Horario:</span>
+                                                  <span className="info-value">
+                                                    {compensado.horaInicio} - {compensado.horaFin}
+                                                  </span>
+                                                </div>
+                                              </div>
+
+                                              <div className="compensado-origen">
+                                                <div className="info-item">
+                                                  <span className="info-label">Período origen:</span>
+                                                  <span className="info-value">
+                                                    {formatPeriodoOrigen(compensado.periodoOrigenInicio, compensado.periodoOrigenFin)}
+                                                  </span>
+                                                </div>
+                                                <div className="info-item">
+                                                  <span className="info-label">Balance origen total:</span>
+                                                  <span className="info-value">{compensado.balanceOrigenTotal.toFixed(2)}h</span>
+                                                </div>
+                                              </div>
+
+                                              <div className="compensado-disponibilidad">
+                                                <div className="disponibilidad-item">
+                                                  <span className="disp-label">Antes del compensado:</span>
+                                                  <span className="disp-valor antes">{compensado.horasDisponiblesAntes.toFixed(2)}h</span>
+                                                </div>
+                                                <div className="disponibilidad-flecha">→</div>
+                                                <div className="disponibilidad-item">
+                                                  <span className="disp-label">Después del compensado:</span>
+                                                  <span className="disp-valor despues">{compensado.horasDisponiblesDespues.toFixed(2)}h</span>
+                                                </div>
+                                                <div className="disponibilidad-item">
+                                                  <span className="disp-label">Disponible actualmente:</span>
+                                                  <span className={`disp-valor actual ${compensado.horasDisponiblesActuales <= 0 ? 'agotado' : 'disponible'}`}>
+                                                    {compensado.horasDisponiblesActuales.toFixed(2)}h
+                                                  </span>
+                                                </div>
+                                              </div>
+
+                                              {compensado.descripcion && (
+                                                <div className="compensado-descripcion">
+                                                  <div className="info-item">
+                                                    <span className="info-label">Descripción:</span>
+                                                    <span className="info-value">{compensado.descripcion}</span>
+                                                  </div>
+                                                </div>
+                                              )}
+
+                                              <div className="compensado-meta">
+                                                <div className="meta-item">
+                                                  <span className="meta-label">Creado:</span>
+                                                  <span className="meta-value">
+                                                    {new Date(compensado.fechaCreacion).toLocaleDateString('es-CO', {
+                                                      day: '2-digit',
+                                                      month: '2-digit',
+                                                      year: 'numeric',
+                                                      hour: '2-digit',
+                                                      minute: '2-digit'
+                                                    })}
+                                                  </span>
+                                                </div>
+                                                <div className="meta-item">
+                                                  <span className="meta-label">Por:</span>
+                                                  <span className="meta-value">{compensado.usuarioCreacion}</span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+
+                              {/* Desglose de semanas existente */}
                               {bancoInfo.desgloseSemanas && bancoInfo.desgloseSemanas.length > 0 && (
                                 <div className="desglose-semanas">
                                   <h4>Desglose Semanal</h4>
@@ -871,7 +1023,7 @@ const TrabajadorIntensidad: React.FC = () => {
                                 </div>
                               )}
 
-                              {/* Nueva sección: Resumen del período */}
+                              {/* Resumen del período existente */}
                               {bancoInfo.resumenPeriodo && (
                                 <div className="resumen-periodo">
                                   <h4>Resumen del Período</h4>

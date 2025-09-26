@@ -10,12 +10,13 @@ interface CentroModalProps {
   datosCompletos: {
     cliente: Cliente | null;
     manoObraTotal: number;
+    manoObraCompensada?: number;
     cargosUnicos: string[];
   };
   centroEncontrado?: any;
-  modalType: 'info' | 'cargos';
+  modalType: 'info' | 'cargos' | 'compensados';
   onToggleModal: () => void;
-  // Prop opcional para identificar desde dónde se abrió (solo para debugging si es necesario)
+  onToggleCompensados?: () => void;
   source?: 'busqueda' | 'estado' | 'meses';
 }
 
@@ -50,15 +51,21 @@ const CentroModalUniversal: React.FC<CentroModalProps> = ({
   centroEncontrado,
   modalType,
   onToggleModal,
-  source = 'meses' // valor por defecto
+  onToggleCompensados,
 }) => {
   if (!isOpen) return null;
 
   const getSubtitle = () => {
-    const baseText = modalType === 'info' ? '📊 Información Completa' : '👷 Cargos de Trabajadores';
-    if (source === 'busqueda') return `${baseText} (Desde Búsqueda)`;
-    if (source === 'estado') return `${baseText} (Desde Estado)`;
-    return baseText;
+    switch (modalType) {
+      case 'info':
+        return '📊 Información Completa';
+      case 'cargos':
+        return '👷 Cargos de Trabajadores';
+      case 'compensados':
+        return '🕒 Mano de Obra Compensada';
+      default:
+        return '📊 Información Completa';
+    }
   };
 
   return (
@@ -131,11 +138,20 @@ const CentroModalUniversal: React.FC<CentroModalProps> = ({
             datosCompletos={datosCompletos}
             centroEncontrado={centroEncontrado}
             onToggleModal={onToggleModal}
+            onToggleCompensados={onToggleCompensados}
           />
-        ) : (
+        ) : modalType === 'cargos' ? (
           <CargosView 
             datosCompletos={datosCompletos}
             onToggleModal={onToggleModal}
+            onToggleCompensados={onToggleCompensados}
+          />
+        ) : (
+          <CompensadosView 
+            centro={centro}
+            datosCompletos={datosCompletos}
+            onToggleModal={onToggleModal}
+            onToggleCompensados={onToggleCompensados}
           />
         )}
       </div>
@@ -149,72 +165,148 @@ const InfoView: React.FC<{
   datosCompletos: any;
   centroEncontrado?: any;
   onToggleModal: () => void;
-}> = ({ centro, datosCompletos, centroEncontrado, onToggleModal }) => {
+  onToggleCompensados?: () => void;
+}> = ({ centro, datosCompletos, centroEncontrado, onToggleModal, onToggleCompensados }) => {
+  
+  const totalHoras = centro.trabajadores.reduce((sum, t) => sum + t.totalHoras, 0);
+  const manoObraNormal = centro.manoObraTotal || datosCompletos.manoObraTotal;
+  const manoObraCompensada = centro.manoObraCompensada || datosCompletos.manoObraCompensada || 0;
+  const totalGeneral = manoObraNormal + manoObraCompensada;
+
   return (
     <div>
       {/* Cards de estadísticas */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '20px',
+        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+        gap: '15px',
         marginBottom: '30px'
       }}>
+        {/* Orden de Compra */}
         <div style={{
           background: 'linear-gradient(135deg, #3b82f6, #1e40af)',
           color: 'white',
-          padding: '20px',
-          borderRadius: '15px',
+          padding: '15px',
+          borderRadius: '12px',
           textAlign: 'center'
         }}>
-          <div style={{ fontSize: '2rem', marginBottom: '10px' }}>🏢</div>
-          <h4 style={{ margin: '0 0 5px 0' }}>Orden de Compra</h4>
-          <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>🏢</div>
+          <h4 style={{ margin: '0 0 5px 0', fontSize: '0.9rem' }}>Orden de Compra</h4>
+          <p style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
             {centro.centroId}
           </p>
         </div>
 
+        {/* Total Trabajadores */}
         <div style={{
           background: 'linear-gradient(135deg, #22c55e, #15803d)',
           color: 'white',
-          padding: '20px',
-          borderRadius: '15px',
+          padding: '15px',
+          borderRadius: '12px',
           textAlign: 'center'
         }}>
-          <div style={{ fontSize: '2rem', marginBottom: '10px' }}>👥</div>
-          <h4 style={{ margin: '0 0 5px 0' }}>Total Trabajadores</h4>
-          <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
+          <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>👥</div>
+          <h4 style={{ margin: '0 0 5px 0', fontSize: '0.9rem' }}>Total Trabajadores</h4>
+          <p style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
             {centro.trabajadores.length}
           </p>
         </div>
 
+        {/* Total Horas */}
         <div style={{
           background: 'linear-gradient(135deg, #f59e0b, #d97706)',
           color: 'white',
-          padding: '20px',
-          borderRadius: '15px',
+          padding: '15px',
+          borderRadius: '12px',
           textAlign: 'center'
         }}>
-          <div style={{ fontSize: '2rem', marginBottom: '10px' }}>⏰</div>
-          <h4 style={{ margin: '0 0 5px 0' }}>Total Horas</h4>
-          <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-            {formatearHoras(centro.trabajadores.reduce((sum, t) => sum + t.totalHoras, 0))}
+          <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>⏰</div>
+          <h4 style={{ margin: '0 0 5px 0', fontSize: '0.9rem' }}>Total Horas</h4>
+          <p style={{ margin: 0, fontSize: '1rem', fontWeight: '600' }}>
+            {formatearHoras(totalHoras)}
           </p>
         </div>
 
+        {/* Mano de Obra Normal */}
         <div style={{
           background: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
           color: 'white',
-          padding: '20px',
-          borderRadius: '15px',
+          padding: '15px',
+          borderRadius: '12px',
           textAlign: 'center'
         }}>
-          <div style={{ fontSize: '2rem', marginBottom: '10px' }}>💰</div>
-          <h4 style={{ margin: '0 0 5px 0' }}>Mano de Obra</h4>
-          <p style={{ margin: 0, fontSize: '1.2rem', fontWeight: '600' }}>
-            {formatearMoneda(centro.manoObraTotal || datosCompletos.manoObraTotal)}
+          <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>💰</div>
+          <h4 style={{ margin: '0 0 5px 0', fontSize: '0.9rem' }}>Mano de Obra Normal</h4>
+          <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '600' }}>
+            {formatearMoneda(manoObraNormal)}
           </p>
         </div>
+
+        {/* Mano de Obra Compensada */}
+        <div style={{
+          background: 'linear-gradient(135deg, #ec4899, #db2777)',
+          color: 'white',
+          padding: '15px',
+          borderRadius: '12px',
+          textAlign: 'center',
+          cursor: onToggleCompensados ? 'pointer' : 'default',
+          transition: 'transform 0.2s ease',
+          ...(onToggleCompensados && {
+            ':hover': {
+              transform: 'scale(1.05)'
+            }
+          })
+        }}
+        onClick={onToggleCompensados}
+        >
+          <div style={{ fontSize: '1.5rem', marginBottom: '8px' }}>🕒</div>
+          <h4 style={{ margin: '0 0 5px 0', fontSize: '0.9rem' }}>Mano de Obra Compensada</h4>
+          <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: '600' }}>
+            {formatearMoneda(manoObraCompensada)}
+          </p>
+          {manoObraCompensada > 0 && (
+            <small style={{ opacity: 0.9, fontSize: '0.7rem' }}>
+              {((manoObraCompensada / totalGeneral) * 100).toFixed(1)}% del total
+            </small>
+          )}
+        </div>
       </div>
+
+      {/* Resumen de Costos */}
+      {manoObraCompensada > 0 && (
+        <div style={{
+          background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+          padding: '15px',
+          borderRadius: '12px',
+          border: '2px solid #f59e0b',
+          marginBottom: '20px'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#92400e', fontSize: '1.1rem' }}>
+            📊 Resumen de Costos
+          </h4>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+            gap: '10px',
+            fontSize: '0.9rem'
+          }}>
+            <div>
+              <strong style={{ color: '#1e40af' }}>Mano de Obra Normal:</strong><br />
+              <span>{formatearMoneda(manoObraNormal)}</span>
+            </div>
+            <div>
+              <strong style={{ color: '#db2777' }}>Mano de Obra Compensada:</strong><br />
+              <span>{formatearMoneda(manoObraCompensada)}</span>
+            </div>
+            <div>
+              <strong style={{ color: '#15803d' }}>Total General:</strong><br />
+              <span style={{ fontWeight: '600', fontSize: '1.1rem' }}>
+                {formatearMoneda(totalGeneral)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Información del proyecto */}
       <div style={{
@@ -338,39 +430,52 @@ const InfoView: React.FC<{
         </div>
       </div>
 
-      {/* Botón para ver cargos */}
-      <div style={{ marginTop: '20px', textAlign: 'center' }}>
-        {centro.trabajadores.length > 0 ? (
+      {/* Botones de acción */}
+      <div style={{ 
+        display: 'flex', 
+        gap: '15px', 
+        marginTop: '25px',
+        justifyContent: 'center',
+        flexWrap: 'wrap'
+      }}>
+        {centro.trabajadores.length > 0 && (
           <button
             onClick={onToggleModal}
             style={{
               background: 'linear-gradient(135deg, #f59e0b, #d97706)',
               color: 'white',
               border: 'none',
-              padding: '15px 30px',
-              borderRadius: '10px',
+              padding: '12px 24px',
+              borderRadius: '8px',
               cursor: 'pointer',
               fontWeight: '600',
-              fontSize: '1rem'
+              fontSize: '0.9rem',
+              flex: '1',
+              minWidth: '200px'
             }}
           >
-            👷 Ver Cargos de Trabajadores ({centro.trabajadores.length})
+            👷 Ver Cargos ({centro.trabajadores.length})
           </button>
-        ) : (
-          <div style={{
-            padding: '20px',
-            background: '#f3f4f6',
-            borderRadius: '12px',
-            border: '2px solid #d1d5db'
-          }}>
-            <div style={{ fontSize: '2rem', marginBottom: '10px' }}>📋</div>
-            <h4 style={{ margin: '0 0 10px 0', color: '#374151' }}>
-              Centro sin Trabajadores Registrados
-            </h4>
-            <p style={{ margin: 0, color: '#6b7280', fontSize: '0.95rem' }}>
-              Este centro no tiene trabajadores registrados en el sistema.
-            </p>
-          </div>
+        )}
+        
+        {manoObraCompensada > 0 && onToggleCompensados && (
+          <button
+            onClick={onToggleCompensados}
+            style={{
+              background: 'linear-gradient(135deg, #ec4899, #db2777)',
+              color: 'white',
+              border: 'none',
+              padding: '12px 24px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '0.9rem',
+              flex: '1',
+              minWidth: '200px'
+            }}
+          >
+            🕒 Ver Compensados
+          </button>
         )}
       </div>
     </div>
@@ -381,7 +486,8 @@ const InfoView: React.FC<{
 const CargosView: React.FC<{
   datosCompletos: any;
   onToggleModal: () => void;
-}> = ({ datosCompletos, onToggleModal }) => {
+  onToggleCompensados?: () => void;
+}> = ({ datosCompletos, onToggleModal, onToggleCompensados }) => {
   return (
     <div>
       <div style={{
@@ -397,21 +503,40 @@ const CargosView: React.FC<{
         <h4 style={{ margin: 0, fontSize: '1.2rem' }}>
           👷 Cargos en el Centro
         </h4>
-        <button
-          onClick={onToggleModal}
-          style={{
-            background: 'rgba(255,255,255,0.2)',
-            color: 'white',
-            border: '1px solid rgba(255,255,255,0.3)',
-            padding: '8px 16px',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '0.9rem'
-          }}
-        >
-          📊 Ver Información
-        </button>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={onToggleModal}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.3)',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '0.9rem'
+            }}
+          >
+            📊 Ver Información
+          </button>
+          {onToggleCompensados && (
+            <button
+              onClick={onToggleCompensados}
+              style={{
+                background: 'rgba(255,255,255,0.2)',
+                color: 'white',
+                border: '1px solid rgba(255,255,255,0.3)',
+                padding: '8px 16px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600',
+                fontSize: '0.9rem'
+              }}
+            >
+              🕒 Ver Compensados
+            </button>
+          )}
+        </div>
       </div>
 
       {datosCompletos.cargosUnicos.length > 0 ? (
@@ -480,6 +605,171 @@ const CargosView: React.FC<{
           </h3>
           <p style={{ margin: 0, color: '#666' }}>
             No se encontró información detallada de los cargos para este centro.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Componente para la vista de compensados
+const CompensadosView: React.FC<{
+  centro: CentroPorMesCompleto;
+  datosCompletos: any;
+  onToggleModal: () => void;
+  onToggleCompensados?: () => void;
+}> = ({ centro, datosCompletos, onToggleModal, onToggleCompensados }) => {
+  
+  const manoObraCompensada = centro.manoObraCompensada || datosCompletos.manoObraCompensada || 0;
+  const manoObraNormal = centro.manoObraTotal || datosCompletos.manoObraTotal;
+
+  return (
+    <div>
+      <div style={{
+        marginBottom: '20px',
+        padding: '15px 20px',
+        background: 'linear-gradient(135deg, #ec4899, #db2777)',
+        color: 'white',
+        borderRadius: '12px',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center'
+      }}>
+        <div>
+          <h4 style={{ margin: 0, fontSize: '1.2rem' }}>
+            🕒 Mano de Obra Compensada
+          </h4>
+          <p style={{ margin: '5px 0 0 0', opacity: 0.9, fontSize: '0.9rem' }}>
+            Horas compensadas calculadas al 50% del valor normal
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={onToggleModal}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.3)',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '0.9rem'
+            }}
+          >
+            📊 Ver Información
+          </button>
+          <button
+            onClick={onToggleCompensados}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              color: 'white',
+              border: '1px solid rgba(255,255,255,0.3)',
+              padding: '8px 16px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '0.9rem'
+            }}
+          >
+            👷 Ver Cargos
+          </button>
+        </div>
+      </div>
+
+      {manoObraCompensada > 0 ? (
+        <div>
+          {/* Estadísticas principales */}
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '15px',
+            marginBottom: '20px'
+          }}>
+            <div style={{
+              background: '#fdf2f8',
+              padding: '20px',
+              borderRadius: '12px',
+              border: '2px solid #fbcfe8',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>💰</div>
+              <h5 style={{ margin: '0 0 10px 0', color: '#db2777' }}>Total Compensado</h5>
+              <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#db2777' }}>
+                {formatearMoneda(manoObraCompensada)}
+              </p>
+            </div>
+
+            <div style={{
+              background: '#f0fdf4',
+              padding: '20px',
+              borderRadius: '12px',
+              border: '2px solid #bbf7d0',
+              textAlign: 'center'
+            }}>
+              <div style={{ fontSize: '2rem', marginBottom: '10px' }}>📈</div>
+              <h5 style={{ margin: '0 0 10px 0', color: '#15803d' }}>Porcentaje del Total</h5>
+              <p style={{ margin: 0, fontSize: '1.5rem', fontWeight: '600', color: '#15803d' }}>
+                {((manoObraCompensada / (manoObraNormal + manoObraCompensada)) * 100).toFixed(1)}%
+              </p>
+            </div>
+          </div>
+
+          {/* Información detallada */}
+          <div style={{
+            background: '#fafafa',
+            padding: '20px',
+            borderRadius: '12px',
+            border: '2px solid #e5e5e5'
+          }}>
+            <h5 style={{ margin: '0 0 15px 0', color: '#333' }}>📋 Información de Compensados</h5>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+              gap: '15px',
+              fontSize: '0.9rem'
+            }}>
+              <div>
+                <strong style={{ color: '#db2777' }}>Cálculo Aplicado:</strong><br />
+                <span>50% del valor hora normal</span>
+              </div>
+              <div>
+                <strong style={{ color: '#db2777' }}>Estado:</strong><br />
+                <span>✅ Activo en el sistema</span>
+              </div>
+              <div>
+                <strong style={{ color: '#db2777' }}>Tipo:</strong><br />
+                <span>Horas extras compensadas</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Nota importante */}
+          <div style={{
+            background: '#fffbeb',
+            padding: '15px',
+            borderRadius: '8px',
+            border: '2px solid #fcd34d',
+            marginTop: '20px'
+          }}>
+            <p style={{ margin: 0, color: '#92400e', fontSize: '0.9rem' }}>
+              💡 <strong>Nota:</strong> Las horas compensadas representan tiempo tomado por trabajadores 
+              como pago de horas extras acumuladas. Se calculan al 50% del coste normal.
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div style={{
+          textAlign: 'center',
+          padding: '60px',
+          color: '#666'
+        }}>
+          <div style={{ fontSize: '4rem', marginBottom: '20px' }}>🕒</div>
+          <h3 style={{ margin: '0 0 15px 0', color: '#333' }}>
+            No hay mano de obra compensada
+          </h3>
+          <p style={{ margin: 0, color: '#666' }}>
+            Este centro no tiene registros de horas compensadas en el período seleccionado.
           </p>
         </div>
       )}

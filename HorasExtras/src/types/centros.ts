@@ -47,6 +47,7 @@ export interface TrabajadorCentro {
 export interface CentroPorMes {
   centroId: string;
   centroNombre: string;
+  manoObraCompensada?: number;
   fechaInicio: string;
   fechaFinal?: string | null;
   trabajadores: TrabajadorCentro[];

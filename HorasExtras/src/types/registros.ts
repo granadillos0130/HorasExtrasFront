@@ -1,4 +1,3 @@
-
 import type { Curso } from "./curso";
 
 export type TipoDestino = 'centro' | 'curso';
@@ -34,7 +33,7 @@ export interface RegistroInputDto {
   // Otros campos
   AnalistaId?: number;
 }
- interface RespuestaIntensidadHoraria {
+  interface RespuestaIntensidadHoraria {
   success: boolean;
   tipoVista: string;
   trabajadorUsaBanco: boolean;
@@ -42,6 +41,7 @@ export interface RegistroInputDto {
   data: Registro[];
   total: number;
   informacionAdicional?: {
+    // Para vista semanal
     semanaEspecifica?: {
       inicioSemana: string;
       horasBase: number;
@@ -57,19 +57,8 @@ export interface RegistroInputDto {
       horasFaltantes: number;
       mensaje: string;
     };
-    bancoHoras?: {
-      historial: Array<{
-        semana: number;
-        fechaInicio: string;
-        horasBase: number;
-        horasTrabajadas: number;
-        excesoDeficit: number;
-      }>;
-      resumen: {
-        saldoTotal: number;
-      };
-    };
-    // NUEVAS PROPIEDADES AÑADIDAS
+    // Para vista mensual
+    bancoHoras?: any;
     desgloseSemanas?: Array<{
       semana: string;
       horasTrabajadas: number;
@@ -82,6 +71,8 @@ export interface RegistroInputDto {
       estadoTotal: string;
       mensaje: string;
     };
+    // NUEVO: Información de compensados
+    compensados?: CompensadosInfo;
   };
   filtros: {
     trabajadorId: number;
@@ -556,9 +547,7 @@ export interface ResumenSemana {
   total: number;
 }
 
-// ===============================
-// INTERFACES PARA MIGRACIONES
-// ===============================
+
 
 export interface RespuestaMigracion {
   mensaje: string;
@@ -617,10 +606,29 @@ export interface DiagnosticoValoresHistoricos {
   }>;
 }
 
-// ===============================
-// RE-EXPORTAR CURSO PARA COMPATIBILIDAD
-// ===============================
-// ===============================
-// RE-EXPORTAR CURSO PARA COMPATIBILIDAD
-// ===============================
+export interface CompensadoDetalle {
+  id: number;
+  fecha: string;
+  centroId: string;
+  centroNombre: string;
+  horaInicio: string;
+  horaFin: string;
+  horasCompensadas: number;
+  periodoOrigenInicio: string;
+  periodoOrigenFin: string;
+  horasDisponiblesAntes: number;
+  horasDisponiblesDespues: number;
+  horasDisponiblesActuales: number;
+  balanceOrigenTotal: number;
+  descripcion?: string;
+  fechaCreacion: string;
+  usuarioCreacion: string;
+}
+
+export interface CompensadosInfo {
+  total: number;
+  totalHorasCompensadas: number;
+  detalle: CompensadoDetalle[];
+}
+
 export type { Curso, RespuestaIntensidadHoraria };
