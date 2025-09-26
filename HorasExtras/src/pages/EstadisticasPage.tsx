@@ -27,39 +27,12 @@ ChartJS.register(
 
 import { estadisticasService } from "../api/estadisticasService";
 import { ausenciasService } from "../api/ausenciasService";
-import type { Centro, TrabajadorEstadistica } from "../types/estadisticas";
+import type { Centro, EstadisticaAusenciaMensual, EstadisticaDiagnostico, EstadisticaTipoAusencia, TrabajadorEstadistica } from "../types/estadisticas";
 import CentroBuscador from "../components/shared/CentroBuscador";
 import CursosEstadisticasPage from "./CursoEstadisticasPage";
 import "../styles/pages/EstadisticasPage.css";
 
-// Interfaces para las estadísticas de ausencias
-interface EstadisticaAusenciaMensual {
-  mes: number;
-  anio: number;
-  nombreMes: string;
-  totalAusencias: number;
-  totalHoras: number;
-  manoObraPerdida: number;
-  citasMedicas: number;
-  incapacidades: number;
-  permisos: number;
-  otros: number;
-}
 
-interface EstadisticaTipoAusencia {
-  tipoAusencia: string;
-  totalAusencias: number;
-  totalHoras: number;
-  manoObraPerdida: number;
-}
-
-interface EstadisticaDiagnostico {
-  diagnosticoCodigo: string;
-  diagnosticoDescripcion: string;
-  cantidadAusencias: number;
-  totalHoras: number;
-  manoObraPerdida: number;
-}
 
 const EstadisticasPage: React.FC = () => {
   // Estados para la vista principal

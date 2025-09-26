@@ -126,9 +126,6 @@ export const centrosService = {
       .then(res => res.data);
   },
 
-  // Obtener centros por estado
-  // Reemplaza tu método obtenerPorEstado actual con este:
-
   async obtenerPorEstado(estado: 'abierto' | 'cerrado'): Promise<CentroPorEstado[]> {
   return api.get(`/centros/por-estado/${estado}`)
     .then(res => res.data);

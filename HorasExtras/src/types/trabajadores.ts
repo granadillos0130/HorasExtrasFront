@@ -165,3 +165,16 @@ export interface CrearTrabajadorDto {
   clinicaFechaInicio: string;
   clinicaFechaFin: string;
 }
+export interface CrearTrabajadorResponse {
+  mensaje: string;
+  trabajadorId: number;
+  imagenUrl?: string;
+  calculoValorHora: object;
+  serviciosCreados: {
+    eps: boolean;
+    arl: boolean;
+    pension: boolean;
+    banco: boolean;
+    clinica: boolean;
+  };
+}

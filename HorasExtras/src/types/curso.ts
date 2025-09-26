@@ -119,3 +119,52 @@ export interface ResumenRapidoCursos {
   } | null;
   fechaConsulta: string;
 }
+
+
+export interface EstadisticasGenerales {
+  totalCursos: number;
+  totalTrabajadoresEnCursos: number;
+  promedioTrabajadoresPorCurso: number;
+  cursoConMasTrabajadores: {
+    idCurso: number;
+    nombreCurso: string;
+    cantidadTrabajadores: number;
+  } | null;
+  cursoConMenosTrabajadores: {
+    idCurso: number;
+    nombreCurso: string;
+    cantidadTrabajadores: number;
+  } | null;
+  detallesCursos: {
+    idCurso: number;
+    nombreCurso: string;
+    descripcion: string;
+    cantidadTrabajadores: number;
+  }[];
+}
+
+export interface EstadisticasCurso {
+  idCurso: number;
+  nombreCurso: string;
+  descripcion: string;
+  cantidadTrabajadores: number;
+  trabajadoresInscritos: {
+    id: number;
+    nombre: string;
+    cedula: string;
+    cargoDesempenado: string;
+    estado: string;
+    area: string;
+  }[];
+}
+
+export interface HorasCurso {
+  idCurso: number;
+  nombreCurso: string;
+  cantidadTrabajadores: number;
+  totalHorasCurso: number;
+  periodoConsultado: {
+    fechaInicio: string;
+    fechaFin: string;
+  };
+}

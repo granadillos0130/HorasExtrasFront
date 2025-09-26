@@ -1,45 +1,9 @@
 // src/api/registrosService.ts - VERSIÓN ACTUALIZADA
 import { api } from "./api";
-import type { Registro, RespuestaIntensidadHoraria} from "../types/registros";
+import type { Registro, RespuestaEdicionLote, RespuestaIntensidadHoraria, RespuestaResumenCompleto, ResumenDia} from "../types/registros";
 import type { RegistroInputDto, RegistroActualizacionDto } from "../types/registros";
 import type { ResumenSemana } from "../types/ResumenSemana";
 
-// 🆕 NUEVO: Interfaz para el resumen detallado del día
-export interface ResumenDia {
-  fecha: string;
-  jornadaEsperada: number;
-  registrosNormales: number;
-  ausencias: number;
-  totalHorasTrabajadas: number;
-  totalHorasAusencias: number;
-  horasAusenciasRemuneradas: number;
-  horasAusenciasNoRemuneradas: number;
-  totalHorasNormales: number;
-  totalHorasExtras: number;
-  cumplioJornada: boolean;
-}
-
-// 🆕 NUEVO: Interfaz para respuesta del resumen completo
-export interface RespuestaResumenCompleto {
-  fechaInicio: string;
-  fechaFin: string;
-  trabajadorId?: number;
-  totalRegistros: number;
-  datos: Registro[];
-}
-
-// 🆕 NUEVO: Interfaz para respuesta de edición en lote
-export interface RespuestaEdicionLote {
-  mensaje: string;
-  registrosActualizados: number;
-  totalProcesados: number;
-  errores: string[];
-  detalleResultados: Array<{
-    id: number;
-    exito: boolean;
-    mensaje: string;
-  }>;
-}
 
 export const registrosService = {
   // Obtener todos los registros

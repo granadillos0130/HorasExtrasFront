@@ -8,7 +8,6 @@ interface Props {
   onSuccess?: () => void;
   centroAEditar?: any | null;
 }
-
 // Interfaz para el payload que se envía al backend
 interface CentroPayload {
   id: string;

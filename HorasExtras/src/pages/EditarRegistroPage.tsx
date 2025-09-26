@@ -4,16 +4,10 @@ import { registrosService } from "../api/registrosService";
 import { trabajadoresService } from "../api/trabajadoresService";
 import { centrosService } from "../api/centrosService";
 import CentroBuscador from "../components/shared/CentroBuscador";
-import type { Registro, RegistroInputDto } from "../types/registros";
+import type { Registro, RegistroExistente, RegistroInputDto } from "../types/registros";
 import type { Trabajador } from "../types/trabajadores";
 import type { Centro } from "../types/centros";
 
-// TIPO ESPECÍFICO PARA REGISTROS EXISTENTES
-interface RegistroExistente {
-  id: number;
-  trabajadorId: number;
-  fecha: string;
-}
 
 const EditarRegistroPage: React.FC = () => {
   const navigate = useNavigate();

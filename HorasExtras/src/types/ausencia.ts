@@ -164,3 +164,148 @@ export interface ValidacionVacacionesResponse {
     festivos: string;
   };
 }
+// 🆕 Interfaces para validación de vacaciones
+export interface ValidarVacacionesDto {
+  fechaInicio: Date;
+  fechaFin: Date;
+  tipoAusencia: string;
+  trabajadorId: number;
+}
+
+export interface DetalleDia {
+  fecha: string;
+  diaSemana: string;
+  esLaborable: boolean;
+  esFestivo: boolean;
+  tieneRegistros: boolean;
+  motivo: string;
+}
+
+export interface ValidacionVacaciones {
+  fechaInicio: string;
+  fechaFin: string;
+  totalDias: number;
+  diasLaborables: number;
+  diasNoLaborables: number;
+  diasADescontar: number;
+  detalleDias: DetalleDia[];
+  mensaje: string;
+  explicacion: {
+    domingos: string;
+    sabados: string;
+    festivos: string;
+  };
+}
+// Interfaz para las estadísticas de horas por tipo
+export interface EstadisticaHoras {
+  tipoAusencia: string;
+  totalHoras: number;
+}
+
+// Interfaz para las estadísticas de horas por área
+export interface EstadisticaHorasArea {
+  area: string;
+  totalHoras: number;
+}
+
+// 🆕 Interface para estadísticas por diagnóstico
+export interface EstadisticaDiagnostico {
+  diagnosticoCodigo: string;
+  diagnosticoDescripcion: string;
+  cantidadAusencias: number;
+  totalHoras: number;
+}
+
+// 🆕 Interfaces adicionales para las nuevas estadísticas
+export interface EstadisticaMensual {
+  mes: number;
+  anio: number;
+  nombreMes: string;
+  totalAusencias: number;
+  totalHoras: number;
+  manoObraPerdida: number;
+  citasMedicas: number;
+  incapacidades: number;
+  permisos: number;
+  otros: number;
+  trabajadoresAfectados: number;
+  ausenciasRemuneradas: number;
+  ausenciasNoRemuneradas: number;
+}
+
+export interface EstadisticaTipoDetallado {
+  tipoAusencia: string;
+  totalAusencias: number;
+  totalHoras: number;
+  manoObraPerdida: number;
+  trabajadoresAfectados: number;
+  remuneradas: number;
+  noRemuneradas: number;
+  diagnosticosMasFrecuentes: {
+    codigo: string;
+    descripcion: string;
+    cantidad: number;
+  }[];
+}
+
+export interface EstadisticaDiagnosticoDetallado {
+  diagnosticoCodigo: string;
+  diagnosticoDescripcion: string;
+  cantidadAusencias: number;
+  totalHoras: number;
+  manoObraPerdida: number;
+  trabajadoresAfectados: number;
+  promedioDuracion: number;
+  tiposAusencia: {
+    tipo: string;
+    cantidad: number;
+  }[];
+  distribucionMensual: {
+    mes: number;
+    cantidad: number;
+  }[];
+}
+
+export interface TendenciaAusencia {
+  anio: number;
+  mes: number;
+  fecha: string;
+  totalAusencias: number;
+  totalHoras: number;
+  manoObraPerdida: number;
+  trabajadoresAfectados: number;
+  diagnosticosPrincipales: {
+    codigo: string;
+    cantidad: number;
+  }[];
+}
+
+export interface ResumenEjecutivo {
+  anio: number;
+  resumenGeneral: {
+    totalAusencias: number;
+    totalHoras: number;
+    manoObraPerdida: number;
+    trabajadoresAfectados: number;
+    totalTrabajadores: number;
+    porcentajeTrabajadoresAfectados: number;
+    promedioHorasPorAusencia: number;
+  };
+  porTipoAusencia: {
+    tipo: string;
+    cantidad: number;
+    porcentaje: number;
+  }[];
+  topDiagnosticos: {
+    codigo: string;
+    descripcion: string;
+    cantidad: number;
+    porcentaje: number;
+  }[];
+  tendenciaMensual: {
+    mes: number;
+    nombreMes: string;
+    cantidad: number;
+    manoObraPerdida: number;
+  }[];
+}

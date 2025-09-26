@@ -17,7 +17,6 @@ import RegistroLotePage from "./pages/RegistroLotePage";
 import { AusenciasPage } from "./pages/AusenciasPage";
 import { AusenciasFormPage } from "./pages/AusenciasFormPage";
 import { EstadisticaAusenciaPage } from "./pages/EstadisticaAusenciaPage";
-import EditarRegistrosLotePage from "./pages/EditarRegistrosLotePage";
 import EditarRegistroPage from "./pages/EditarRegistroPage";
 import { EditarAusenciaPage } from "./pages/EditarAusenciaPage";
 import TrabajadorAusenciasPage from "./pages/TrabajadorAusenciasPage";
@@ -83,7 +82,6 @@ export default function App() {
             <Route path="/trabajadores/:id/ausencias" element={<TrabajadorAusenciasPage />} />
             <Route path="clientes" element={<ClientesPage/>} />
             <Route path="/registros" element={<RegistrosPage />} />
-            <Route path="/registros/editar-lote" element={<EditarRegistrosLotePage />} />
             <Route path="/registros/editar/:id" element={<EditarRegistroPage />} />
             <Route path="/registros/nuevo" element={<RegistroNuevoPage />} />
             <Route path="/registros/lote" element={<RegistroLotePage />} />

@@ -2,16 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { ausenciasService } from "../api/ausenciasService";
 import "../styles/components/ausencias/EstadisticaAusenciaPage.css";
+import type { EstadisticaHoras, EstadisticaHorasArea } from "../types/ausencia";
 
-interface EstadisticaHoras {
-  tipoAusencia: string;
-  totalHoras: number;
-}
-
-interface EstadisticaHorasArea {
-  area: string;
-  totalHoras: number;
-}
 
 export function EstadisticaAusenciaPage() {
   const [estadisticas, setEstadisticas] = useState<EstadisticaHoras[]>([]);

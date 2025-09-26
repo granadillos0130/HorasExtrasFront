@@ -1,20 +1,7 @@
 import { api } from "../api/api";
-import type { Trabajador, CrearTrabajadorDto } from "../types/trabajadores";
+import type { Trabajador, CrearTrabajadorDto, CrearTrabajadorResponse } from "../types/trabajadores";
 
 // Tipo para la respuesta de creación con imagen
-interface CrearTrabajadorResponse {
-  mensaje: string;
-  trabajadorId: number;
-  imagenUrl?: string;
-  calculoValorHora: object;
-  serviciosCreados: {
-    eps: boolean;
-    arl: boolean;
-    pension: boolean;
-    banco: boolean;
-    clinica: boolean;
-  };
-}
 
 export const trabajadoresService = {
   // Obtener todos los trabajadores

@@ -22,60 +22,7 @@ ChartJS.register(
 );
 
 import { cursosService } from "../api/cursoService";
-
-interface Curso {
-  id: number;
-  nombre: string;
-  descripcion: string;
-}
-
-interface EstadisticasGenerales {
-  totalCursos: number;
-  totalTrabajadoresEnCursos: number;
-  promedioTrabajadoresPorCurso: number;
-  cursoConMasTrabajadores: {
-    idCurso: number;
-    nombreCurso: string;
-    cantidadTrabajadores: number;
-  } | null;
-  cursoConMenosTrabajadores: {
-    idCurso: number;
-    nombreCurso: string;
-    cantidadTrabajadores: number;
-  } | null;
-  detallesCursos: {
-    idCurso: number;
-    nombreCurso: string;
-    descripcion: string;
-    cantidadTrabajadores: number;
-  }[];
-}
-
-interface EstadisticasCurso {
-  idCurso: number;
-  nombreCurso: string;
-  descripcion: string;
-  cantidadTrabajadores: number;
-  trabajadoresInscritos: {
-    id: number;
-    nombre: string;
-    cedula: string;
-    cargoDesempenado: string;
-    estado: string;
-    area: string;
-  }[];
-}
-
-interface HorasCurso {
-  idCurso: number;
-  nombreCurso: string;
-  cantidadTrabajadores: number;
-  totalHorasCurso: number;
-  periodoConsultado: {
-    fechaInicio: string;
-    fechaFin: string;
-  };
-}
+import type { Curso, EstadisticasCurso, EstadisticasGenerales, HorasCurso } from "../types/curso";
 
 interface Props {
   onVolver: () => void;

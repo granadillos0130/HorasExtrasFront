@@ -2,128 +2,22 @@ import { api } from "./api";
 import type { 
   Ausencia, 
   AusenciaDto, 
+  EstadisticaDiagnostico, 
+  EstadisticaDiagnosticoDetallado, 
+  EstadisticaHoras, 
+  EstadisticaHorasArea, 
+  EstadisticaMensual, 
   EstadisticasTrabajador, 
+  EstadisticaTipoDetallado, 
+  ResumenEjecutivo, 
   ResumenTrabajador, 
+  TendenciaAusencia, 
   ValidacionVacacionesResponse,
   ValidarVacacionesDto
 } from "../types/ausencia";
 import type { Diagnostico } from "../types/diagnostico";
 
-// Interfaz para las estadísticas de horas por tipo
-interface EstadisticaHoras {
-  tipoAusencia: string;
-  totalHoras: number;
-}
 
-// Interfaz para las estadísticas de horas por área
-interface EstadisticaHorasArea {
-  area: string;
-  totalHoras: number;
-}
-
-// 🆕 Interface para estadísticas por diagnóstico
-interface EstadisticaDiagnostico {
-  diagnosticoCodigo: string;
-  diagnosticoDescripcion: string;
-  cantidadAusencias: number;
-  totalHoras: number;
-}
-
-// 🆕 Interfaces adicionales para las nuevas estadísticas
-interface EstadisticaMensual {
-  mes: number;
-  anio: number;
-  nombreMes: string;
-  totalAusencias: number;
-  totalHoras: number;
-  manoObraPerdida: number;
-  citasMedicas: number;
-  incapacidades: number;
-  permisos: number;
-  otros: number;
-  trabajadoresAfectados: number;
-  ausenciasRemuneradas: number;
-  ausenciasNoRemuneradas: number;
-}
-
-interface EstadisticaTipoDetallado {
-  tipoAusencia: string;
-  totalAusencias: number;
-  totalHoras: number;
-  manoObraPerdida: number;
-  trabajadoresAfectados: number;
-  remuneradas: number;
-  noRemuneradas: number;
-  diagnosticosMasFrecuentes: {
-    codigo: string;
-    descripcion: string;
-    cantidad: number;
-  }[];
-}
-
-interface EstadisticaDiagnosticoDetallado {
-  diagnosticoCodigo: string;
-  diagnosticoDescripcion: string;
-  cantidadAusencias: number;
-  totalHoras: number;
-  manoObraPerdida: number;
-  trabajadoresAfectados: number;
-  promedioDuracion: number;
-  tiposAusencia: {
-    tipo: string;
-    cantidad: number;
-  }[];
-  distribucionMensual: {
-    mes: number;
-    cantidad: number;
-  }[];
-}
-
-interface TendenciaAusencia {
-  anio: number;
-  mes: number;
-  fecha: string;
-  totalAusencias: number;
-  totalHoras: number;
-  manoObraPerdida: number;
-  trabajadoresAfectados: number;
-  diagnosticosPrincipales: {
-    codigo: string;
-    cantidad: number;
-  }[];
-}
-
-interface ResumenEjecutivo {
-  anio: number;
-  resumenGeneral: {
-    totalAusencias: number;
-    totalHoras: number;
-    manoObraPerdida: number;
-    trabajadoresAfectados: number;
-    totalTrabajadores: number;
-    porcentajeTrabajadoresAfectados: number;
-    promedioHorasPorAusencia: number;
-  };
-  porTipoAusencia: {
-    tipo: string;
-    cantidad: number;
-    porcentaje: number;
-  }[];
-  topDiagnosticos: {
-    codigo: string;
-    descripcion: string;
-    cantidad: number;
-    porcentaje: number;
-  }[];
-  tendenciaMensual: {
-    mes: number;
-    nombreMes: string;
-    cantidad: number;
-    manoObraPerdida: number;
-  }[];
-}
-
-// ===== FUNCIONES EXISTENTES =====
 
 export async function getPorMes(anio: number, mes: number) {
   const response = await api.get<Ausencia[]>(`/ausencias/mes/${anio}/${mes}`);
