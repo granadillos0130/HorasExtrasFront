@@ -23,6 +23,7 @@ import TrabajadorAusenciasPage from "./pages/TrabajadorAusenciasPage";
 import TrabajadorDetailPage from "./components/trabajadores/TrabajadorDetailPage";
 import { CursosPage } from "./pages/CursosPage";
 import CompensadoForm from "./components/compensado/CompensadoForm";
+import { CompensadosPage } from "./pages/CompensadosPage";
 
 // CACHE MANAGER
 const useCacheManager = () => {
@@ -91,6 +92,7 @@ export default function App() {
             <Route path="/centros/crear" element={<CentroForm />} />
             <Route path="/centros/editar/:id" element={<CentroForm />} />
             <Route path="/compensados/nueva" element={<CompensadoForm />} />
+            <Route path="/compensados/ver" element={<CompensadosPage />} />
             <Route path="/estadisticas" element={<EstadisticasPage />} />
             <Route path="/ausencias" element={<AusenciasPage />} />
             <Route path="/ausencias/nueva" element={<AusenciasFormPage />} />

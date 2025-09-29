@@ -128,6 +128,12 @@ export function AusenciasPage() {
             💳 Crear Compensado
           </button>
           <button 
+            className="compensados-btn" 
+            onClick={() => navigate("/compensados/ver")}
+          >
+            💳 Ver Compensados
+          </button>
+          <button 
             className="crear-ausencia-btn" 
             onClick={() => navigate("/ausencias/nueva")}
           >

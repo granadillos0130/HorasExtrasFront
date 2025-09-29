@@ -1,0 +1,671 @@
+/* CompensadosPage.css */
+
+.compensados-container {
+  padding: 2rem;
+  background: #f8fafc;
+  min-height: 100vh;
+}
+
+.compensados-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.compensados-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 0;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 1rem;
+}
+
+.estadisticas-btn,
+.ausencias-btn,
+.crear-compensado-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.estadisticas-btn {
+  background: #3b82f6;
+  color: white;
+}
+
+.estadisticas-btn:hover {
+  background: #2563eb;
+  transform: translateY(-1px);
+}
+
+.ausencias-btn {
+  background: #8b5cf6;
+  color: white;
+}
+
+.ausencias-btn:hover {
+  background: #7c3aed;
+  transform: translateY(-1px);
+}
+
+.crear-compensado-btn {
+  background: #10b981;
+  color: white;
+}
+
+.crear-compensado-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+/* Grid de meses */
+.meses-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.mes-btn {
+  padding: 1rem;
+  border: 2px solid #e5e7eb;
+  background: white;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.mes-btn:hover {
+  border-color: #3b82f6;
+  background: #f0f9ff;
+}
+
+.mes-btn.seleccionado {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+/* Resultados */
+.resultado-compensados {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.compensados-subtitle {
+  padding: 1.5rem;
+  margin: 0;
+  border-bottom: 1px solid #e5e7eb;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+/* Loading */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4rem;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid #e5e7eb;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-text {
+  margin-top: 1rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* No data */
+.no-data-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 4rem;
+}
+
+.no-data-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.no-data-text {
+  color: #6b7280;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.crear-primer-btn {
+  padding: 0.75rem 1.5rem;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.crear-primer-btn:hover {
+  background: #059669;
+  transform: translateY(-1px);
+}
+
+/* Estadísticas rápidas */
+.stats-summary {
+  display: flex;
+  gap: 1rem;
+  padding: 1.5rem;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  flex-wrap: wrap;
+}
+
+.total-compensados {
+  padding: 0.5rem 1rem;
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.badge {
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.badge-success {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.badge-warning {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.badge-info {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+/* Tabla */
+.table-container {
+  overflow-x: auto;
+}
+
+.compensados-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.compensados-table th {
+  background: #f9fafb;
+  padding: 1rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  white-space: nowrap;
+}
+
+.header-icon {
+  margin-right: 0.5rem;
+}
+
+.compensados-table td {
+  padding: 1rem;
+  border-bottom: 1px solid #f3f4f6;
+  vertical-align: top;
+}
+
+.table-row.even {
+  background: #ffffff;
+}
+
+.table-row.odd {
+  background: #f9fafb;
+}
+
+.table-row.cancelado {
+  opacity: 0.6;
+  background: #fef2f2;
+}
+
+.table-row:hover:not(.cancelado) {
+  background: #f0f9ff;
+}
+
+/* Celdas específicas */
+.trabajador-cell {
+  min-width: 180px;
+}
+
+.trabajador-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.trabajador-avatar {
+  width: 40px;
+  height: 40px;
+  background: #dbeafe;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+}
+
+.trabajador-nombre {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.centro-cell {
+  min-width: 150px;
+}
+
+.centro-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.fecha-cell {
+  min-width: 120px;
+}
+
+.fecha-badge {
+  background: #f3f4f6;
+  color: #374151;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.horario-cell {
+  min-width: 140px;
+}
+
+.horario-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hora-badge {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.hora-badge.ingreso {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.hora-badge.salida {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.separador {
+  color: #6b7280;
+  font-weight: bold;
+}
+
+.horas-cell {
+  min-width: 100px;
+}
+
+.horas-badge {
+  background: #fef3c7;
+  color: #92400e;
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.periodo-cell {
+  min-width: 120px;
+}
+
+.periodo-badge {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.balance-cell {
+  min-width: 140px;
+}
+
+.balance-info {
+  font-size: 0.75rem;
+  line-height: 1.4;
+}
+
+.balance-antes,
+.balance-despues {
+  margin: 0.25rem 0;
+  padding: 0.125rem 0.25rem;
+  border-radius: 4px;
+}
+
+.balance-antes {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.balance-despues {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.descripcion-cell {
+  min-width: 150px;
+  max-width: 200px;
+}
+
+.descripcion-tooltip {
+  cursor: help;
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Estados */
+.estado-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.estado-badge.activo {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.estado-badge.cancelado {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* Acciones */
+.acciones-cell {
+  min-width: 120px;
+}
+
+.acciones-buttons {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.btn-editar,
+.btn-cancelar {
+  padding: 0.5rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 1rem;
+}
+
+.btn-editar {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.btn-editar:hover {
+  background: #bfdbfe;
+  transform: scale(1.1);
+}
+
+.btn-cancelar {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.btn-cancelar:hover {
+  background: #fecaca;
+  transform: scale(1.1);
+}
+
+.estado-info {
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-style: italic;
+}
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0.25rem;
+  border-radius: 4px;
+}
+
+.modal-close:hover {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.modal-body {
+  padding: 1.5rem;
+}
+
+.modal-body p {
+  margin: 0 0 1.5rem 0;
+  color: #374151;
+  font-weight: 500;
+}
+
+.compensado-details {
+  background: #f9fafb;
+  padding: 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.5rem;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detail-row:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.detail-label {
+  font-weight: 600;
+  color: #374151;
+  min-width: 120px;
+}
+
+.detail-value {
+  color: #6b7280;
+  flex: 1;
+  text-align: right;
+}
+
+.warning-message {
+  background: #fef3c7;
+  border: 1px solid #f59e0b;
+  padding: 1rem;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 0.875rem;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-cancelar-modal,
+.btn-confirmar-cancelar {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-cancelar-modal {
+  background: #f3f4f6;
+  color: #374151;
+}
+
+.btn-cancelar-modal:hover {
+  background: #e5e7eb;
+}
+
+.btn-confirmar-cancelar {
+  background: #dc2626;
+  color: white;
+}
+
+.btn-confirmar-cancelar:hover {
+  background: #b91c1c;
+}
+
+.btn-confirmar-cancelar:disabled,
+.btn-cancelar-modal:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .compensados-container {
+    padding: 1rem;
+  }
+
+  .compensados-header {
+    flex-direction: column;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .header-buttons {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .meses-grid {
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  }
+
+  .stats-summary {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .table-container {
+    font-size: 0.875rem;
+  }
+
+  .compensados-table th,
+  .compensados-table td {
+    padding: 0.75rem 0.5rem;
+  }
+
+  .modal-content {
+    margin: 1rem;
+    width: calc(100% - 2rem);
+  }
+}

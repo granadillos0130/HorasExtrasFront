@@ -188,5 +188,14 @@ export const compensadoService = {
   async getTrabajadoresConBancoHoras(): Promise<Trabajador[]> {
     const res = await api.get<Trabajador[]>("/trabajadores/con-banco-horas");
     return res.data;
-}
+},
+async getPorMes(anio: number, mes: number): Promise<Compensado[]> {
+    const res = await api.get<Compensado[]>(`/compensados/mes/${anio}/${mes}`);
+    return res.data;
+  },
+
+  // NUEVO: Cancelar compensado (alias de eliminar)
+  cancelarCompensado(id: number): Promise<{ mensaje: string; compensadoId: number; estado: string }> {
+    return this.eliminar(id);
+  }
 };
