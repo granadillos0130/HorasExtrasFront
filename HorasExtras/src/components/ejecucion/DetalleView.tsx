@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { DetalleDias } from '../../types/ejecucion';
 import { formatearHoras, formatearFecha } from '../../utils/formatters';
 import { ExcelExportService } from '../../api/excelExportService';
@@ -20,10 +20,16 @@ const DetalleView: React.FC<DetalleViewProps> = ({
   loading,
   onVolver
 }) => {
+  const [filaExpandida, setFilaExpandida] = useState<number | null>(null);
+
   const exportarExcel = () => {
     if (detalle) {
       ExcelExportService.exportarDetalle(detalle, centroNombre, mesNombre, año);
     }
+  };
+
+  const toggleFila = (index: number) => {
+    setFilaExpandida(filaExpandida === index ? null : index);
   };
 
   return (
@@ -94,15 +100,106 @@ const DetalleView: React.FC<DetalleViewProps> = ({
                   </thead>
                   <tbody>
                     {detalle.detalleDias.map((dia, index) => (
-                      <tr key={index} style={{ borderBottom: '1px solid #e5e7eb' }}>
-                        <td style={{ padding: '12px' }}>{formatearFecha(dia.fecha)}</td>
-                        <td style={{ padding: '12px', textAlign: 'center' }}>{formatearHoras(dia.horasNormales)}</td>
-                        <td style={{ padding: '12px', textAlign: 'center' }}>{formatearHoras(dia.extrasDiurnas)}</td>
-                        <td style={{ padding: '12px', textAlign: 'center' }}>{formatearHoras(dia.extrasNocturnas)}</td>
-                        <td style={{ padding: '12px', textAlign: 'center' }}>{formatearHoras(dia.dominicalesDiurnas)}</td>
-                        <td style={{ padding: '12px', textAlign: 'center' }}>{formatearHoras(dia.dominicalesNocturnas)}</td>
-                        <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold' }}>{formatearHoras(dia.totalHoras)}</td>
-                      </tr>
+                      <React.Fragment key={index}>
+                        {/* Fila principal - clickeable */}
+                        <tr 
+                          onClick={() => toggleFila(index)}
+                          style={{ 
+                            borderBottom: '1px solid #e5e7eb',
+                            cursor: 'pointer',
+                            background: filaExpandida === index ? '#f0f9ff' : 'transparent',
+                            transition: 'background 0.2s'
+                          }}
+                          onMouseEnter={(e) => e.currentTarget.style.background = '#f9fafb'}
+                          onMouseLeave={(e) => e.currentTarget.style.background = filaExpandida === index ? '#f0f9ff' : 'transparent'}
+                        >
+                          <td style={{ padding: '12px' }}>
+                            <span style={{ marginRight: '8px' }}>
+                              {filaExpandida === index ? '▼' : '▶'}
+                            </span>
+                            {formatearFecha(dia.fecha)}
+                          </td>
+                          <td style={{ padding: '12px', textAlign: 'center' }}>{formatearHoras(dia.horasNormales)}</td>
+                          <td style={{ padding: '12px', textAlign: 'center' }}>{formatearHoras(dia.extrasDiurnas)}</td>
+                          <td style={{ padding: '12px', textAlign: 'center' }}>{formatearHoras(dia.extrasNocturnas)}</td>
+                          <td style={{ padding: '12px', textAlign: 'center' }}>{formatearHoras(dia.dominicalesDiurnas)}</td>
+                          <td style={{ padding: '12px', textAlign: 'center' }}>{formatearHoras(dia.dominicalesNocturnas)}</td>
+                          <td style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold' }}>{formatearHoras(dia.totalHoras)}</td>
+                        </tr>
+
+                        {/* Fila expandida con detalles */}
+                        {filaExpandida === index && (
+                          <tr>
+                            <td colSpan={7} style={{ padding: '20px', background: '#f0f9ff', borderBottom: '2px solid #e5e7eb' }}>
+                              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }}>
+                                
+                                {/* Columna 1: Horario */}
+                                <div style={{ background: 'white', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                  <h4 style={{ margin: '0 0 12px 0', color: '#1f2937', fontSize: '0.95rem', fontWeight: 'bold' }}>
+                                    ⏰ HORARIO TRABAJADO
+                                  </h4>
+                                  <div style={{ fontSize: '0.85rem', lineHeight: '1.8' }}>
+                                    <div><strong>Ingreso:</strong> {dia.horaIngreso}</div>
+                                    <div><strong>Salida:</strong> {dia.horaSalida}</div>
+                                    <div><strong>Almuerzo:</strong> {dia.tiempoAlmuerzo}</div>
+                                    <div><strong>Intensidad:</strong> {formatearHoras(dia.intensidadHoraria)}</div>
+                                  </div>
+                                </div>
+
+                                {/* Columna 2: Desglose de horas */}
+                                <div style={{ background: 'white', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                  <h4 style={{ margin: '0 0 12px 0', color: '#1f2937', fontSize: '0.95rem', fontWeight: 'bold' }}>
+                                    📊 DESGLOSE DE HORAS
+                                  </h4>
+                                  <div style={{ fontSize: '0.85rem', lineHeight: '1.8' }}>
+                                    <div><strong>Normales:</strong> {formatearHoras(dia.horasNormales)}</div>
+                                    <div><strong>Extras Diurnas:</strong> {formatearHoras(dia.extrasDiurnas)}</div>
+                                    <div><strong>Extras Nocturnas:</strong> {formatearHoras(dia.extrasNocturnas)}</div>
+                                    <div><strong>Dom. Diurnas:</strong> {formatearHoras(dia.dominicalesDiurnas)}</div>
+                                    <div><strong>Dom. Nocturnas:</strong> {formatearHoras(dia.dominicalesNocturnas)}</div>
+                                    <div style={{ borderTop: '1px solid #e5e7eb', marginTop: '8px', paddingTop: '8px' }}>
+                                      <strong>TOTAL:</strong> <span style={{ color: '#059669', fontWeight: 'bold' }}>{formatearHoras(dia.totalHoras)}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Columna 3: Información adicional */}
+                                <div style={{ background: 'white', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
+                                  <h4 style={{ margin: '0 0 12px 0', color: '#1f2937', fontSize: '0.95rem', fontWeight: 'bold' }}>
+                                    ℹ️ INFORMACIÓN ADICIONAL
+                                  </h4>
+                                  <div style={{ fontSize: '0.85rem', lineHeight: '1.8' }}>
+                                    <div><strong>Día:</strong> {dia.diaSemana}</div>
+                                    <div><strong>Centro:</strong> {dia.centroDia}</div>
+                                    {dia.esConductor && (
+                                      <>
+                                        <div><strong>Desp. Ida:</strong> {dia.desplazamientoIda}</div>
+                                        <div><strong>Desp. Regreso:</strong> {dia.desplazamientoRegreso}</div>
+                                      </>
+                                    )}
+                                    {dia.esCompensado && (
+                                      <div style={{ marginTop: '8px', padding: '6px', background: '#fef3c7', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                        ⚠️ Día compensado
+                                      </div>
+                                    )}
+                                    {dia.esFestivo && (
+                                      <div style={{ marginTop: '8px', padding: '6px', background: '#dbeafe', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                        🎉 Día festivo
+                                      </div>
+                                    )}
+                                    {dia.esAusencia && (
+                                      <div style={{ marginTop: '8px', padding: '6px', background: '#fee2e2', borderRadius: '4px', fontSize: '0.8rem' }}>
+                                        ❌ Ausencia
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </React.Fragment>
                     ))}
                   </tbody>
                 </table>
