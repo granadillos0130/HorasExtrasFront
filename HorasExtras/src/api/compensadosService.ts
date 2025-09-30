@@ -197,5 +197,22 @@ async getPorMes(anio: number, mes: number): Promise<Compensado[]> {
   // NUEVO: Cancelar compensado (alias de eliminar)
   cancelarCompensado(id: number): Promise<{ mensaje: string; compensadoId: number; estado: string }> {
     return this.eliminar(id);
+  },
+  async validarCompensadoConAlmuerzo(data: CrearCompensado): Promise<{
+  esValido: boolean;
+  horasBrutas: number;
+  tiempoAlmuerzoDescontado: number;
+  horasEfectivas: number;
+  horasDisponibles: number;
+  horasSobrantes: number;
+  yaHayAlmuerzoEnOtraActividad: boolean;
+  mensaje: string;
+}> {
+  try {
+    const res = await api.post("/compensados/validar", data);
+    return res.data;
+  } catch (error: any) {
+    throw new Error(error.response?.data?.error || "Error al validar compensado");
   }
+},
 };

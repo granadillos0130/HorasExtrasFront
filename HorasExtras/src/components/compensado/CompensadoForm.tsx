@@ -6,478 +6,23 @@ import type { CrearCompensado, HorasDisponibles } from "../../types/compensado";
 import type { Trabajador } from "../../types/trabajadores";
 import "../../styles/components/compensado/CompensadoForm.css";
 
-// Interfaces para centros (asumiendo estructura similar)
+// Interfaces para centros
 interface Centro {
   id: string;
   nombreCentro: string;
   estado?: boolean;
 }
 
-// Estilos específicos para compensados
-const compensadoStyles = `
-.compensado-form-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 20px;
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-  min-height: 100vh;
-}
-
-.form-header {
-  text-align: center;
-  margin-bottom: 30px;
-  padding: 30px 20px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  border-radius: 20px;
-  color: white;
-  box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
-}
-
-.form-title {
-  font-size: 2.5rem;
-  margin: 0 0 15px 0;
-  font-weight: 800;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 15px;
-}
-
-.form-icon {
-  font-size: 3rem;
-  filter: drop-shadow(2px 2px 4px rgba(0, 0, 0, 0.3));
-}
-
-.form-subtitle {
-  font-size: 1.2rem;
-  margin: 0;
-  opacity: 0.95;
-  font-weight: 400;
-}
-
-.compensado-form {
-  background: white;
-  border-radius: 20px;
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-}
-
-.form-section {
-  padding: 30px;
-  border-bottom: 2px solid #f1f5f9;
-}
-
-.form-section:last-child {
-  border-bottom: none;
-}
-
-.section-title {
-  font-size: 1.4rem;
-  margin: 0 0 25px 0;
-  color: #1e293b;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding-bottom: 12px;
-  border-bottom: 3px solid #e2e8f0;
-}
-
-.section-icon {
-  font-size: 1.6rem;
-  width: 40px;
-  height: 40px;
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 20px;
-}
-
-.form-group {
-  margin-bottom: 0;
-}
-
-.form-group.full-width {
-  grid-column: 1 / -1;
-}
-
-.form-label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #374151;
-  font-size: 0.95rem;
-}
-
-.required {
-  color: #ef4444;
-}
-
-.form-input, .form-select, .form-textarea {
-  width: 100%;
-  padding: 14px 16px;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  font-size: 1rem;
-  transition: all 0.2s;
-  background: #fafafa;
-  box-sizing: border-box;
-}
-
-.form-input:focus, .form-select:focus, .form-textarea:focus {
-  outline: none;
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-  background: white;
-}
-
-.form-textarea {
-  min-height: 100px;
-  resize: vertical;
-  font-family: inherit;
-}
-
-.form-actions {
-  padding: 30px;
-  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
-  display: flex;
-  gap: 15px;
-  justify-content: center;
-  flex-wrap: wrap;
-}
-
-.btn {
-  padding: 14px 28px;
-  border: none;
-  border-radius: 12px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-width: 140px;
-  justify-content: center;
-}
-
-.btn-primary {
-  background: linear-gradient(135deg, #667eea, #764ba2);
-  color: white;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
-}
-
-.btn-primary:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
-}
-
-.btn-secondary {
-  background: linear-gradient(135deg, #f1f5f9, #e2e8f0);
-  color: #475569;
-  border: 2px solid #cbd5e1;
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
-  transform: translateY(-1px);
-}
-
-.btn-outline {
-  background: transparent;
-  color: #667eea;
-  border: 2px solid #667eea;
-}
-
-.btn-outline:hover:not(:disabled) {
-  background: #667eea;
-  color: white;
-  transform: translateY(-1px);
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none !important;
-}
-
-.btn-spinner {
-  width: 18px;
-  height: 18px;
-  border: 2px solid transparent;
-  border-top: 2px solid currentColor;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-.form-message {
-  white-space: pre-line;
-  line-height: 1.6;
-  text-align: left;
-  max-width: 100%;
-  word-wrap: break-word;
-  margin: 20px 30px;
-  padding: 20px;
-  border-radius: 12px;
-}
-
-.form-message.success {
-  background: linear-gradient(135deg, #d1fae5, #a7f3d0);
-  border: 2px solid #10b981;
-  color: #064e3b;
-  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
-}
-
-.form-message.error {
-  background: linear-gradient(135deg, #fee2e2, #fecaca);
-  border: 2px solid #ef4444;
-  color: #7f1d1d;
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
-}
-
-.loading-container {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 1rem;
-  background: #f8f9fa;
-  border-radius: 10px;
-  border: 2px dashed #dee2e6;
-  justify-content: center;
-  color: #6c757d;
-  font-weight: 500;
-}
-
-.loading-spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #dee2e6;
-  border-top: 2px solid #667eea;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-/* Horas disponibles section */
-.horas-disponibles-section {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  border: 2px solid #f59e0b;
-  border-radius: 12px;
-  padding: 20px;
-  margin: 20px 0;
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.horas-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 15px;
-  color: #92400e;
-  font-size: 1.1rem;
-  font-weight: 600;
-}
-
-.horas-content {
-  color: #78350f;
-  line-height: 1.6;
-}
-
-.horas-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-  margin: 15px 0;
-}
-
-.horas-item {
-  background: rgba(255, 255, 255, 0.8);
-  padding: 12px;
-  border-radius: 8px;
-  border-left: 4px solid #f59e0b;
-}
-
-.horas-item strong {
-  display: block;
-  color: #92400e;
-  font-size: 0.9rem;
-  margin-bottom: 4px;
-}
-
-.horas-item span {
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: #78350f;
-}
-
-.compensados-existentes {
-  background: rgba(255, 255, 255, 0.9);
-  border-radius: 8px;
-  padding: 15px;
-  margin-top: 15px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.compensado-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 8px 0;
-  border-bottom: 1px solid #f3f4f6;
-  font-size: 0.85rem;
-}
-
-.compensado-item:last-child {
-  border-bottom: none;
-}
-
-.vista-previa {
-  background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-  border: 2px solid #22c55e;
-  border-radius: 12px;
-  padding: 20px;
-  margin: 20px 0;
-}
-
-.vista-previa h4 {
-  margin: 0 0 15px 0;
-  color: #15803d;
-  font-size: 1.1rem;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.vista-previa-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 15px;
-  font-size: 0.9rem;
-  color: #166534;
-}
-
-.vista-previa-item {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.vista-previa-item strong {
-  color: #15803d;
-}
-
-.integration-info {
-  background: linear-gradient(135deg, #eff6ff, #dbeafe);
-  border: 2px solid #3b82f6;
-  border-radius: 15px;
-  padding: 20px;
-  margin: 25px 0;
-  position: relative;
-  overflow: hidden;
-}
-
-.integration-info::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #3b82f6, #1d4ed8, #3b82f6);
-  animation: shimmer 2s infinite;
-}
-
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.integration-info h4 {
-  color: #1d4ed8;
-  margin: 0 0 15px 0;
-  font-size: 1.2rem;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.integration-info p {
-  color: #1e40af;
-  margin: 0 0 10px 0;
-  line-height: 1.6;
-}
-
-.integration-info ul {
-  color: #1e40af;
-  margin: 10px 0;
-  padding-left: 20px;
-}
-
-.warning-message {
-  background: linear-gradient(135deg, #fef3c7, #fde68a);
-  border: 2px solid #f59e0b;
-  border-radius: 10px;
-  padding: 15px;
-  margin: 15px 0;
-  color: #92400e;
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  font-size: 0.9rem;
-  line-height: 1.5;
-}
-
-.warning-icon {
-  font-size: 1.2rem;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.help-text {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  padding: 12px;
-  margin-top: 8px;
-  font-size: 0.85rem;
-  color: #64748b;
-  line-height: 1.4;
-}
-`;
-
-// Inyectar estilos
-if (typeof document !== 'undefined') {
-  const styleElement = document.createElement('style');
-  styleElement.textContent = compensadoStyles;
-  document.head.appendChild(styleElement);
+// Interface para validación de compensado
+interface ValidacionCompensado {
+  esValido: boolean;
+  horasBrutas: number;
+  tiempoAlmuerzoDescontado: number;
+  horasEfectivas: number;
+  horasDisponibles: number;
+  horasSobrantes: number;
+  yaHayAlmuerzoEnOtraActividad: boolean;
+  mensaje: string;
 }
 
 const initialCompensadoState: CrearCompensado = {
@@ -511,27 +56,30 @@ const CompensadoForm = () => {
   const [horasDisponibles, setHorasDisponibles] = useState<HorasDisponibles | null>(null);
   const [loadingHoras, setLoadingHoras] = useState(false);
   
+  // Estados para validación de compensado
+  const [validacionCompensado, setValidacionCompensado] = useState<ValidacionCompensado | null>(null);
+  const [loadingValidacion, setLoadingValidacion] = useState(false);
+  
   // Estados para mostrar información
   const [mostrarInfo, setMostrarInfo] = useState(false);
 
   // Cargar trabajadores al montar
-  // Cambiar el useEffect:
-useEffect(() => {
-  const cargarTrabajadores = async () => {
-    try {
-      setLoadingTrabajadores(true);
-      const data = await compensadoService.getTrabajadoresConBancoHoras(); // ← Usar nuevo método
-      setTrabajadores(data);
-    } catch (error) {
-      console.error("Error al cargar trabajadores:", error);
-      setMensaje("error:Error al cargar la lista de trabajadores con banco de horas.");
-    } finally {
-      setLoadingTrabajadores(false);
-    }
-  };
+  useEffect(() => {
+    const cargarTrabajadores = async () => {
+      try {
+        setLoadingTrabajadores(true);
+        const data = await compensadoService.getTrabajadoresConBancoHoras();
+        setTrabajadores(data);
+      } catch (error) {
+        console.error("Error al cargar trabajadores:", error);
+        setMensaje("error:Error al cargar la lista de trabajadores con banco de horas.");
+      } finally {
+        setLoadingTrabajadores(false);
+      }
+    };
 
-  cargarTrabajadores();
-}, []);
+    cargarTrabajadores();
+  }, []);
 
   // Cargar centros al montar
   useEffect(() => {
@@ -539,7 +87,6 @@ useEffect(() => {
       try {
         setLoadingCentros(true);
         const response = await api.get<Centro[]>("/centros");
-        // Filtrar centros activos
         const centrosActivos = response.data.filter(c => c.estado !== false);
         setCentros(centrosActivos);
       } catch (error) {
@@ -586,6 +133,50 @@ useEffect(() => {
     return () => clearTimeout(timeoutId);
   }, [formData.trabajadorId, formData.periodoOrigenInicio, formData.periodoOrigenFin]);
 
+  // Validar automáticamente cuando cambien los datos relevantes
+  useEffect(() => {
+    const validarAutomaticamente = async () => {
+      if (
+        !formData.trabajadorId ||
+        !formData.centroId ||
+        !formData.fecha ||
+        !formData.horaInicio ||
+        !formData.horaFin ||
+        !formData.periodoOrigenInicio ||
+        !formData.periodoOrigenFin ||
+        !horasDisponibles
+      ) {
+        setValidacionCompensado(null);
+        return;
+      }
+
+      setLoadingValidacion(true);
+      try {
+        const validacion = await compensadoService.validarCompensadoConAlmuerzo({
+          trabajadorId: formData.trabajadorId,
+          centroId: formData.centroId,
+          fecha: formData.fecha,
+          horaInicio: formData.horaInicio,
+          horaFin: formData.horaFin,
+          horasCompensadas: formData.horasCompensadas,
+          periodoOrigenInicio: formData.periodoOrigenInicio,
+          periodoOrigenFin: formData.periodoOrigenFin,
+          descripcion: formData.descripcion,
+          usuarioCreacion: formData.usuarioCreacion
+        });
+        setValidacionCompensado(validacion);
+      } catch (error) {
+        console.error("Error al validar compensado:", error);
+        setValidacionCompensado(null);
+      } finally {
+        setLoadingValidacion(false);
+      }
+    };
+
+    const timeoutId = setTimeout(validarAutomaticamente, 500);
+    return () => clearTimeout(timeoutId);
+  }, [formData.trabajadorId, formData.centroId, formData.fecha, formData.horaInicio, formData.horaFin, formData.periodoOrigenInicio, formData.periodoOrigenFin, horasDisponibles, formData.horasCompensadas, formData.descripcion, formData.usuarioCreacion]);
+
   // Calcular horas automáticamente cuando cambien las horas de inicio/fin
   useEffect(() => {
     if (formData.horaInicio && formData.horaFin) {
@@ -619,7 +210,8 @@ useEffect(() => {
       ...prev,
       trabajadorId: trabajadorId
     }));
-    setHorasDisponibles(null); // Reset horas disponibles
+    setHorasDisponibles(null);
+    setValidacionCompensado(null);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -628,16 +220,14 @@ useEffect(() => {
     setMensaje("");
 
     try {
-      // Validaciones antes de enviar
       const validacion = compensadoService.validarCompensado(formData);
       if (!validacion.valido) {
         setMensaje("error:" + validacion.errores.join("\n"));
         return;
       }
 
-      // Verificar horas disponibles
-      if (!horasDisponibles || horasDisponibles.horasDisponibles < formData.horasCompensadas) {
-        setMensaje(`error:Horas insuficientes para crear el compensado.\nDisponibles: ${horasDisponibles?.horasDisponibles || 0} horas\nSolicitadas: ${formData.horasCompensadas} horas`);
+      if (!validacionCompensado || !validacionCompensado.esValido) {
+        setMensaje(`error:${validacionCompensado?.mensaje || "No se pudo validar el compensado"}`);
         return;
       }
 
@@ -646,40 +236,42 @@ useEffect(() => {
       setMensaje(`success:🎉 ¡Compensado creado exitosamente!
 
 📋 DETALLES DEL COMPENSADO:
-• Trabajador: ${trabajadorSeleccionado?.nombre}
-• Centro: ${centros.find(c => c.id === formData.centroId)?.nombreCentro}
-• Fecha: ${new Date(formData.fecha).toLocaleDateString('es-ES')}
-• Horario: ${formData.horaInicio} - ${formData.horaFin}
-• Horas utilizadas: ${formData.horasCompensadas} horas
+- Trabajador: ${trabajadorSeleccionado?.nombre}
+- Centro: ${centros.find(c => c.id === formData.centroId)?.nombreCentro}
+- Fecha: ${new Date(formData.fecha).toLocaleDateString('es-ES')}
+- Horario: ${formData.horaInicio} - ${formData.horaFin}
+- Horas brutas: ${validacionCompensado.horasBrutas.toFixed(2)} horas
+- Descuento almuerzo: ${validacionCompensado.tiempoAlmuerzoDescontado.toFixed(2)} horas
+- Horas efectivas utilizadas: ${validacionCompensado.horasEfectivas.toFixed(2)} horas
 
 💰 DESCUENTO DE BANCO DE HORAS:
-• Horas disponibles antes: ${horasDisponibles.horasDisponibles} horas
-• Horas utilizadas: ${formData.horasCompensadas} horas
-• Horas restantes: ${(horasDisponibles.horasDisponibles - formData.horasCompensadas).toFixed(2)} horas
+- Horas disponibles antes: ${validacionCompensado.horasDisponibles.toFixed(2)} horas
+- Horas utilizadas: ${validacionCompensado.horasEfectivas.toFixed(2)} horas
+- Horas restantes: ${validacionCompensado.horasSobrantes.toFixed(2)} horas
 
 📅 PERÍODO ORIGEN DE LAS HORAS:
-• ${new Date(formData.periodoOrigenInicio).toLocaleDateString('es-ES')} - ${new Date(formData.periodoOrigenFin).toLocaleDateString('es-ES')}
+- ${new Date(formData.periodoOrigenInicio).toLocaleDateString('es-ES')} - ${new Date(formData.periodoOrigenFin).toLocaleDateString('es-ES')}
+
+🍽️ INFORMACIÓN DE ALMUERZO:
+- ${validacionCompensado.yaHayAlmuerzoEnOtraActividad 
+  ? "No se descontó almuerzo (ya existe en otro registro del día)" 
+  : validacionCompensado.tiempoAlmuerzoDescontado > 0 
+    ? `Se descontaron ${validacionCompensado.tiempoAlmuerzoDescontado.toFixed(2)}h de almuerzo`
+    : "No se descontó almuerzo (jornada parcial)"}
 
 🔗 INTEGRACIÓN AUTOMÁTICA:
-• Se creó automáticamente un registro en RegistrosTrabajoDiarios
-• Aparecerá como trabajo normal en el centro seleccionado
-• Las horas se registran como "horas normales" (no generan extras)
-• El registro estará marcado como "COMPENSADO" para identificación
+- Se creó automáticamente un registro en RegistrosTrabajoDiarios
+- Aparecerá como trabajo normal en el centro seleccionado
+- Las horas se registran como "horas normales" (no generan extras)
+- El registro estará marcado como "COMPENSADO" para identificación`);
 
-🔍 DÓNDE VERLO:
-• Dashboard de Registros → Buscar por fecha del compensado
-• El registro aparecerá en el centro de trabajo especificado
-• Se identificará con el tipo "COMPENSADO"`);
-
-      // Reiniciar formulario
       setFormData({
         ...initialCompensadoState,
-        trabajadorId: formData.trabajadorId, // Mantener trabajador seleccionado
+        trabajadorId: formData.trabajadorId,
         periodoOrigenInicio: formData.periodoOrigenInicio,
         periodoOrigenFin: formData.periodoOrigenFin
       });
 
-      // Actualizar horas disponibles
       setTimeout(() => {
         if (formData.trabajadorId && formData.periodoOrigenInicio && formData.periodoOrigenFin) {
           compensadoService.getHorasDisponibles(
@@ -702,10 +294,10 @@ useEffect(() => {
     setFormData(initialCompensadoState);
     setTrabajadorSeleccionado(null);
     setHorasDisponibles(null);
+    setValidacionCompensado(null);
     setMensaje("");
   };
 
-  // Componente de información sobre compensados
   const IntegrationInfoComponent = () => (
     <div className="integration-info">
       <h4>
@@ -748,7 +340,6 @@ useEffect(() => {
     </div>
   );
 
-  // Componente para mostrar horas disponibles
   const HorasDisponiblesComponent = () => {
     if (!horasDisponibles) return null;
 
@@ -805,13 +396,11 @@ useEffect(() => {
     );
   };
 
-  // Componente de vista previa
   const VistaPreviaComponent = () => {
     if (!formData.fecha || !formData.horaInicio || !formData.horaFin || !horasDisponibles) {
       return null;
     }
 
-    const horasRestantes = horasDisponibles.horasDisponibles - formData.horasCompensadas;
     const centroSeleccionado = centros.find(c => c.id === formData.centroId);
 
     return (
@@ -821,46 +410,108 @@ useEffect(() => {
           Vista Previa del Compensado
         </h4>
 
-        <div className="vista-previa-grid">
-          <div className="vista-previa-item">
-            <strong>Fecha programada:</strong>
-            <span>{new Date(formData.fecha).toLocaleDateString('es-ES')}</span>
+        {loadingValidacion && (
+          <div className="loading-container" style={{ margin: '10px 0' }}>
+            <span className="loading-spinner"></span>
+            Validando compensado...
           </div>
-          <div className="vista-previa-item">
-            <strong>Centro de trabajo:</strong>
-            <span>{centroSeleccionado?.nombreCentro || "Seleccionar centro"}</span>
-          </div>
-          <div className="vista-previa-item">
-            <strong>Horario:</strong>
-            <span>{formData.horaInicio} - {formData.horaFin}</span>
-          </div>
-          <div className="vista-previa-item">
-            <strong>Horas a utilizar:</strong>
-            <span>{formData.horasCompensadas}h</span>
-          </div>
-          <div className="vista-previa-item">
-            <strong>Horas disponibles:</strong>
-            <span>{horasDisponibles.horasDisponibles.toFixed(2)}h</span>
-          </div>
-          <div className="vista-previa-item">
-            <strong>Quedarían:</strong>
-            <span style={{ 
-              color: horasRestantes >= 0 ? '#15803d' : '#dc2626',
-              fontWeight: '700'
-            }}>
-              {horasRestantes.toFixed(2)}h
-            </span>
-          </div>
-        </div>
+        )}
 
-        {horasRestantes < 0 && (
-          <div className="warning-message">
-            <span className="warning-icon">⚠️</span>
-            <div>
-              <strong>Horas insuficientes:</strong> No tienes suficientes horas disponibles para crear este compensado. 
-              Reduce las horas solicitadas o selecciona un período con más horas excedentes.
+        {validacionCompensado && (
+          <>
+            <div className="vista-previa-grid">
+              <div className="vista-previa-item">
+                <strong>Fecha programada:</strong>
+                <span>{new Date(formData.fecha).toLocaleDateString('es-ES')}</span>
+              </div>
+              <div className="vista-previa-item">
+                <strong>Centro de trabajo:</strong>
+                <span>{centroSeleccionado?.nombreCentro || "Seleccionar centro"}</span>
+              </div>
+              <div className="vista-previa-item">
+                <strong>Horario:</strong>
+                <span>{formData.horaInicio} - {formData.horaFin}</span>
+              </div>
+              <div className="vista-previa-item">
+                <strong>Horas brutas:</strong>
+                <span>{validacionCompensado.horasBrutas.toFixed(2)}h</span>
+              </div>
+              {validacionCompensado.tiempoAlmuerzoDescontado > 0 && (
+                <div className="vista-previa-item">
+                  <strong>Descuento almuerzo:</strong>
+                  <span style={{ color: '#f59e0b' }}>
+                    -{validacionCompensado.tiempoAlmuerzoDescontado.toFixed(2)}h
+                  </span>
+                </div>
+              )}
+              <div className="vista-previa-item">
+                <strong>Horas efectivas:</strong>
+                <span style={{ fontWeight: '700', color: '#667eea' }}>
+                  {validacionCompensado.horasEfectivas.toFixed(2)}h
+                </span>
+              </div>
+              <div className="vista-previa-item">
+                <strong>Horas disponibles:</strong>
+                <span>{validacionCompensado.horasDisponibles.toFixed(2)}h</span>
+              </div>
+              <div className="vista-previa-item">
+                <strong>Quedarían:</strong>
+                <span style={{ 
+                  color: validacionCompensado.horasSobrantes >= 0 ? '#15803d' : '#dc2626',
+                  fontWeight: '700'
+                }}>
+                  {validacionCompensado.horasSobrantes.toFixed(2)}h
+                </span>
+              </div>
             </div>
-          </div>
+
+            {validacionCompensado.yaHayAlmuerzoEnOtraActividad && (
+              <div className="warning-message" style={{ 
+                background: 'linear-gradient(135deg, #dbeafe, #bfdbfe)',
+                borderColor: '#3b82f6'
+              }}>
+                <span className="warning-icon">ℹ️</span>
+                <div>
+                  <strong>Sin descuento de almuerzo:</strong> Ya existe otro registro con almuerzo en esta fecha, 
+                  por lo que las {validacionCompensado.horasBrutas.toFixed(2)}h se contarán completas.
+                </div>
+              </div>
+            )}
+
+            {validacionCompensado.tiempoAlmuerzoDescontado > 0 && !validacionCompensado.yaHayAlmuerzoEnOtraActividad && (
+              <div className="warning-message" style={{ 
+                background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                borderColor: '#f59e0b'
+              }}>
+                <span className="warning-icon">🍽️</span>
+                <div>
+                  <strong>Descuento de almuerzo:</strong> Se descontarán {validacionCompensado.tiempoAlmuerzoDescontado.toFixed(2)}h 
+                  de almuerzo. Horas efectivas: {validacionCompensado.horasEfectivas.toFixed(2)}h
+                </div>
+              </div>
+            )}
+
+            {!validacionCompensado.esValido && (
+              <div className="warning-message">
+                <span className="warning-icon">⚠️</span>
+                <div>
+                  <strong>Horas insuficientes:</strong> {validacionCompensado.mensaje}
+                </div>
+              </div>
+            )}
+
+            {validacionCompensado.esValido && (
+              <div className="warning-message" style={{ 
+                background: 'linear-gradient(135deg, #d1fae5, #a7f3d0)',
+                borderColor: '#10b981'
+              }}>
+                <span className="warning-icon">✅</span>
+                <div>
+                  <strong>Compensado válido:</strong> {validacionCompensado.mensaje}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     );
@@ -881,7 +532,6 @@ useEffect(() => {
       <IntegrationInfoComponent />
 
       <form className="compensado-form" onSubmit={handleSubmit}>
-        {/* Selección del Trabajador */}
         <div className="form-section">
           <h3 className="section-title">
             <span className="section-icon">👤</span>
@@ -917,7 +567,6 @@ useEffect(() => {
           </div>
         </div>
 
-        {/* Período de Origen de Horas */}
         <div className="form-section">
           <h3 className="section-title">
             <span className="section-icon">📅</span>
@@ -959,7 +608,6 @@ useEffect(() => {
             </div>
           </div>
 
-          {/* Loading de consulta de horas */}
           {loadingHoras && (
             <div className="loading-container" style={{ margin: '15px 0' }}>
               <span className="loading-spinner"></span>
@@ -967,11 +615,9 @@ useEffect(() => {
             </div>
           )}
 
-          {/* Mostrar horas disponibles */}
           <HorasDisponiblesComponent />
         </div>
 
-        {/* Detalles del Compensado */}
         {horasDisponibles && horasDisponibles.tieneHorasDisponibles && (
           <div className="form-section">
             <h3 className="section-title">
@@ -1066,7 +712,7 @@ useEffect(() => {
                   className="form-input"
                   min="0.1"
                   max="24"
-                  step="0.1"
+                  step="0.01"
                   required
                 />
                 <div className="help-text">
@@ -1088,12 +734,10 @@ useEffect(() => {
               </div>
             </div>
 
-            {/* Vista previa del compensado */}
             <VistaPreviaComponent />
           </div>
         )}
 
-        {/* Botones de acción */}
         <div className="form-actions">
           <button
             type="button"
@@ -1132,7 +776,8 @@ useEffect(() => {
               isLoading || 
               !horasDisponibles || 
               !horasDisponibles.tieneHorasDisponibles ||
-              horasDisponibles.horasDisponibles < formData.horasCompensadas ||
+              !validacionCompensado ||
+              !validacionCompensado.esValido ||
               !formData.centroId
             }
           >
@@ -1150,7 +795,6 @@ useEffect(() => {
           </button>
         </div>
 
-        {/* Mensaje de resultado */}
         {mensaje && (
           <div className={`form-message ${mensaje.startsWith('success:') ? 'success' : 'error'}`}>
             {mensaje.replace(/^(success:|error:)/, '')}
