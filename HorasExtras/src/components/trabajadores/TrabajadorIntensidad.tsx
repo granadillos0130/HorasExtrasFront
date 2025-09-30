@@ -62,6 +62,7 @@ const TrabajadorIntensidad: React.FC = () => {
   const [error, setError] = useState("");
   const [compensadosExpandido, setCompensadosExpandido] = useState(false);
   const [compensadoDetalleVisible, setCompensadoDetalleVisible] = useState<number | null>(null);
+  const [semanaDetalleVisible, setSemanaDetalleVisible] = useState<number | null>(null);
 
   // Estado para metadatos de vista (DENTRO del componente)
   const [metadatosVista, setMetadatosVista] = useState<{
@@ -184,6 +185,7 @@ const TrabajadorIntensidad: React.FC = () => {
 
     return null;
   };
+  
   const getCompensadosInfo = () => {
     if (!metadatosVista?.informacionAdicional?.compensados) return null;
     return metadatosVista.informacionAdicional.compensados;
@@ -994,17 +996,26 @@ const TrabajadorIntensidad: React.FC = () => {
                                 </div>
                               )}
 
-                              {/* Desglose de semanas existente */}
+                              {/* Desglose de semanas con expansión */}
                               {bancoInfo.desgloseSemanas && bancoInfo.desgloseSemanas.length > 0 && (
                                 <div className="desglose-semanas">
                                   <h4>Desglose Semanal</h4>
                                   <div className="semanas-grid">
                                     {bancoInfo.desgloseSemanas.map((semana: any, index: number) => (
                                       <div key={index} className="semana-card">
-                                        <div className="semana-header">
+                                        <div 
+                                          className="semana-header"
+                                          onClick={() => setSemanaDetalleVisible(
+                                            semanaDetalleVisible === index ? null : index
+                                          )}
+                                          style={{ cursor: 'pointer' }}
+                                        >
                                           <span className="semana-numero">Semana {index + 1}</span>
                                           <span className={`semana-balance ${semana.balance >= 0 ? 'positivo' : 'negativo'}`}>
                                             {semana.balance >= 0 ? '+' : ''}{semana.balance.toFixed(2)}h
+                                          </span>
+                                          <span className="semana-toggle">
+                                            {semanaDetalleVisible === index ? '▼' : '▶'}
                                           </span>
                                         </div>
                                         <div className="semana-detalles">
@@ -1017,6 +1028,34 @@ const TrabajadorIntensidad: React.FC = () => {
                                             {semana.estado}
                                           </div>
                                         </div>
+                                        
+                                        {semanaDetalleVisible === index && (
+                                          <div className="semana-detalle-expandido">
+                                            <div className="semana-detalle-titulo">📊 Desglose de Horas</div>
+                                            <div className="semana-horas-detalle">
+                                              <div className="hora-detalle-item normal">
+                                                <span className="hora-label">⏰ Horas Normales:</span>
+                                                <span className="hora-valor">{formatHours(semana.horasNormales || 0)}</span>
+                                              </div>
+                                              <div className="hora-detalle-item extra-diurna">
+                                                <span className="hora-label">☀️ Extras Diurnas:</span>
+                                                <span className="hora-valor">{formatHours(semana.horasExtrasDiurnas || 0)}</span>
+                                              </div>
+                                              <div className="hora-detalle-item extra-nocturna">
+                                                <span className="hora-label">🌙 Extras Nocturnas:</span>
+                                                <span className="hora-valor">{formatHours(semana.horasExtrasNocturnas || 0)}</span>
+                                              </div>
+                                              <div className="hora-detalle-item dom-diurna">
+                                                <span className="hora-label">🌅 Dom. Diurnas:</span>
+                                                <span className="hora-valor">{formatHours(semana.extrasDominicalesDiurnas || 0)}</span>
+                                              </div>
+                                              <div className="hora-detalle-item dom-nocturna">
+                                                <span className="hora-label">🌃 Dom. Nocturnas:</span>
+                                                <span className="hora-valor">{formatHours(semana.extrasDominicalesNocturnas || 0)}</span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )}
                                       </div>
                                     ))}
                                   </div>
