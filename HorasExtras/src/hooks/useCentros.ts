@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useCallback } from "react";
 import { centrosService } from "../api/centrosService";
 import { clientesService } from "../api/clientesService";
@@ -241,7 +242,11 @@ export const useCentros = () => {
       const estadisticas = await centrosService.getEstadisticas({ centroId: centroData.id });
       setCentroEncontrado(centroData);
 
-      if (estadisticas && estadisticas.trabajadores) {
+      if (
+        estadisticas &&
+        typeof estadisticas === 'object' &&
+        Array.isArray((estadisticas as any).trabajadores)
+      ) {
         const centroCompleto: CentroPorMesCompleto = {
           centroId: centroData.id,
           centroNombre: centroData.nombreCentro,
@@ -249,7 +254,7 @@ export const useCentros = () => {
           fechaFinal: centroData.fechaFinal,
           manoObraTotal: 0,
           cargosUnicos: [],
-          trabajadores: estadisticas.trabajadores.map((t: EstadisticaTrabajador) => ({
+          trabajadores: (estadisticas as any).trabajadores.map((t: EstadisticaTrabajador) => ({
             trabajadorId: t.trabajadorId,
             nombre: t.nombreTrabajador,
             totalHoras: t.totalHoras,

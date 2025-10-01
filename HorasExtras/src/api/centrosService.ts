@@ -27,7 +27,7 @@ export const centrosService = {
     return api.post(`/centros/${centroId}/asignarTrabajador/${trabajadorId}`);
   },
 
-  getEstadisticas(params: { centroId?: string; nombre?: string }): Promise<any> {
+  getEstadisticas(params: { centroId?: string; nombre?: string }): Promise<unknown> {
     return api.get(`/centros/estadisticas`, { params }).then(res => res.data);
   },
   obtenerPorCliente(clienteId: string): Promise<Centro[]> {
@@ -56,6 +56,7 @@ export const centrosService = {
   },
 
   obtenerDetalleDiasTrabajador(centroId: string, trabajadorId: number): Promise<{
+    centroNombre: string;
     centroId: string;
     trabajadorId: number;
     nombreTrabajador: string;
@@ -111,7 +112,7 @@ export const centrosService = {
     manoObraTotal: number;
     success: boolean;
     error?: string;
-    detalleCalculos?: any;
+    detalleCalculos?: unknown;
   }[]> {
     return api.post(`/centros/mano-obra-total/batch`, centroIds)
       .then(res => res.data);

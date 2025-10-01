@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // CentrosPage.tsx - Versión Ultra Simplificada
 import React, { useState, useEffect, useCallback } from "react";
 import { centrosService } from "../api/centrosService";
@@ -261,7 +262,10 @@ const CentrosPage: React.FC = () => {
       const estadisticas = await centrosService.getEstadisticas({ centroId: centroData.id });
       setCentroEncontrado(centroData);
 
-      if (estadisticas && estadisticas.trabajadores) {
+      // Asegurarse que estadisticas tiene la propiedad trabajadores
+      const trabajadores = (estadisticas && (estadisticas as any).trabajadores) ? (estadisticas as any).trabajadores : [];
+
+      if (trabajadores.length > 0) {
         const centroCompleto: CentroPorMesCompleto = {
           centroId: centroData.id,
           centroNombre: centroData.nombreCentro,
@@ -269,18 +273,18 @@ const CentrosPage: React.FC = () => {
           fechaFinal: centroData.fechaFinal,
           manoObraTotal: 0,
           cargosUnicos: [],
-          trabajadores: estadisticas.trabajadores.map((t: EstadisticaTrabajador) => ({
+          trabajadores: trabajadores.map((t: any) => ({
             trabajadorId: t.trabajadorId,
             nombre: t.nombreTrabajador,
             totalHoras: t.totalHoras,
             horasNormales: t.horasNormales,
             extrasDiurnas: t.horasExtrasDiurnas,
             extrasNocturnas: t.horasExtrasNocturnas,
-            cargo: 'No especificado'
+            cargo: t.cargo || 'No especificado'
           }))
         };
         setCentroSeleccionado(centroCompleto);
-        await cargarDatosCompletosCentro(centroData, estadisticas);
+        await cargarDatosCompletosCentro(centroData, { trabajadores });
       } else {
         const centroBasico: CentroPorMesCompleto = {
           centroId: centroData.id,

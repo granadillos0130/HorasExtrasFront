@@ -108,7 +108,36 @@ export const useEjecucionData = (centroId: string) => {
     setLoading(true);
     try {
       const detalle = await centrosService.obtenerDetalleDiasTrabajador(centroId, trabajadorId);
-      setDetalleActual(detalle);
+      // Adaptar la respuesta para que cumpla con DetalleDias
+      setDetalleActual({
+        centroId: detalle.centroId,
+        centroCentroNombre: detalle.centroNombre,
+        trabajadorId: detalle.trabajadorId,
+        nombreTrabajador: detalle.nombreTrabajador,
+        totalDias: detalle.detalleDias.length,
+        detalleDias: detalle.detalleDias.map(d => ({
+          fecha: d.fecha,
+          diaSemana: '',
+          horaIngreso: '',
+          horaSalida: '',
+          tiempoAlmuerzo: '',
+          intensidadHoraria: 0,
+          centroId: detalle.centroId,
+          centroDia: '',
+          horasNormales: d.horasNormales,
+          extrasDiurnas: d.extrasDiurnas,
+          extrasNocturnas: d.extrasNocturnas,
+          dominicalesDiurnas: d.dominicalesDiurnas,
+          dominicalesNocturnas: d.dominicalesNocturnas,
+          totalHoras: d.totalHoras,
+          desplazamientoIda: '',
+          desplazamientoRegreso: '',
+          esConductor: false,
+          esCompensado: false,
+          esFestivo: false,
+          esAusencia: false
+        }))
+      });
     } catch (error) {
       console.error("Error al cargar detalle del trabajador:", error);
       setDetalleActual(null);
