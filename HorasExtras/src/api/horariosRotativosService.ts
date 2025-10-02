@@ -48,4 +48,9 @@ export const horariosRotativosService = {
     const res = await api.get(`/horarios/trabajador/${trabajadorId}/vigente`, { params });
     return res.data;
   },
+async cerrarAsignacion(asignacionId: number, fechaFin: string): Promise<void> {
+  await api.put(`/horarios/asignacion/${asignacionId}/cerrar`, {
+    fechaFin: fechaFin
+  });
+}
 };

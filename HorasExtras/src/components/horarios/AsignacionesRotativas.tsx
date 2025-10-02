@@ -22,6 +22,22 @@ const AsignacionesRotativas: React.FC = () => {
       setLoading(false);
     }
   };
+  const handleCerrarAsignacion = async (trabajadorId: number, asignacionId: number) => {
+    const fechaFin = prompt("Fecha de fin (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
+
+    if (!fechaFin) return;
+
+    if (confirm("¿Cerrar esta asignación de horario?")) {
+      try {
+        await horariosRotativosService.cerrarAsignacion(asignacionId, fechaFin);
+        alert("Asignación cerrada correctamente");
+        cargarAsignaciones();
+      } catch (err) {
+        alert("Error al cerrar la asignación");
+        console.error(err);
+      }
+    }
+  };
 
   useEffect(() => {
     cargarAsignaciones();
@@ -120,7 +136,9 @@ const AsignacionesRotativas: React.FC = () => {
                   <th>Desde</th>
                   <th>Semana Actual</th>
                   <th>Días Activo</th>
+                  <th>Acciones</th>
                 </tr>
+
               </thead>
               <tbody>
                 {asignaciones.map((asignacion) => (
@@ -157,6 +175,15 @@ const AsignacionesRotativas: React.FC = () => {
                       <span className="dias-badge">
                         {asignacion.diasActivo} días
                       </span>
+                    </td>
+                    {/* ✅ NUEVA COLUMNA DE ACCIONES */}
+                    <td>
+                      <button
+                        className="btn-action btn-delete"
+                        onClick={() => handleCerrarAsignacion(asignacion.trabajadorId, asignacion.id)}
+                      >
+                        Cerrar
+                      </button>
                     </td>
                   </tr>
                 ))}
