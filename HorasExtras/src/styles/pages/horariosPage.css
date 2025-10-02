@@ -681,3 +681,385 @@
     padding: 3px 6px;
   }
 }
+/* ===================================================================
+   Agregar al final de src/styles/pages/horariosPage.css
+   =================================================================== */
+
+/* Tabs principales */
+.tabs-container {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tab-button {
+  padding: 16px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #6b7280;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.tab-button:hover {
+  color: #374151;
+  background: #f9fafb;
+}
+
+.tab-button.active {
+  color: #3b82f6;
+  border-bottom-color: #3b82f6;
+}
+
+.tab-description {
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: #9ca3af;
+}
+
+.tab-button.active .tab-description {
+  color: #60a5fa;
+}
+
+/* Contenido de tabs */
+.tab-content {
+  animation: fadeIn 0.3s ease-in;
+}
+
+/* Horarios rotativos container */
+.horarios-rotativos-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Info banner */
+.info-banner {
+  background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.info-icon {
+  font-size: 2rem;
+  flex-shrink: 0;
+}
+
+.info-content strong {
+  display: block;
+  color: #1e40af;
+  margin-bottom: 6px;
+  font-size: 1.1rem;
+}
+
+.info-content p {
+  margin: 0;
+  color: #1e3a8a;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+/* Sub-tabs */
+.sub-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.sub-tab {
+  padding: 20px;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+}
+
+.sub-tab:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1);
+  transform: translateY(-2px);
+}
+
+.sub-tab.active {
+  border-color: #3b82f6;
+  background: linear-gradient(135deg, #dbeafe, #eff6ff);
+}
+
+.sub-tab-icon {
+  font-size: 2rem;
+}
+
+.sub-tab-label {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.sub-tab-description {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.sub-tab.active .sub-tab-label {
+  color: #3b82f6;
+}
+
+.sub-tab.active .sub-tab-description {
+  color: #2563eb;
+}
+
+.sub-tab-content {
+  animation: fadeIn 0.3s ease-in;
+}
+
+/* Catálogo de horarios */
+.catalogo-horarios,
+.asignaciones-rotativas {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.catalogo-header,
+.asignaciones-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.catalogo-header h3,
+.asignaciones-header h3 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: #1f2937;
+}
+
+.catalogo-description,
+.asignaciones-description {
+  margin: 4px 0 0 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* Grid de horarios */
+.horarios-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.horario-card {
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.3s;
+}
+
+.horario-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+}
+
+.horario-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.horario-card-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1f2937;
+}
+
+.badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.badge-success {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-inactive {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.horario-description {
+  color: #6b7280;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.horario-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #f3f4f6;
+}
+
+.horario-stats .stat-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.stat-icon {
+  font-size: 1rem;
+}
+
+.horario-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-action {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-view {
+  background: #3b82f6;
+  color: white;
+}
+
+.btn-view:hover {
+  background: #2563eb;
+}
+
+/* Tabla de asignaciones */
+.asignaciones-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.asignaciones-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.asignaciones-table th {
+  background: #f9fafb;
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #6b7280;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.asignaciones-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.asignaciones-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.horario-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.horario-par {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.horario-impar {
+  background: #fce7f3;
+  color: #9f1239;
+}
+
+.semana-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.semana-par {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.semana-impar {
+  background: #fce7f3;
+  color: #9f1239;
+}
+
+.dias-badge {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .tabs-container {
+    flex-direction: column;
+  }
+
+  .sub-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .horarios-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .asignaciones-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .catalogo-header,
+  .asignaciones-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
