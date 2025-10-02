@@ -319,6 +319,17 @@ export function obtenerProximoDiaLaboral(fecha: Date): Date {
   
   return proximoDia;
 }
+export const calcularFechaFinVacaciones = async (data: {
+  fechaInicio: Date;
+  diasVacaciones: number;
+  trabajadorId: number;
+}) => {
+  const response = await api.post(
+    "/Ausencias/calcular-fecha-fin-vacaciones",
+    data
+  );
+  return response.data;
+};
 
 // ===== OBJETO EXPORTADO ACTUALIZADO =====
 export const ausenciasService = {

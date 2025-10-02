@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { crearAusencia, validarDiasVacaciones } from "../../api/ausenciasService";
+import { crearAusencia, validarDiasVacaciones, calcularFechaFinVacaciones } from "../../api/ausenciasService";
 import { trabajadoresService } from "../../api/trabajadoresService";
 import { crearDiagnostico } from "../../api/ausenciasService";
 import TrabajadorBuscador from "../shared/TrabajadorBuscador";
@@ -8,7 +8,6 @@ import type { AusenciaDto, ValidacionVacaciones } from "../../types/ausencia";
 import type { Trabajador } from "../../types/trabajadores";
 import type { Diagnostico } from "../../types/diagnostico";
 import "../../styles/components/ausencias/AusenciaForm.css";
-
 
 const initialState: AusenciaDto = {
   id: 0,
@@ -20,14 +19,13 @@ const initialState: AusenciaDto = {
   fechaInicio: new Date(),
   fechaFin: new Date(),
   horaInicio: "08:00",
-  horaFin: "17:00", // 🆕 Cambio a día completo por defecto
+  horaFin: "17:00",
   remunerado: false,
   diagnosticoId: undefined,
   diagnosticoCodigo: "",
   diagnosticoDescripcion: "",
 };
 
-// Interface para el nuevo diagnóstico
 interface NuevoDiagnostico {
   codigo: string;
   descripcion: string;
@@ -36,20 +34,6 @@ interface NuevoDiagnostico {
 const initialDiagnosticoState: NuevoDiagnostico = {
   codigo: "",
   descripcion: ""
-};
-
-
-// 🆕 Función para calcular fecha de regreso (próximo día laboral)
-const calcularFechaRegreso = (fechaFin: Date): Date => {
-  const fechaRegreso = new Date(fechaFin);
-  fechaRegreso.setDate(fechaRegreso.getDate() + 1);
-
-  // Si es sábado (6) o domingo (0), avanzar al lunes
-  while (fechaRegreso.getDay() === 0 || fechaRegreso.getDay() === 6) {
-    fechaRegreso.setDate(fechaRegreso.getDate() + 1);
-  }
-
-  return fechaRegreso;
 };
 
 // Componente Modal para crear diagnóstico
@@ -223,16 +207,71 @@ const AusenciaForm = () => {
   const [showCrearDiagnosticoModal, setShowCrearDiagnosticoModal] = useState(false);
   const [diagnosticoBuscadorKey, setDiagnosticoBuscadorKey] = useState(0);
 
-  // 🆕 Estados para validación de vacaciones
+  // Estados para validación de vacaciones
   const [validacionVacaciones, setValidacionVacaciones] = useState<ValidacionVacaciones | null>(null);
   const [loadingValidacion, setLoadingValidacion] = useState(false);
 
-  // 🆕 Función para verificar si es vacaciones (memoizada)
+  // NUEVO: Estados para el cálculo de vacaciones
+  const [diasVacaciones, setDiasVacaciones] = useState<number>(1);
+  const [fechaFinCalculada, setFechaFinCalculada] = useState<Date | null>(null);
+  const [fechaRegresoCalculada, setFechaRegresoCalculada] = useState<Date | null>(null);
+  const [loadingCalculo, setLoadingCalculo] = useState(false);
+
   const esVacaciones = React.useCallback(() => {
     return formData.tipoAusencia.toLowerCase().includes("vacacion");
   }, [formData.tipoAusencia]);
 
-  // 🆕 Función para validar vacaciones cuando cambien fechas o trabajador (memoizada)
+  // NUEVO: Función para calcular fecha fin basada en días de vacaciones
+  const calcularFechaFin = React.useCallback(async () => {
+    if (!esVacaciones() || !trabajadorSeleccionadoId || !formData.fechaInicio || diasVacaciones < 1) {
+      setFechaFinCalculada(null);
+      setFechaRegresoCalculada(null);
+      return;
+    }
+
+    setLoadingCalculo(true);
+    try {
+      const resultado = await calcularFechaFinVacaciones({
+        fechaInicio: formData.fechaInicio,
+        diasVacaciones: diasVacaciones,
+        trabajadorId: trabajadorSeleccionadoId
+      });
+
+      const fechaFin = new Date(resultado.fechaFin);
+      const fechaRegreso = new Date(resultado.fechaRegreso);
+
+      setFechaFinCalculada(fechaFin);
+      setFechaRegresoCalculada(fechaRegreso);
+
+      // Actualizar formData con la fecha fin calculada
+      setFormData(prev => ({
+        ...prev,
+        fechaFin: fechaFin
+      }));
+    } catch (error) {
+      console.error("Error al calcular fecha fin:", error);
+      setFechaFinCalculada(null);
+      setFechaRegresoCalculada(null);
+    } finally {
+      setLoadingCalculo(false);
+    }
+  }, [esVacaciones, trabajadorSeleccionadoId, formData.fechaInicio, diasVacaciones]);
+
+  // Effect para calcular fecha fin cuando cambian los días o fecha inicio
+  useEffect(() => {
+    if (esVacaciones() && trabajadorSeleccionadoId && formData.fechaInicio && diasVacaciones >= 1) {
+      const timeoutId = setTimeout(() => {
+        calcularFechaFin();
+      }, 500);
+
+      return () => clearTimeout(timeoutId);
+    } else {
+      setFechaFinCalculada(null);
+      setFechaRegresoCalculada(null);
+    }
+  }, [esVacaciones, calcularFechaFin, trabajadorSeleccionadoId, formData.fechaInicio, diasVacaciones]);
+
+  // Función para validar vacaciones cuando cambien fechas o trabajador
   const validarVacacionesSiAplica = React.useCallback(async () => {
     if (!esVacaciones() || !trabajadorSeleccionadoId || !formData.fechaInicio || !formData.fechaFin) {
       setValidacionVacaciones(null);
@@ -256,10 +295,9 @@ const AusenciaForm = () => {
     }
   }, [esVacaciones, trabajadorSeleccionadoId, formData.fechaInicio, formData.fechaFin, formData.tipoAusencia]);
 
-  // 🆕 Effect para validar vacaciones cuando cambien las dependencias
+  // Effect para validar vacaciones cuando tengamos fecha fin calculada
   useEffect(() => {
     if (esVacaciones() && trabajadorSeleccionadoId && formData.fechaInicio && formData.fechaFin) {
-      // Pequeño delay para evitar demasiadas llamadas
       const timeoutId = setTimeout(() => {
         validarVacacionesSiAplica();
       }, 500);
@@ -318,10 +356,9 @@ const AusenciaForm = () => {
     }
 
     if (name === "tipoAusencia") {
-      // 🆕 Cuando cambie el tipo de ausencia, ajustar horarios
       const nuevasHoras = value.toLowerCase().includes("vacacion")
-        ? { horaInicio: "08:00", horaFin: "17:00" } // Día completo para vacaciones
-        : { horaInicio: "08:00", horaFin: "10:00" }; // Horas específicas para otras ausencias
+        ? { horaInicio: "08:00", horaFin: "17:00" }
+        : { horaInicio: "08:00", horaFin: "10:00" };
 
       setFormData((prev) => ({
         ...prev,
@@ -331,6 +368,13 @@ const AusenciaForm = () => {
         diagnosticoDescripcion: "",
         ...nuevasHoras
       }));
+
+      // Resetear días de vacaciones cuando cambie el tipo
+      if (!value.toLowerCase().includes("vacacion")) {
+        setDiasVacaciones(1);
+        setFechaFinCalculada(null);
+        setFechaRegresoCalculada(null);
+      }
       return;
     }
 
@@ -367,7 +411,6 @@ const AusenciaForm = () => {
     }));
   };
 
-  // Manejar cuando se crea un nuevo diagnóstico
   const handleDiagnosticoCreated = (nuevoDiagnostico: Diagnostico) => {
     setFormData(prev => ({
       ...prev,
@@ -377,7 +420,7 @@ const AusenciaForm = () => {
     }));
 
     setDiagnosticoBuscadorKey(prev => prev + 1);
-    setMensaje("success:🎉 ¡Diagnóstico creado exitosamente!\n\nSe ha seleccionado automáticamente en el formulario.");
+    setMensaje("success:Diagnóstico creado exitosamente y seleccionado automáticamente.");
 
     setTimeout(() => {
       setMensaje("");
@@ -391,9 +434,8 @@ const AusenciaForm = () => {
   };
 
   const calcularHorasTotales = (horaInicio: string, horaFin: string, dias: number): number => {
-    // Para vacaciones, calcular horas de jornada completa
     if (esVacaciones()) {
-      return dias * 8; // Asumir 8 horas por día de vacaciones (ya con descuento de almuerzo)
+      return dias * 8;
     }
 
     const [horaInicioH, horaInicioM] = horaInicio.split(':').map(Number);
@@ -404,25 +446,17 @@ const AusenciaForm = () => {
 
     let horasPorDia = (minutosFin - minutosInicio) / 60;
 
-    // NUEVA LÓGICA: Descontar almuerzo si la ausencia incluye el período de almuerzo
-    // Horario de almuerzo: 12:30 PM a 2:00 PM (1.5 horas)
-    const inicioAlmuerzoMinutos = 12 * 60 + 30; // 12:30 PM = 750 minutos
-    const finAlmuerzoMinutos = 14 * 60;         // 2:00 PM = 840 minutos
-    const duracionAlmuerzo = 1.5; // 1.5 horas
+    const inicioAlmuerzoMinutos = 12 * 60 + 30;
+    const finAlmuerzoMinutos = 14 * 60;
+    const duracionAlmuerzo = 1.5;
 
-    // Verificar si la ausencia incluye el período de almuerzo
     const incluyeAlmuerzo = minutosInicio < finAlmuerzoMinutos && minutosFin > inicioAlmuerzoMinutos;
 
     if (incluyeAlmuerzo) {
-      // Calcular cuánto tiempo de almuerzo está incluido en la ausencia
       const inicioDescuento = Math.max(minutosInicio, inicioAlmuerzoMinutos);
       const finDescuento = Math.min(minutosFin, finAlmuerzoMinutos);
       const tiempoAlmuerzoIncluido = (finDescuento - inicioDescuento) / 60;
-
-      // El descuento no puede ser mayor al tiempo real de almuerzo incluido
       const descuentoReal = Math.min(tiempoAlmuerzoIncluido, duracionAlmuerzo);
-
-      // Descontar el tiempo de almuerzo
       horasPorDia = Math.max(0, horasPorDia - descuentoReal);
     }
 
@@ -445,63 +479,55 @@ const AusenciaForm = () => {
       const diasAusencia = calcularDiasAusencia(formData.fechaInicio, formData.fechaFin);
       const horasTotales = calcularHorasTotales(formData.horaInicio, formData.horaFin, diasAusencia);
 
-      // 🆕 Mensaje específico para vacaciones
       let mensajeExito = "";
 
       if (esVacaciones()) {
         const diasADescontar = validacionVacaciones?.diasADescontar || diasAusencia;
-        const fechaRegreso = calcularFechaRegreso(formData.fechaFin);
 
-        mensajeExito = `success:🎉 ¡Vacaciones registradas exitosamente!
+        mensajeExito = `success:Vacaciones registradas exitosamente
 
-📅 DETALLES DE LAS VACACIONES:
-• Período solicitado: ${formData.fechaInicio.toLocaleDateString('es-ES')} - ${formData.fechaFin.toLocaleDateString('es-ES')}
-• Días calendarios: ${diasAusencia} días
+DETALLES DE LAS VACACIONES:
+• Días solicitados: ${diasVacaciones} días
+• Período: ${formData.fechaInicio.toLocaleDateString('es-ES')} - ${formData.fechaFin.toLocaleDateString('es-ES')}
+• Días calendarios totales: ${diasAusencia} días
 • Días laborables a descontar: ${diasADescontar} días
-• Fecha de regreso: ${fechaRegreso.toLocaleDateString('es-ES')}
+• Fecha de regreso: ${fechaRegresoCalculada?.toLocaleDateString('es-ES') || 'No calculada'}
 
-📋 INTEGRACIÓN AUTOMÁTICA CON REGISTROS:
-• Se crearon automáticamente ${diasAusencia} registro${diasAusencia > 1 ? 's' : ''} de vacaciones
+INTEGRACIÓN AUTOMÁTICA CON REGISTROS:
+• Se crearon ${diasAusencia} registro${diasAusencia > 1 ? 's' : ''} de vacaciones
 • Horario: Día completo (08:00 - 17:00)
 • Total de horas: ${horasTotales.toFixed(2)} horas
 
 ${formData.remunerado
-            ? `💰 VACACIONES REMUNERADAS:
+            ? `VACACIONES REMUNERADAS:
 • Las horas contarán como horas normales trabajadas
 • Se incluirán en el cálculo de jornada completa`
-            : `🚫 VACACIONES NO REMUNERADAS:
+            : `VACACIONES NO REMUNERADAS:
 • Las horas se marcarán como horas ausentes
 • No contarán para horas normales trabajadas`
           }
 
-🔍 DÓNDE VER LOS REGISTROS:
-• Ve al Dashboard de Registros → Selecciona las fechas de vacaciones
-• Los registros aparecerán marcados como "AUSENCIA - Vacaciones"`;
+Los registros aparecerán marcados como "AUSENCIA - Vacaciones" en el Dashboard de Registros.`;
       } else {
-        mensajeExito = `success:🎉 ¡Ausencia registrada exitosamente!
+        mensajeExito = `success:Ausencia registrada exitosamente
 
-📋 INTEGRACIÓN AUTOMÁTICA CON REGISTROS:
-• Se crearon automáticamente ${diasAusencia} registro${diasAusencia > 1 ? 's' : ''} en el sistema de horas
+INTEGRACIÓN AUTOMÁTICA CON REGISTROS:
+• Se crearon ${diasAusencia} registro${diasAusencia > 1 ? 's' : ''} en el sistema de horas
 • Fechas afectadas: ${formData.fechaInicio.toLocaleDateString('es-ES')} - ${formData.fechaFin.toLocaleDateString('es-ES')}
 • Horario de ausencia: ${formData.horaInicio} - ${formData.horaFin}
 • Total de horas: ${horasTotales.toFixed(2)} horas
 ${formData.diagnosticoCodigo ? `• Diagnóstico: ${formData.diagnosticoCodigo} - ${formData.diagnosticoDescripcion}` : ''}
 
 ${formData.remunerado
-            ? `💰 AUSENCIA REMUNERADA:
+            ? `AUSENCIA REMUNERADA:
 • Las horas contarán como horas normales trabajadas
-• Se incluirán en el cálculo de jornada completa
-• Aparecerán con fondo amarillo en el dashboard de registros`
-            : `🚫 AUSENCIA NO REMUNERADA:
+• Se incluirán en el cálculo de jornada completa`
+            : `AUSENCIA NO REMUNERADA:
 • Las horas se marcarán como horas ausentes
-• No contarán para horas normales trabajadas
-• Se identificarán claramente en reportes y estadísticas`
+• No contarán para horas normales trabajadas`
           }
 
-🔍 DÓNDE VER LOS REGISTROS:
-• Ve al Dashboard de Registros → Selecciona las fechas de la ausencia
-• Los registros aparecerán marcados como "AUSENCIA - ${formData.tipoAusencia}"
-• Podrás filtrar entre registros de trabajo y ausencias`;
+Los registros aparecerán marcados como "AUSENCIA - ${formData.tipoAusencia}" en el Dashboard.`;
       }
 
       setMensaje(mensajeExito);
@@ -509,10 +535,12 @@ ${formData.remunerado
       // Reiniciar el formulario
       setFormData(initialState);
       setTrabajadorSeleccionadoId(0);
-      setValidacionVacaciones(null); // 🆕 Limpiar validación
+      setValidacionVacaciones(null);
+      setDiasVacaciones(1);
+      setFechaFinCalculada(null);
+      setFechaRegresoCalculada(null);
       setDiagnosticoBuscadorKey(prev => prev + 1);
 
-      // Scroll hacia el mensaje
       setTimeout(() => {
         const messageElement = document.querySelector('.form-message');
         if (messageElement) {
@@ -522,7 +550,7 @@ ${formData.remunerado
 
     } catch (error) {
       console.error("Error al registrar la ausencia:", error);
-      setMensaje("error:❌ Error al guardar la ausencia.\n\nPor favor, verifica que todos los campos estén correctos e intenta nuevamente.\n\nSi el problema persiste, contacta al administrador del sistema.");
+      setMensaje("error:Error al guardar la ausencia. Por favor, verifica que todos los campos estén correctos e intenta nuevamente.");
     } finally {
       setIsLoading(false);
     }
@@ -532,15 +560,17 @@ ${formData.remunerado
     setFormData(initialState);
     setTrabajadorSeleccionadoId(0);
     setMensaje("");
-    setValidacionVacaciones(null); // 🆕 Limpiar validación
+    setValidacionVacaciones(null);
+    setDiasVacaciones(1);
+    setFechaFinCalculada(null);
+    setFechaRegresoCalculada(null);
     setDiagnosticoBuscadorKey(prev => prev + 1);
   };
 
-  // Componente de información sobre integración
   const IntegrationInfoComponent = () => (
     <div className="integration-info">
       <h4>
-        🔗 Integración Automática con Sistema de Registros
+        Integración Automática con Sistema de Registros
         <button
           type="button"
           onClick={() => setMostrarInfo(!mostrarInfo)}
@@ -553,48 +583,31 @@ ${formData.remunerado
             color: '#1d4ed8'
           }}
         >
-          {mostrarInfo ? '🔼' : '🔽'}
+          {mostrarInfo ? '▲' : '▼'}
         </button>
       </h4>
 
       {mostrarInfo && (
         <div>
           <p>
-            <strong>¿Qué sucede cuando registras una ausencia?</strong>
+            <strong>Qué sucede cuando registras una ausencia:</strong>
           </p>
           <ul>
             <li>Se crean automáticamente registros en el sistema de horas para cada día de la ausencia</li>
-            <li><strong>⚡ NUEVO:</strong> Se descuenta automáticamente el tiempo de almuerzo (12:30 PM - 2:00 PM) cuando la ausencia incluye este período</li>
+            <li>Se descuenta automáticamente el tiempo de almuerzo (12:30 PM - 2:00 PM) cuando la ausencia incluye este período</li>
             <li>Las ausencias aparecen junto con los registros normales de trabajo</li>
             <li>Si es <strong>remunerada</strong>: cuenta como horas normales trabajadas</li>
             <li>Si <strong>no es remunerada</strong>: se marca como horas ausentes</li>
-            <li><strong>Para vacaciones</strong>: se registra automáticamente como día completo (8 horas netas)</li>
+            <li><strong>Para vacaciones</strong>: solo ingresas cuántos días y el sistema calcula automáticamente las fechas</li>
             <li><strong>Para citas médicas y enfermedades</strong>: puedes agregar el diagnóstico CIE-10 correspondiente</li>
           </ul>
-          <div style={{
-            background: '#fef3c7',
-            border: '1px solid #f59e0b',
-            borderRadius: '8px',
-            padding: '12px',
-            marginTop: '15px',
-            fontSize: '0.9rem',
-            color: '#92400e'
-          }}>
-            <strong>🍽️ Descuento de Almuerzo Automático:</strong><br />
-            • Si tu ausencia es de 7:30 AM a 3:00 PM, se descontarán automáticamente 1.5 horas de almuerzo<br />
-            • Si tu ausencia es de 2:00 PM a 5:00 PM, NO se descuenta almuerzo (ya pasó el horario)<br />
-            • Los sábados y domingos no tienen descuento de almuerzo
-          </div>
         </div>
       )}
     </div>
   );
 
-  // 🆕 Componente para mostrar validación de vacaciones
   const ValidacionVacacionesComponent = () => {
     if (!esVacaciones() || !validacionVacaciones) return null;
-
-    const fechaRegreso = calcularFechaRegreso(formData.fechaFin);
 
     return (
       <div className="validacion-vacaciones">
@@ -627,21 +640,23 @@ ${formData.remunerado
             </div>
           </div>
 
-          <div className="fecha-regreso">
-            <div className="fecha-regreso-title">📅 Fecha de regreso al trabajo:</div>
-            <div className="fecha-regreso-date">
-              {fechaRegreso.toLocaleDateString('es-ES', {
-                weekday: 'long',
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-              })}
+          {fechaRegresoCalculada && (
+            <div className="fecha-regreso">
+              <div className="fecha-regreso-title">Fecha de regreso al trabajo:</div>
+              <div className="fecha-regreso-date">
+                {fechaRegresoCalculada.toLocaleDateString('es-ES', {
+                  weekday: 'long',
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric'
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {validacionVacaciones.detalleDias && validacionVacaciones.detalleDias.length > 0 && (
             <div className="detalle-dias">
-              <h5>📋 Detalle por días:</h5>
+              <h5>Detalle por días:</h5>
               {validacionVacaciones.detalleDias.map((dia, index) => (
                 <div key={index} className="dia-item">
                   <span className="dia-fecha">
@@ -649,7 +664,7 @@ ${formData.remunerado
                   </span>
                   <span className="dia-tipo">{dia.motivo}</span>
                   <span className={dia.esLaborable ? "dia-laborable" : "dia-no-laborable"}>
-                    {dia.esLaborable ? "✅ Se descuenta" : "⭕ No se descuenta"}
+                    {dia.esLaborable ? "Se descuenta" : "No se descuenta"}
                   </span>
                 </div>
               ))}
@@ -664,7 +679,7 @@ ${formData.remunerado
             fontSize: '0.85rem',
             color: '#78350f'
           }}>
-            <strong>ℹ️ Explicación del cálculo:</strong><br />
+            <strong>Explicación del cálculo:</strong><br />
             • {validacionVacaciones.explicacion.domingos}<br />
             • {validacionVacaciones.explicacion.sabados}<br />
             • {validacionVacaciones.explicacion.festivos}
@@ -796,7 +811,6 @@ ${formData.remunerado
               />
             </div>
 
-            {/* CAMPO DIAGNÓSTICO CON BUSCADOR Y OPCIÓN DE CREAR */}
             {mostrarCampoDiagnostico() && (
               <div className="form-group full-width">
                 <div className="diagnostico-section">
@@ -825,13 +839,8 @@ ${formData.remunerado
                   </button>
 
                   <small className="diagnostico-help">
-                    💡 <strong>Ayuda:</strong> Puedes buscar por código CIE-10 (ejemplo: "A09") o por descripción (ejemplo: "diarrea", "cefalea").
+                    Puedes buscar por código CIE-10 (ejemplo: "A09") o por descripción (ejemplo: "diarrea", "cefalea").
                     Si no encuentras el diagnóstico que necesitas, puedes crear uno nuevo haciendo clic en el botón de arriba.
-                    Este campo es opcional pero recomendado para {
-                      formData.tipoAusencia === "Cita médica general" || formData.tipoAusencia === "Cita Seguimiento EO"
-                        ? "citas médicas"
-                        : "casos de enfermedad"
-                    } ya que permite un mejor seguimiento estadístico.
                   </small>
                 </div>
               </div>
@@ -860,23 +869,112 @@ ${formData.remunerado
               />
             </div>
 
-            <div className="form-group">
-              <label className="form-label">
-                Fecha de Fin <span className="required">*</span>
-              </label>
-              <input
-                type="date"
-                name="fechaFin"
-                value={formData.fechaFin.toISOString().split("T")[0]}
-                onChange={handleChange}
-                className="form-input"
-                required
-              />
-            </div>
-
-            {/* 🆕 CAMPOS DE HORA SOLO SI NO ES VACACIONES */}
-            {!esVacaciones() && (
+            {esVacaciones() ? (
               <>
+                {/* CAMPO DÍAS DE VACACIONES */}
+                <div className="form-group">
+                  <label className="form-label">
+                    Días de Vacaciones <span className="required">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="90"
+                    value={diasVacaciones}
+                    onChange={(e) => setDiasVacaciones(parseInt(e.target.value) || 1)}
+                    className="form-input"
+                    required
+                    style={{ fontSize: '1.1rem', fontWeight: '600' }}
+                  />
+                  <small style={{ color: '#6b7280', fontSize: '0.8rem', marginTop: '4px', display: 'block' }}>
+                    Ingresa cuántos días de vacaciones deseas dar
+                  </small>
+                </div>
+
+                {/* FECHA FIN CALCULADA (READONLY) */}
+                {loadingCalculo ? (
+                  <div className="form-group">
+                    <label className="form-label">Fecha de Fin (calculando...)</label>
+                    <div className="loading-container">
+                      <span className="loading-spinner"></span>
+                      Calculando...
+                    </div>
+                  </div>
+                ) : fechaFinCalculada ? (
+                  <div className="form-group">
+                    <label className="form-label">
+                      Fecha de Fin (calculada automáticamente)
+                    </label>
+                    <input
+                      type="text"
+                      value={fechaFinCalculada.toLocaleDateString('es-ES')}
+                      className="form-input"
+                      readOnly
+                      disabled
+                      style={{ background: '#f3f4f6', fontWeight: '600' }}
+                    />
+                  </div>
+                ) : null}
+
+                {/* FECHA DE REGRESO (READONLY) */}
+                {fechaRegresoCalculada && (
+                  <div className="form-group">
+                    <label className="form-label">
+                      Regresa al trabajo el:
+                    </label>
+                    <input
+                      type="text"
+                      value={fechaRegresoCalculada.toLocaleDateString('es-ES', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                      })}
+                      className="form-input"
+                      readOnly
+                      disabled
+                      style={{ background: '#ecfdf5', fontWeight: '600', color: '#065f46' }}
+                    />
+                  </div>
+                )}
+
+                {/* INFO VACACIONES */}
+                <div className="form-group full-width">
+                  <div style={{
+                    background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
+                    border: '2px solid #f59e0b',
+                    borderRadius: '10px',
+                    padding: '15px',
+                    textAlign: 'center'
+                  }}>
+                    <h4 style={{ margin: '0 0 8px 0', color: '#92400e', fontSize: '1rem' }}>
+                      Vacaciones - Día Completo
+                    </h4>
+                    <p style={{ margin: '0', color: '#78350f', fontSize: '0.9rem' }}>
+                      Las vacaciones se registran automáticamente como día completo (08:00 - 17:00).
+                      <br />Solo necesitas especificar la fecha de inicio y cuántos días darás.
+                      <br /><strong>El sistema calcula automáticamente la fecha de fin considerando fines de semana, festivos y horarios del trabajador.</strong>
+                    </p>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* PARA OTROS TIPOS: FECHA FIN MANUAL */}
+                <div className="form-group">
+                  <label className="form-label">
+                    Fecha de Fin <span className="required">*</span>
+                  </label>
+                  <input
+                    type="date"
+                    name="fechaFin"
+                    value={formData.fechaFin.toISOString().split("T")[0]}
+                    onChange={handleChange}
+                    className="form-input"
+                    required
+                  />
+                </div>
+
                 <div className="form-group">
                   <label className="form-label">
                     Hora de Inicio <span className="required">*</span>
@@ -907,27 +1005,6 @@ ${formData.remunerado
               </>
             )}
 
-            {/* 🆕 MOSTRAR INFORMACIÓN ESPECIAL PARA VACACIONES */}
-            {esVacaciones() && (
-              <div className="form-group full-width">
-                <div style={{
-                  background: 'linear-gradient(135deg, #fef3c7, #fde68a)',
-                  border: '2px solid #f59e0b',
-                  borderRadius: '10px',
-                  padding: '15px',
-                  textAlign: 'center'
-                }}>
-                  <h4 style={{ margin: '0 0 8px 0', color: '#92400e', fontSize: '1rem' }}>
-                    🏖️ Vacaciones - Día Completo
-                  </h4>
-                  <p style={{ margin: '0', color: '#78350f', fontSize: '0.9rem' }}>
-                    Las vacaciones se registran automáticamente como día completo (08:00 - 17:00).
-                    <br />Solo necesitas especificar las fechas de inicio y fin.
-                  </p>
-                </div>
-              </div>
-            )}
-
             <div className="form-group checkbox-group">
               <label className="checkbox-label">
                 <input
@@ -938,7 +1015,7 @@ ${formData.remunerado
                   className="form-checkbox"
                 />
                 <span className="checkbox-custom"></span>
-                <span className="checkbox-text">¿Es remunerado?</span>
+                <span className="checkbox-text">Es remunerado</span>
               </label>
               <small style={{
                 display: 'block',
@@ -948,14 +1025,13 @@ ${formData.remunerado
                 fontStyle: 'italic'
               }}>
                 {formData.remunerado
-                  ? '💰 Contará como horas normales trabajadas'
-                  : '🚫 Se marcará como horas ausentes'
+                  ? 'Contará como horas normales trabajadas'
+                  : 'Se marcará como horas ausentes'
                 }
               </small>
             </div>
           </div>
 
-          {/* 🆕 MOSTRAR VALIDACIÓN DE VACACIONES */}
           {loadingValidacion && esVacaciones() && (
             <div className="loading-container" style={{ margin: '15px 0' }}>
               <span className="loading-spinner"></span>
@@ -965,10 +1041,8 @@ ${formData.remunerado
 
           <ValidacionVacacionesComponent />
 
-          {/* Vista previa de cálculos */}
           {formData.fechaInicio && formData.fechaFin && (
             esVacaciones() ? (
-              // 🆕 Vista previa específica para vacaciones
               <div style={{
                 background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
                 border: '2px solid #22c55e',
@@ -977,7 +1051,7 @@ ${formData.remunerado
                 marginTop: '20px'
               }}>
                 <h4 style={{ margin: '0 0 10px 0', color: '#15803d', fontSize: '1rem' }}>
-                  🏖️ Vista Previa de Vacaciones
+                  Vista Previa de Vacaciones
                 </h4>
                 <div style={{
                   display: 'grid',
@@ -986,6 +1060,9 @@ ${formData.remunerado
                   fontSize: '0.9rem',
                   color: '#166534'
                 }}>
+                  <div>
+                    <strong>Días solicitados:</strong> {diasVacaciones}
+                  </div>
                   <div>
                     <strong>Días calendarios:</strong> {calcularDiasAusencia(formData.fechaInicio, formData.fechaFin)}
                   </div>
@@ -998,20 +1075,9 @@ ${formData.remunerado
                   <div>
                     <strong>Tipo:</strong> {formData.remunerado ? 'Remuneradas' : 'No remuneradas'}
                   </div>
-                  {validacionVacaciones && (
-                    <div style={{ gridColumn: '1 / -1', marginTop: '10px', padding: '10px', background: 'rgba(255,255,255,0.8)', borderRadius: '6px' }}>
-                      <strong>📅 Regresa el:</strong> {calcularFechaRegreso(formData.fechaFin).toLocaleDateString('es-ES', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </div>
-                  )}
                 </div>
               </div>
             ) : (
-              // Vista previa normal para otras ausencias CON DESCUENTO DE ALMUERZO
               formData.horaInicio && formData.horaFin && (
                 <div style={{
                   background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
@@ -1021,14 +1087,13 @@ ${formData.remunerado
                   marginTop: '20px'
                 }}>
                   <h4 style={{ margin: '0 0 10px 0', color: '#15803d', fontSize: '1rem' }}>
-                    📊 Vista Previa de la Ausencia
+                    Vista Previa de la Ausencia
                   </h4>
 
-                  {/* 🆕 MOSTRAR INFORMACIÓN SOBRE DESCUENTO DE ALMUERZO */}
                   {(() => {
                     const horaInicioMinutos = parseInt(formData.horaInicio.split(':')[0]) * 60 + parseInt(formData.horaInicio.split(':')[1]);
                     const horaFinMinutos = parseInt(formData.horaFin.split(':')[0]) * 60 + parseInt(formData.horaFin.split(':')[1]);
-                    const incluyeAlmuerzo = horaInicioMinutos < 840 && horaFinMinutos > 750; // 840 = 2:00 PM, 750 = 12:30 PM
+                    const incluyeAlmuerzo = horaInicioMinutos < 840 && horaFinMinutos > 750;
                     const horasBrutas = (horaFinMinutos - horaInicioMinutos) / 60;
                     const horasNetas = calcularHorasTotales(formData.horaInicio, formData.horaFin, 1);
 
@@ -1042,7 +1107,7 @@ ${formData.remunerado
                         fontSize: '0.85rem',
                         color: '#92400e'
                       }}>
-                        🍽️ <strong>Descuento de Almuerzo Aplicado (12:30 PM - 2:00 PM):</strong><br />
+                        Descuento de Almuerzo Aplicado (12:30 PM - 2:00 PM):
                         Horas brutas: {horasBrutas.toFixed(2)}h → Horas netas: {horasNetas.toFixed(2)}h
                         (se descontaron {(horasBrutas - horasNetas).toFixed(2)}h de almuerzo)
                       </div>
@@ -1070,7 +1135,7 @@ ${formData.remunerado
                     </div>
                     {mostrarCampoDiagnostico() && formData.diagnosticoCodigo && (
                       <div style={{ gridColumn: '1 / -1', marginTop: '10px', padding: '10px', background: 'rgba(255,255,255,0.8)', borderRadius: '6px' }}>
-                        <strong>🏥 Diagnóstico:</strong> {formData.diagnosticoCodigo} - {formData.diagnosticoDescripcion}
+                        <strong>Diagnóstico:</strong> {formData.diagnosticoCodigo} - {formData.diagnosticoDescripcion}
                       </div>
                     )}
                   </div>
@@ -1080,7 +1145,6 @@ ${formData.remunerado
           )}
         </div>
 
-        {/* Botones de acción */}
         <div className="form-actions">
           <button
             type="button"
@@ -1111,7 +1175,6 @@ ${formData.remunerado
           </button>
         </div>
 
-        {/* Mensaje de resultado */}
         {mensaje && (
           <div className={`form-message ${mensaje.startsWith('success:') ? 'success' : 'error'}`}>
             <span className="message-icon">
@@ -1122,7 +1185,6 @@ ${formData.remunerado
         )}
       </form>
 
-      {/* Modal para crear diagnóstico */}
       <CrearDiagnosticoModal
         isOpen={showCrearDiagnosticoModal}
         onClose={() => setShowCrearDiagnosticoModal(false)}
