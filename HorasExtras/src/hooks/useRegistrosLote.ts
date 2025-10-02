@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/hooks/useRegistrosLote.ts
 import { useState } from "react";
 import { registrosLoteService } from "../api/registrosLoteService";

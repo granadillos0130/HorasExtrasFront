@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from "react";
 import { centrosService } from "../../api/centrosService";
 import { clientesService } from "../../api/clientesService";

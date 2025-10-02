@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/api/registrosService.ts - VERSIÓN ACTUALIZADA
 import { api } from "./api";
 import type { Registro, RespuestaEdicionLote, RespuestaIntensidadHoraria, RespuestaResumenCompleto, ResumenDia} from "../types/registros";

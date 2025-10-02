@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useState } from "react";
 import { registrosService } from "../api/registrosService";
 import type { ResumenSemana } from "../types/ResumenSemana";

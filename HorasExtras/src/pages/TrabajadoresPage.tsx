@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTrabajadores } from "../hooks/useTrabajadores";

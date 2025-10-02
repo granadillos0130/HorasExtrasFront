@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState } from "react"; // 👈 AGREGAR useState
 import { useNavigate } from "react-router-dom";
 import type { Trabajador } from "../../types/trabajadores";

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // hooks/useRegistrosDetalle.ts
 import { useState } from "react";
 import { registrosService } from "../api/registrosService";

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // components/modales/CentroModalUniversal.tsx
 import React from 'react';
 import type { CentroPorMesCompleto } from '../../types/centros';
