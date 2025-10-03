@@ -22,7 +22,7 @@ const AsignacionesRotativas: React.FC = () => {
       setLoading(false);
     }
   };
-  const handleCerrarAsignacion = async (trabajadorId: number, asignacionId: number) => {
+  const handleCerrarAsignacion = async (_trabajadorId: number, asignacionId: number) => {
     const fechaFin = prompt("Fecha de fin (YYYY-MM-DD):", new Date().toISOString().split('T')[0]);
 
     if (!fechaFin) return;
