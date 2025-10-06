@@ -1,5 +1,6 @@
 import { api } from "./api";
 import type { Centro, CentroPorEstado, CentroPorMesCompleto, EstadisticasMes, TipoHora, TrabajadoresPorTipoHora } from "../types/centros";
+import type { DetalleDias } from "../types/ejecucion";
 
 export const centrosService = {
   async getAll(): Promise<Centro[]> {
@@ -55,24 +56,9 @@ export const centrosService = {
     return api.get(`/centros/${centroId}/trabajador/${trabajadorId}/mano-obra`).then(res => res.data);
   },
 
-  obtenerDetalleDiasTrabajador(centroId: string, trabajadorId: number): Promise<{
-    centroNombre: string;
-    centroId: string;
-    trabajadorId: number;
-    nombreTrabajador: string;
-    detalleDias: Array<{
-      fecha: string;
-      horasNormales: number;
-      extrasDiurnas: number;
-      extrasNocturnas: number;
-      dominicalesDiurnas: number;
-      dominicalesNocturnas: number;
-      totalHoras: number;
-    }>;
-  }> {
-    return api.get(`/centros/${centroId}/trabajadores/${trabajadorId}/detalle-dias`).then(res => res.data);
-  },
-
+  obtenerDetalleDiasTrabajador(centroId: string, trabajadorId: number): Promise<DetalleDias> {
+  return api.get(`/centros/${centroId}/trabajadores/${trabajadorId}/detalle-dias`).then(res => res.data);
+},
   obtenerMesesConActividad(centroId: string, anio: number): Promise<{
     mes: number;
     nombreMes: string;

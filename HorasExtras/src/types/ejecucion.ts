@@ -12,7 +12,7 @@ export interface TrabajadorManoObra {
 
 export interface DetalleDias {
   centroId: string;
-  centroCentroNombre: string;
+  centroNombre: string;  // ✅ Cambia esto (quita el "centro" duplicado)
   trabajadorId: number;
   nombreTrabajador: string;
   totalDias: number;
