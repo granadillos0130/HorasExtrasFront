@@ -28,7 +28,7 @@ import { CompensadosPage } from "./pages/CompensadosPage";
 // CACHE MANAGER
 const useCacheManager = () => {
   useEffect(() => {
-    const CURRENT_VERSION = '2025-10-2v1'; // Cambia esto con cada versión nueva
+    const CURRENT_VERSION = '2025-10-06v1'; // Cambia esto con cada versión nueva
     const lastVersion = localStorage.getItem('app_version');
     
     if (lastVersion !== CURRENT_VERSION) {
