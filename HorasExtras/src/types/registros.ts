@@ -22,6 +22,7 @@ export interface RegistroInputDto {
   
   // Campos de tiempo
   Fecha: string; // "YYYY-MM-DD"
+  FechaSalida?: string;
   Hora_Ingreso: string; // "HH:mm"
   Hora_Salida: string; // "HH:mm"
   Tiempo_Almuerzo: string | null; // "HH:mm:ss"
@@ -98,6 +99,7 @@ export interface RegistroActualizacionDto {
   
   // Campos de tiempo
   Fecha: string; // "YYYY-MM-DD"
+  FechaSalida?: string;
   Hora_Ingreso: string; // "HH:mm"
   Hora_Salida: string; // "HH:mm"
   Tiempo_Almuerzo: string | null; // "HH:mm:ss"

@@ -55,6 +55,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
     CursoNombre: undefined, // 🆕 NUEVO CAMPO
     CursoDescripcion: undefined, // 🆕 NUEVO CAMPO
     Fecha: fechaInicial || new Date().toISOString().split("T")[0],
+    FechaSalida: undefined,
     Hora_Ingreso: "08:00",
     Hora_Salida: "17:00",
     Tiempo_Almuerzo: "01:00",
@@ -295,12 +296,12 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
   };
 
   // Handler para campos del formulario
-  const handleInputChange = (field: keyof RegistroInputDto, value: string | number | boolean) => {
-    setFormData((prev) => ({
-      ...prev,
-      [field]: value,
-    }));
-  };
+  const handleInputChange = (field: keyof RegistroInputDto, value: string | number | boolean | undefined) => {
+  setFormData((prev) => ({
+    ...prev,
+    [field]: value,
+  }));
+};
 
   // Handler para trabajador
   const handleTrabajadorChange = (trabajadorId: number) => {
@@ -504,7 +505,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           </div>
 
           <div className="form-group">
-            <label>Fecha *</label>
+            <label>Fecha Ingreso  *</label>
             <input
               type="date"
               value={formData.Fecha}
@@ -512,7 +513,36 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
               required
             />
           </div>
+          <div className="form-group">
+            <label>
+              Fecha Salida
+              <small style={{ display: 'block', color: '#666', fontSize: '0.8rem', marginTop: '4px' }}>
+                Solo si sale al día siguiente
+              </small>
+            </label>
+            <input
+              type="date"
+              value={formData.FechaSalida || ""}
+              onChange={(e) => handleInputChange("FechaSalida", e.target.value || undefined)}
+              min={formData.Fecha} // ⭐ Validación: no puede ser antes de la fecha de entrada
+            />
+          </div>
         </div>
+        {formData.FechaSalida && formData.FechaSalida !== formData.Fecha && (
+          <div style={{
+            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+            color: 'white',
+            padding: '10px 15px',
+            borderRadius: '8px',
+            marginBottom: '15px',
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            gridColumn: '1 / -1'
+          }}>
+            ⏰ TURNO NOCTURNO: Este registro cruza del {new Date(formData.Fecha).toLocaleDateString('es-ES')}
+            al {new Date(formData.FechaSalida).toLocaleDateString('es-ES')}
+          </div>
+        )}
 
         {/* 🆕 NUEVO: Selector de tipo de destino */}
         <div className="form-row">
