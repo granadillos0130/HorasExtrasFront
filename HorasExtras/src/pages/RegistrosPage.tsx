@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import ExcelJS from "exceljs";
+import { getImageUrl } from "../utils/imageUtils"; // 👈 AGREGAR IMPORT
 import { saveAs } from "file-saver";
 import { registrosService } from "../api/registrosService";
 import { trabajadoresService } from "../api/trabajadoresService";
@@ -17,6 +18,31 @@ const RegistroCard: React.FC<{
 }> = ({ registro, onEdit, onDelete, compact = false }) => {
   const esAusencia = registro.tipoRegistro === 'AUSENCIA';
   
+  // 👈 ESTADOS para manejar la imagen - AQUÍ VAN, AL INICIO DEL COMPONENTE
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true);
+  const [showImage, setShowImage] = useState(true);
+
+  // 👈 useEffect para resetear cuando cambia el trabajador
+  React.useEffect(() => {
+    setImageError(false);
+    setImageLoading(true);
+    setShowImage(true);
+  }, [registro.trabajadorId, registro.imagen_Url]);
+
+  // 👈 useEffect para timeout de 5 segundos
+  React.useEffect(() => {
+    if (imageLoading && registro.imagen_Url) {
+      const timeout = setTimeout(() => {
+        setImageError(true);
+        setImageLoading(false);
+      }, 5000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [imageLoading, registro.imagen_Url]);
+
+  // 👈 FUNCIONES de formateo (estas ya estaban bien)
   const formatearHora = (timeString: string) => {
     return timeString?.substring(0, 5) || "--:--";
   };
@@ -26,6 +52,35 @@ const RegistroCard: React.FC<{
     const h = Math.floor(hours);
     const m = Math.round((hours - h) * 60);
     return `${h}:${m.toString().padStart(2, "0")}`;
+  };
+
+  // 👈 Función para obtener iniciales
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((word) => word[0])
+      .join("")
+      .toUpperCase()
+      .substring(0, 2);
+  };
+
+  // 👈 Handlers para la imagen
+  const handleImageLoad = () => {
+    setImageLoading(false);
+    setImageError(false);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoading(false);
+  };
+
+  const retryImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setImageError(false);
+    setImageLoading(true);
+    setShowImage(false);
+    setTimeout(() => setShowImage(true), 50);
   };
 
   const getCardStyle = () => {
@@ -96,7 +151,92 @@ const RegistroCard: React.FC<{
           alignItems: 'center'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ fontSize: '1.5rem' }}>{getIcono()}</div>
+            {/* 👈 MODIFICADO: Avatar con foto */}
+            <div style={{ 
+              position: 'relative',
+              width: '45px', 
+              height: '45px',
+              flexShrink: 0
+            }}>
+              {registro.imagen_Url && !imageError && showImage ? (
+                <>
+                  {imageLoading && (
+                    <div style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+                      backgroundSize: '200% 100%',
+                      animation: 'loading-shimmer 1.5s infinite',
+                      borderRadius: '50%'
+                    }}>
+                      <span style={{ fontSize: '16px' }}>⏳</span>
+                    </div>
+                  )}
+                  <img 
+                    src={getImageUrl(registro.imagen_Url)}
+                    alt={registro.trabajadorNombre}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      borderRadius: '50%',
+                      border: '2px solid white',
+                      display: imageLoading ? 'none' : 'block'
+                    }}
+                    onLoad={handleImageLoad}
+                    onError={handleImageError}
+                  />
+                </>
+              ) : (
+                <div style={{
+                  width: '100%',
+                  height: '100%',
+                  borderRadius: '50%',
+                  background: esAusencia ? '#f59e0b' : '#3b82f6',
+                  color: 'white',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '0.9rem',
+                  fontWeight: '700',
+                  border: '2px solid white',
+                  position: 'relative'
+                }}>
+                  <span>{getInitials(registro.trabajadorNombre || 'T')}</span>
+                  {imageError && registro.imagen_Url && (
+                    <button 
+                      style={{
+                        position: 'absolute',
+                        bottom: '-4px',
+                        right: '-4px',
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '50%',
+                        background: '#4CAF50',
+                        border: '1px solid white',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '10px',
+                        padding: 0
+                      }}
+                      onClick={retryImage}
+                      title="Reintentar cargar imagen"
+                    >
+                      🔄
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div>
               <h5 style={{ margin: '0 0 4px 0', fontSize: '1rem', fontWeight: '600' }}>
                 {registro.trabajadorNombre}
@@ -164,20 +304,120 @@ const RegistroCard: React.FC<{
         alignItems: 'flex-start',
         gap: '20px'
       }}>
-        {/* Icono y información principal */}
-        <div style={{
-          background: esAusencia ? '#f59e0b' : '#3b82f6',
-          color: 'white',
-          width: '60px',
-          height: '60px',
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '1.8rem',
+        {/* 👈 MODIFICADO: Avatar con foto del trabajador */}
+        <div style={{ 
+          position: 'relative',
+          width: '70px', 
+          height: '70px',
           flexShrink: 0
         }}>
-          {getIcono()}
+          {registro.imagen_Url && !imageError && showImage ? (
+            <>
+              {imageLoading && (
+                <div style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  background: 'linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%)',
+                  backgroundSize: '200% 100%',
+                  animation: 'loading-shimmer 1.5s infinite',
+                  borderRadius: '50%'
+                }}>
+                  <span style={{ fontSize: '24px', animation: 'spin 2s linear infinite' }}>⏳</span>
+                </div>
+              )}
+              <img 
+                src={getImageUrl(registro.imagen_Url)}
+                alt={registro.trabajadorNombre}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  borderRadius: '50%',
+                  border: '3px solid white',
+                  boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                  display: imageLoading ? 'none' : 'block'
+                }}
+                onLoad={handleImageLoad}
+                onError={handleImageError}
+              />
+            </>
+          ) : (
+            <div style={{
+              width: '100%',
+              height: '100%',
+              borderRadius: '50%',
+              background: esAusencia ? '#f59e0b' : '#3b82f6',
+              color: 'white',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontSize: '1.5rem',
+              fontWeight: '700',
+              border: '3px solid white',
+              boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+              position: 'relative'
+            }}>
+              <span>{getInitials(registro.trabajadorNombre || 'T')}</span>
+              {imageError && registro.imagen_Url && (
+                <button 
+                  style={{
+                    position: 'absolute',
+                    bottom: '-6px',
+                    right: '-6px',
+                    width: '24px',
+                    height: '24px',
+                    borderRadius: '50%',
+                    background: '#4CAF50',
+                    border: '2px solid white',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '12px',
+                    padding: 0,
+                    boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                    transition: 'all 0.2s ease'
+                  }}
+                  onClick={retryImage}
+                  title="Reintentar cargar imagen"
+                  onMouseOver={(e) => {
+                    e.currentTarget.style.transform = 'scale(1.1)';
+                    e.currentTarget.style.background = '#45a049';
+                  }}
+                  onMouseOut={(e) => {
+                    e.currentTarget.style.transform = 'scale(1)';
+                    e.currentTarget.style.background = '#4CAF50';
+                  }}
+                >
+                  🔄
+                </button>
+              )}
+            </div>
+          )}
+          
+          {/* Icono de tipo en la esquina */}
+          <div style={{
+            position: 'absolute',
+            bottom: '-5px',
+            left: '-5px',
+            background: 'white',
+            borderRadius: '50%',
+            width: '28px',
+            height: '28px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 6px rgba(0,0,0,0.2)',
+            fontSize: '0.9rem'
+          }}>
+            {getIcono()}
+          </div>
         </div>
 
         <div style={{ flex: 1 }}>
@@ -357,10 +597,32 @@ const RegistroCard: React.FC<{
           </div>
         </div>
       </div>
+
+      {/* CSS para animaciones */}
+      <style>
+        {`
+          @keyframes loading-shimmer {
+            0% {
+              background-position: 200% 0;
+            }
+            100% {
+              background-position: -200% 0;
+            }
+          }
+          
+          @keyframes spin {
+            from {
+              transform: rotate(0deg);
+            }
+            to {
+              transform: rotate(360deg);
+            }
+          }
+        `}
+      </style>
     </div>
   );
 };
-
 interface EstadisticaDia {
   fecha: string;
   totalTrabajadores: number;

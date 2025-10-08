@@ -126,7 +126,7 @@ export interface Registro {
   trabajadorNombre: string;
   centroId: number | string;
   nombreCentro: string;
-  
+  imagen_Url?: string;
   // Campos para identificar tipo de registro
   tipoRegistro?: TipoRegistro;
   esCurso?: boolean;
