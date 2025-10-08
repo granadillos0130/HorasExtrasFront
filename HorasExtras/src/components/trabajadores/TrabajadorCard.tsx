@@ -24,7 +24,29 @@ const TrabajadorCard: React.FC<Props> = ({
   onSelect
 }) => {
   const navigate = useNavigate();
-  const [imageError, setImageError] = useState(false); // 👈 NUEVO ESTADO
+  const [imageError, setImageError] = useState(false);
+  const [imageLoading, setImageLoading] = useState(true); // 👈 NUEVO: estado de carga
+  const [showImage, setShowImage] = useState(true); // 👈 NUEVO: controlar visibilidad
+
+  // Resetear estados cuando cambia el trabajador
+  React.useEffect(() => {
+    setImageError(false);
+    setImageLoading(true);
+    setShowImage(true);
+  }, [trabajador.id, trabajador.imagen_Url]);
+
+  // 👈 NUEVO: Timeout para imágenes que tardan mucho
+  React.useEffect(() => {
+    if (imageLoading && trabajador.imagen_Url) {
+      const timeout = setTimeout(() => {
+        // Si después de 5 segundos sigue cargando, mostrar iniciales
+        setImageError(true);
+        setImageLoading(false);
+      }, 5000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [imageLoading, trabajador.imagen_Url]);
 
   const getInitials = (name: string) => {
     return name
@@ -33,6 +55,26 @@ const TrabajadorCard: React.FC<Props> = ({
       .join("")
       .toUpperCase()
       .substring(0, 2);
+  };
+
+  const handleImageLoad = () => {
+    setImageLoading(false);
+    setImageError(false);
+  };
+
+  const handleImageError = () => {
+    setImageError(true);
+    setImageLoading(false);
+  };
+
+  // 👈 NUEVO: Función para reintentar cargar la imagen manualmente
+  const retryImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setImageError(false);
+    setImageLoading(true);
+    setShowImage(false);
+    // Forzar re-render
+    setTimeout(() => setShowImage(true), 50);
   };
 
   const handleEdit = () => {
@@ -71,18 +113,40 @@ const TrabajadorCard: React.FC<Props> = ({
       onClick={handleCardClick}
     >
       <div className="card-content">
-        {/* Avatar e info básica - SECCIÓN MODIFICADA */}
+        {/* Avatar e info básica */}
         <div className="worker-main-info">
           <div className="worker-avatar">
-            {trabajador.imagen_Url && !imageError ? (
-              <img 
-                src={getImageUrl(trabajador.imagen_Url)} // 👈 USAR getImageUrl
-                alt={trabajador.nombre}
-                className="avatar-image"
-                onError={() => setImageError(true)} // 👈 MANEJAR ERROR
-              />
+            {trabajador.imagen_Url && !imageError && showImage ? (
+              <>
+                {/* Mostrar skeleton/spinner mientras carga */}
+                {imageLoading && (
+                  <div className="avatar-loading">
+                    <span className="loading-spinner">⏳</span>
+                  </div>
+                )}
+                <img 
+                  src={getImageUrl(trabajador.imagen_Url)}
+                  alt={trabajador.nombre}
+                  className={`avatar-image ${imageLoading ? 'loading' : 'loaded'}`}
+                  onLoad={handleImageLoad}
+                  onError={handleImageError}
+                  style={{ display: imageLoading ? 'none' : 'block' }} // 👈 Ocultar hasta que cargue
+                />
+              </>
             ) : (
-              <span className="avatar-initials">{getInitials(trabajador.nombre)}</span>
+              <div className="avatar-fallback">
+                <span className="avatar-initials">{getInitials(trabajador.nombre)}</span>
+                {/* 👈 NUEVO: Botón para reintentar si falló */}
+                {imageError && trabajador.imagen_Url && (
+                  <button 
+                    className="retry-image-btn"
+                    onClick={retryImage}
+                    title="Reintentar cargar imagen"
+                  >
+                    🔄
+                  </button>
+                )}
+              </div>
             )}
           </div>
           <div className="worker-details">
@@ -102,7 +166,7 @@ const TrabajadorCard: React.FC<Props> = ({
           <div className="selection-dot"></div>
         </div>
 
-        {/* Acciones - Solo se muestran cuando está seleccionado */}
+        {/* Acciones */}
         <div className={`card-actions ${isSelected ? 'visible' : ''}`}>
           <div className="actions-grid">
             <button 
