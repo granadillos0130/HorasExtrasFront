@@ -29,8 +29,7 @@ const CentrosPage: React.FC = () => {
   // Estados básicos
   const [añoSeleccionado, setAñoSeleccionado] = useState<number>(new Date().getFullYear());
   const [mesSeleccionado, setMesSeleccionado] = useState<number | null>(null);
-  const [vistaActual, setVistaActual] = useState<'crear' | 'ejecucion' | 'busqueda' | 'editar' | 'estado' | null>(null);
-  const [loading, setLoading] = useState(false);
+const [vistaActual, setVistaActual] = useState<'crear' | 'ejecucion' | 'busqueda' | 'editar' | 'estado' | 'meses'>('meses');  const [loading, setLoading] = useState(false);
 
   // Estados para datos
   const [centrosDelMes, setCentrosDelMes] = useState<CentroPorMesCompleto[]>([]);
@@ -56,7 +55,7 @@ const CentrosPage: React.FC = () => {
   // Estados para búsqueda y filtros
   const [centroBuscado, setCentroBuscado] = useState<string>("");
   const [loadingBusqueda, setLoadingBusqueda] = useState(false);
-  const [estadoFiltro, setEstadoFiltro] = useState<'todos' | 'abierto' | 'cerrado'>('todos');
+  const [estadoFiltro, setEstadoFiltro] = useState<'todos' | 'abierto' | 'cerrado'>('abierto');
   const [loadingEstado, setLoadingEstado] = useState(false);
 
   // Estados para datos adicionales
@@ -189,7 +188,7 @@ const CentrosPage: React.FC = () => {
   // ================================
   // FUNCIONES SIMPLIFICADAS PARA MANEJAR MODAL
   // ================================
-  
+
   const abrirModal = (tipo: 'info' | 'cargos', fuente: 'busqueda' | 'estado' | 'meses') => {
     setModal({
       isOpen: true,
@@ -205,7 +204,10 @@ const CentrosPage: React.FC = () => {
       source: 'meses'
     });
     setCentroSeleccionado(null);
-    setVistaActual(null);
+    // Solo cambiar a 'meses' si estamos en crear o editar
+    if (vistaActual === 'crear' || vistaActual === 'editar') {
+      setVistaActual('meses');
+    }
     setCentroAEditar(null);
     setDatosCompletos({
       cliente: null,
@@ -224,7 +226,7 @@ const CentrosPage: React.FC = () => {
   // ================================
   // FUNCIONES DE MANEJO SIMPLIFICADAS
   // ================================
-  
+
   const prepararCentroParaModal = async (centro: any, fuente: 'busqueda' | 'estado' | 'meses') => {
     setCentroSeleccionado(centro);
     try {
@@ -311,7 +313,7 @@ const CentrosPage: React.FC = () => {
     try {
       setLoading(true);
       const centroCompleto = centrosPorEstado.find(c => c.centroId === centroId);
-      
+
       if (!centroCompleto) {
         alert("Error: No se encontraron los datos completos del centro");
         return;
@@ -330,7 +332,7 @@ const CentrosPage: React.FC = () => {
         interventor: centroCompleto.interventor ?? undefined,
         vendedor: centroCompleto.vendedor ?? undefined
       };
-      
+
       setCentroEncontrado(centroData);
 
       const centroParaModal: CentroPorMesCompleto = {
@@ -448,14 +450,14 @@ const CentrosPage: React.FC = () => {
   // ================================
   // RENDER PRINCIPAL
   // ================================
-  
+
   // Si estamos en la vista de información de ejecución
   if (vistaActual === 'ejecucion' && centroSeleccionado) {
     return (
       <InformacionEjecucionPage
         centroId={centroSeleccionado.centroId}
         centroNombre={centroSeleccionado.centroNombre}
-        onVolver={() => setVistaActual(null)}
+        onVolver={() => setVistaActual('meses')}
       />
     );
   }
@@ -521,7 +523,7 @@ const CentrosPage: React.FC = () => {
           >
             🔍 Buscar Centro
           </button>
-          
+
           <button
             onClick={() => {
               setVistaActual('estado');
@@ -556,13 +558,13 @@ const CentrosPage: React.FC = () => {
 
           <button
             onClick={() => {
-              setVistaActual(null);
+              setVistaActual('meses');
               setCentroBuscado("");
               setCentroEncontrado(null);
               cerrarModal();
             }}
             style={{
-              background: vistaActual === null || mesSeleccionado !== null ?
+              background: vistaActual === 'meses' ?
                 'linear-gradient(135deg, #3b82f6, #1e40af)' :
                 'linear-gradient(135deg, #64748b, #475569)',
               color: 'white',
@@ -819,7 +821,7 @@ const CentrosPage: React.FC = () => {
         )}
 
         {/* Vista por meses */}
-        {vistaActual !== 'busqueda' && vistaActual !== 'estado' && (
+        {vistaActual === 'meses' && (
           <>
             {/* Selector de año */}
             <div style={{
