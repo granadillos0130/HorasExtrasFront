@@ -31,7 +31,7 @@ import { authService } from "./api/authService";
 // CACHE MANAGER
 const useCacheManager = () => {
   useEffect(() => {
-    const CURRENT_VERSION = '2025-11-05v2'; // Actualizado
+    const CURRENT_VERSION = '2025-11-11v1'; // Actualizado
     const lastVersion = localStorage.getItem('app_version');
     
     if (lastVersion !== CURRENT_VERSION) {
