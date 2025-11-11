@@ -1,6 +1,6 @@
-// src/components/shared/Navbar.tsx
-import React, { useState, useMemo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { authService } from '../../api/authService';
 
 interface NavItem {
   id: string;
@@ -10,9 +10,13 @@ interface NavItem {
   description: string;
 }
 
-const Navbar: React.FC = () => {
+const Sidebar: React.FC = () => {
   const location = useLocation();
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isMobileOpen, setIsMobileOpen] = useState(false);
+  
+  const currentUser = authService.getCurrentUser();
 
   const navItems: NavItem[] = [
     {
@@ -69,7 +73,7 @@ const Navbar: React.FC = () => {
       title: "Cursos",
       path: "/cursos",
       icon: "🎓",
-      description: "Gestión de cursos de capacitación"
+      description: "Gestión de cursos"
     },
     {
       id: "ausencias",
@@ -86,89 +90,113 @@ const Navbar: React.FC = () => {
     return false;
   };
 
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
+  const handleLogout = () => {
+    authService.logout();
+    navigate("/login");
   };
 
-  // Generar breadcrumbs basado en la ruta actual
-  const breadcrumbs = useMemo(() => {
-    const pathSegments = location.pathname.split('/').filter(Boolean);
-    const crumbs = [{ title: 'Inicio', path: '/', icon: '🏠' }];
-    
-    let currentPath = '';
-    pathSegments.forEach((segment) => {
-      currentPath += `/${segment}`;
-      const navItem = navItems.find(item => item.path === currentPath);
-      if (navItem) {
-        crumbs.push({
-          title: navItem.title,
-          path: currentPath,
-          icon: navItem.icon
-        });
-      } else {
-        // Para rutas específicas como /trabajadores/editar/123
-        const parentPath = `/${segment}`;
-        const parentItem = navItems.find(item => item.path === parentPath);
-        if (parentItem && crumbs.length === 1) {
-          crumbs.push({
-            title: parentItem.title,
-            path: parentPath,
-            icon: parentItem.icon
-          });
-        }
-        // Agregar sub-página
-        if (pathSegments.indexOf(segment) > 0) {
-          const actionNames: { [key: string]: string } = {
-            'crear': '➕ Crear',
-            'editar': '✏️ Editar',
-            'nuevo': '➕ Nuevo',
-            'nueva': '➕ Nueva',
-            'lote': '📊 Lote',
-            'intensidad': '⚡ Intensidad',
-            'estadisticas': '📊 Estadísticas'
-          };
-          const actionName = actionNames[segment] || `📄 ${segment}`;
-          crumbs.push({
-            title: actionName,
-            path: currentPath,
-            icon: ''
-          });
-        }
-      }
-    });
-    
-    return crumbs;
-  }, [location.pathname, navItems]);
+  const toggleSidebar = () => {
+    setIsCollapsed(!isCollapsed);
+  };
 
-  const currentPageInfo = useMemo(() => {
-    const currentItem = navItems.find(item => isActive(item.path));
-    return currentItem || navItems[0];
-  }, [location.pathname, navItems]);
+  const toggleMobileSidebar = () => {
+    setIsMobileOpen(!isMobileOpen);
+  };
 
   return (
     <>
-      {/* Navbar principal */}
-      <nav style={{
+      {/* Mobile Header */}
+      <div className="mobile-header" style={{
+        display: 'none',
         position: 'sticky',
         top: 0,
         zIndex: 1000,
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        backdropFilter: 'blur(10px)',
-        borderBottom: '2px solid rgba(255,255,255,0.1)',
-        boxShadow: '0 4px 20px rgba(0,0,0,0.1)'
+        padding: '15px 20px',
+        boxShadow: '0 2px 10px rgba(0,0,0,0.1)'
       }}>
         <div style={{
-          maxWidth: '1400px',
-          margin: '0 auto',
-          padding: '0 20px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px',
+            color: 'white',
+            fontWeight: '700',
+            fontSize: '1.3rem'
+          }}>
+            <span>⚡</span>
+            <span>HorasExtras</span>
+          </div>
+          <button
+            onClick={toggleMobileSidebar}
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: '2px solid rgba(255,255,255,0.3)',
+              color: 'white',
+              padding: '8px 12px',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '1.2rem'
+            }}
+          >
+            ☰
+          </button>
+        </div>
+      </div>
+
+      {/* Overlay para mobile */}
+      {isMobileOpen && (
+        <div
+          onClick={toggleMobileSidebar}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0,0,0,0.5)',
+            zIndex: 999,
+            display: 'none'
+          }}
+          className="mobile-overlay"
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`sidebar ${isCollapsed ? 'collapsed' : ''} ${isMobileOpen ? 'mobile-open' : ''}`}
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          height: '100vh',
+          width: isCollapsed ? '80px' : '280px',
+          background: 'linear-gradient(180deg, #1e1e2e 0%, #2d2d44 100%)',
+          boxShadow: '4px 0 20px rgba(0,0,0,0.1)',
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'width 0.3s ease',
+          zIndex: 1000,
+          overflowY: 'auto',
+          overflowX: 'hidden'
+        }}
+      >
+        {/* Header con logo */}
+        <div style={{
+          padding: '20px',
+          borderBottom: '2px solid rgba(255,255,255,0.1)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          minHeight: '70px'
+          minHeight: '70px',
+          background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
         }}>
-          {/* Logo/Brand */}
-          <Link 
-            to="/" 
+          <Link
+            to="/"
             style={{
               textDecoration: 'none',
               display: 'flex',
@@ -176,357 +204,249 @@ const Navbar: React.FC = () => {
               gap: '12px',
               color: 'white',
               fontWeight: '700',
-              fontSize: '1.4rem',
-              textShadow: '1px 1px 3px rgba(0,0,0,0.3)'
+              fontSize: isCollapsed ? '1.5rem' : '1.3rem',
+              transition: 'all 0.3s ease'
             }}
           >
-            <div style={{
-              background: 'rgba(255,255,255,0.2)',
-              padding: '8px 12px',
-              borderRadius: '12px',
-              fontSize: '1.2rem',
-              backdropFilter: 'blur(5px)',
-              border: '1px solid rgba(255,255,255,0.3)'
-            }}>
-              ⚡
-            </div>
-            <span>HorasExtras</span>
+            <span>⚡</span>
+            {!isCollapsed && <span>HorasExtras</span>}
           </Link>
+          
+          <button
+            onClick={toggleSidebar}
+            className="collapse-btn"
+            style={{
+              background: 'rgba(255,255,255,0.2)',
+              border: '2px solid rgba(255,255,255,0.3)',
+              color: 'white',
+              padding: '6px 10px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '1rem',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            {isCollapsed ? '→' : '←'}
+          </button>
+        </div>
 
-          {/* Navigation Links - Desktop */}
+        {/* User Info */}
+        {currentUser && (
+          <div style={{
+            padding: isCollapsed ? '15px 10px' : '20px',
+            borderBottom: '2px solid rgba(255,255,255,0.1)',
+            background: 'rgba(102, 126, 234, 0.1)'
+          }}>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '12px',
+              color: 'white'
+            }}>
+              <div style={{
+                width: '40px',
+                height: '40px',
+                borderRadius: '50%',
+                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.3rem',
+                flexShrink: 0
+              }}>
+                👤
+              </div>
+              {!isCollapsed && (
+                <div style={{
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    fontWeight: '600',
+                    fontSize: '0.95rem',
+                    marginBottom: '2px',
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {currentUser.nombre}
+                  </div>
+                  <div style={{
+                    fontSize: '0.75rem',
+                    opacity: 0.7,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>
+                    {currentUser.cargoDesempenado || 'Trabajador'}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Navigation Items */}
+        <nav style={{
+          flex: 1,
+          padding: '20px 10px',
+          overflowY: 'auto'
+        }}>
           <div style={{
             display: 'flex',
-            gap: '8px',
-            alignItems: 'center'
-          }} className="desktop-nav">
-            {navItems.slice(1).map((item) => (
+            flexDirection: 'column',
+            gap: '8px'
+          }}>
+            {navItems.map((item) => (
               <Link
                 key={item.id}
                 to={item.path}
+                onClick={() => setIsMobileOpen(false)}
                 style={{
                   textDecoration: 'none',
                   color: 'white',
-                  padding: '10px 16px',
-                  borderRadius: '12px',
-                  fontSize: '0.95rem',
-                  fontWeight: '600',
+                  padding: isCollapsed ? '12px 10px' : '12px 16px',
+                  borderRadius: '10px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '8px',
+                  gap: '12px',
                   transition: 'all 0.3s ease',
-                  background: isActive(item.path) 
-                    ? 'rgba(255,255,255,0.25)' 
-                    : 'rgba(255,255,255,0.1)',
-                  border: isActive(item.path)
-                    ? '2px solid rgba(255,255,255,0.4)'
-                    : '2px solid transparent',
-                  backdropFilter: 'blur(5px)',
+                  background: isActive(item.path)
+                    ? 'linear-gradient(135deg, #667eea, #764ba2)'
+                    : 'transparent',
+                  border: '2px solid',
+                  borderColor: isActive(item.path)
+                    ? 'rgba(255,255,255,0.3)'
+                    : 'transparent',
                   position: 'relative',
-                  overflow: 'hidden'
+                  justifyContent: isCollapsed ? 'center' : 'flex-start'
                 }}
                 onMouseOver={(e) => {
                   if (!isActive(item.path)) {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.2)';
-                    e.currentTarget.style.transform = 'translateY(-2px)';
-                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.2)';
+                    e.currentTarget.style.background = 'rgba(102, 126, 234, 0.2)';
+                    e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
                   }
                 }}
                 onMouseOut={(e) => {
                   if (!isActive(item.path)) {
-                    e.currentTarget.style.background = 'rgba(255,255,255,0.1)';
-                    e.currentTarget.style.transform = 'translateY(0)';
-                    e.currentTarget.style.boxShadow = 'none';
+                    e.currentTarget.style.background = 'transparent';
+                    e.currentTarget.style.borderColor = 'transparent';
                   }
                 }}
+                title={isCollapsed ? item.title : ''}
               >
-                <span style={{ fontSize: '1.1rem' }}>{item.icon}</span>
-                <span>{item.title}</span>
-                {isActive(item.path) && (
+                <span style={{ 
+                  fontSize: '1.3rem',
+                  flexShrink: 0
+                }}>
+                  {item.icon}
+                </span>
+                {!isCollapsed && (
                   <div style={{
-                    position: 'absolute',
-                    bottom: '-2px',
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: '60%',
-                    height: '3px',
-                    background: 'linear-gradient(90deg, #43e97b, #38f9d7)',
-                    borderRadius: '2px'
-                  }} />
+                    display: 'flex',
+                    flexDirection: 'column',
+                    overflow: 'hidden'
+                  }}>
+                    <span style={{
+                      fontWeight: '600',
+                      fontSize: '0.95rem'
+                    }}>
+                      {item.title}
+                    </span>
+                    {isActive(item.path) && (
+                      <span style={{
+                        fontSize: '0.7rem',
+                        opacity: 0.8
+                      }}>
+                        {item.description}
+                      </span>
+                    )}
+                  </div>
                 )}
               </Link>
             ))}
           </div>
+        </nav>
 
-          {/* Mobile Menu Button */}
+        {/* Logout Button */}
+        <div style={{
+          padding: '20px 10px',
+          borderTop: '2px solid rgba(255,255,255,0.1)'
+        }}>
           <button
-            onClick={toggleMenu}
+            onClick={handleLogout}
             style={{
-              display: 'none',
-              background: 'rgba(255,255,255,0.2)',
+              width: '100%',
+              padding: isCollapsed ? '12px 10px' : '12px 16px',
+              background: 'rgba(239, 68, 68, 0.9)',
               color: 'white',
               border: '2px solid rgba(255,255,255,0.3)',
-              padding: '10px',
               borderRadius: '10px',
               cursor: 'pointer',
-              fontSize: '1.2rem',
-              backdropFilter: 'blur(5px)',
-              transition: 'all 0.3s ease'
-            }}
-            className="mobile-menu-btn"
-          >
-            {isMenuOpen ? '✕' : '☰'}
-          </button>
-        </div>
-
-        {/* Mobile Navigation Menu */}
-        {isMenuOpen && (
-          <div style={{
-            background: 'rgba(0,0,0,0.95)',
-            backdropFilter: 'blur(10px)',
-            padding: '20px',
-            borderTop: '1px solid rgba(255,255,255,0.1)'
-          }} className="mobile-nav">
-            <div style={{
-              display: 'grid',
-              gap: '12px',
-              maxWidth: '400px',
-              margin: '0 auto'
-            }}>
-              {navItems.map((item) => (
-                <Link
-                  key={item.id}
-                  to={item.path}
-                  onClick={() => setIsMenuOpen(false)}
-                  style={{
-                    textDecoration: 'none',
-                    color: 'white',
-                    padding: '16px 20px',
-                    borderRadius: '12px',
-                    background: isActive(item.path)
-                      ? 'linear-gradient(135deg, #43e97b, #38f9d7)'
-                      : 'rgba(255,255,255,0.1)',
-                    border: '2px solid rgba(255,255,255,0.2)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '15px',
-                    transition: 'all 0.3s ease'
-                  }}
-                >
-                  <span style={{ fontSize: '1.3rem' }}>{item.icon}</span>
-                  <div>
-                    <div style={{ 
-                      fontWeight: '600', 
-                      fontSize: '1.1rem',
-                      marginBottom: '2px'
-                    }}>
-                      {item.title}
-                    </div>
-                    <div style={{ 
-                      fontSize: '0.85rem', 
-                      opacity: 0.8 
-                    }}>
-                      {item.description}
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-      </nav>
-
-      {/* Breadcrumbs - Solo mostrar si no estamos en el dashboard principal */}
-      {location.pathname !== '/' && (
-        <div style={{
-          background: 'rgba(255,255,255,0.95)',
-          backdropFilter: 'blur(10px)',
-          borderBottom: '1px solid rgba(0,0,0,0.1)',
-          padding: '12px 0',
-          position: 'sticky',
-          top: '70px',
-          zIndex: 999
-        }}>
-          <div style={{
-            maxWidth: '1400px',
-            margin: '0 auto',
-            padding: '0 20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px'
-          }}>
-            {breadcrumbs.map((crumb, index) => (
-              <React.Fragment key={crumb.path}>
-                {index > 0 && (
-                  <span style={{
-                    color: '#9ca3af',
-                    fontSize: '0.9rem',
-                    fontWeight: '500'
-                  }}>
-                    →
-                  </span>
-                )}
-                {index === breadcrumbs.length - 1 ? (
-                  // Última miga (página actual) - no es enlace
-                  <div style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    color: '#667eea',
-                    fontWeight: '600',
-                    fontSize: '0.9rem',
-                    background: 'linear-gradient(135deg, #667eea15, #764ba215)',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    border: '1px solid #667eea30'
-                  }}>
-                    {crumb.icon && <span style={{ fontSize: '0.9rem' }}>{crumb.icon}</span>}
-                    <span>{crumb.title}</span>
-                  </div>
-                ) : (
-                  // Migas anteriores - son enlaces
-                  <Link
-                    to={crumb.path}
-                    style={{
-                      textDecoration: 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '6px',
-                      color: '#6b7280',
-                      fontWeight: '500',
-                      fontSize: '0.9rem',
-                      padding: '6px 10px',
-                      borderRadius: '6px',
-                      transition: 'all 0.2s ease'
-                    }}
-                    onMouseOver={(e) => {
-                      e.currentTarget.style.color = '#667eea';
-                      e.currentTarget.style.background = 'rgba(102, 126, 234, 0.1)';
-                    }}
-                    onMouseOut={(e) => {
-                      e.currentTarget.style.color = '#6b7280';
-                      e.currentTarget.style.background = 'transparent';
-                    }}
-                  >
-                    {crumb.icon && <span style={{ fontSize: '0.9rem' }}>{crumb.icon}</span>}
-                    <span>{crumb.title}</span>
-                  </Link>
-                )}
-              </React.Fragment>
-            ))}
-            
-            {/* Información adicional de la página actual */}
-            <div style={{
-              marginLeft: 'auto',
+              fontSize: '0.95rem',
+              fontWeight: '600',
               display: 'flex',
               alignItems: 'center',
-              gap: '10px',
-              fontSize: '0.85rem',
-              color: '#6b7280'
-            }}>
-              <div style={{
-                background: 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
-                padding: '4px 10px',
-                borderRadius: '20px',
-                fontSize: '0.8rem',
-                fontWeight: '600',
-                color: '#4b5563'
-              }}>
-                {currentPageInfo.description}
-              </div>
-            </div>
-          </div>
+              justifyContent: isCollapsed ? 'center' : 'flex-start',
+              gap: '12px',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseOver={(e) => {
+              e.currentTarget.style.background = 'rgba(220, 38, 38, 1)';
+              e.currentTarget.style.transform = 'translateY(-2px)';
+            }}
+            onMouseOut={(e) => {
+              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.9)';
+              e.currentTarget.style.transform = 'translateY(0)';
+            }}
+          >
+            <span style={{ fontSize: '1.2rem' }}>🚪</span>
+            {!isCollapsed && <span>Cerrar Sesión</span>}
+          </button>
         </div>
-      )}
+      </aside>
 
-      {/* CSS para responsive */}
       <style>
         {`
+          /* Responsive */
           @media (max-width: 768px) {
-            .desktop-nav {
+            .mobile-header {
+              display: flex !important;
+            }
+            
+            .collapse-btn {
               display: none !important;
             }
-            .mobile-menu-btn {
+            
+            .sidebar {
+              transform: translateX(-100%);
+              width: 280px !important;
+            }
+            
+            .sidebar.mobile-open {
+              transform: translateX(0);
+            }
+            
+            .mobile-overlay {
               display: block !important;
             }
           }
-          
-          @media (min-width: 769px) {
-            .mobile-nav {
-              display: none !important;
-            }
+
+          /* Scrollbar personalizado */
+          .sidebar::-webkit-scrollbar {
+            width: 6px;
           }
 
-          /* Responsive para breadcrumbs */
-          @media (max-width: 640px) {
-            /* Ocultar descripción en móvil */
-            .breadcrumb-description {
-              display: none !important;
-            }
-            /* Breadcrumbs más compactos en móvil */
-            .breadcrumbs-container {
-              padding: 8px 15px !important;
-              font-size: 0.8rem !important;
-            }
+          .sidebar::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.05);
           }
 
-          /* Animaciones mejoradas */
-          .mobile-nav {
-            animation: slideDown 0.3s ease-out;
+          .sidebar::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
           }
 
-          @keyframes slideDown {
-            from {
-              opacity: 0;
-              transform: translateY(-20px);
-            }
-            to {
-              opacity: 1;
-              transform: translateY(0);
-            }
-          }
-
-          /* Efectos hover suaves para enlaces de navegación */
-          .nav-link {
-            position: relative;
-            overflow: hidden;
-          }
-
-          .nav-link::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-          }
-
-          .nav-link:hover::before {
-            left: 100%;
-          }
-
-          /* Scroll suave para navegación */
-          html {
-            scroll-behavior: smooth;
-          }
-
-          /* Mejora de accesibilidad */
-          .nav-link:focus {
-            outline: 2px solid #43e97b;
-            outline-offset: 2px;
-          }
-
-          /* Loading state para breadcrumbs */
-          .breadcrumb-loading {
-            background: linear-gradient(90deg, #f3f4f6, #e5e7eb, #f3f4f6);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-          }
-
-          @keyframes loading {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
+          .sidebar::-webkit-scrollbar-thumb:hover {
+            background: rgba(255,255,255,0.3);
           }
         `}
       </style>
@@ -534,4 +454,4 @@ const Navbar: React.FC = () => {
   );
 };
 
-export default Navbar;
+export default Sidebar;
