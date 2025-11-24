@@ -8,7 +8,7 @@ import { registrosService } from "../api/registrosService";
 import { trabajadoresService } from "../api/trabajadoresService";
 import type { Registro, RegistroConTipo, FiltroTipoRegistro, EstadisticasDia } from "../types/registros";
 import type { Trabajador } from "../types/trabajadores";
-
+import { huelleroService } from "../api/huelleroService";
 // 🆕 Componente RegistroCard integrado
 const RegistroCard: React.FC<{
   registro: RegistroConTipo;
@@ -17,7 +17,7 @@ const RegistroCard: React.FC<{
   compact?: boolean;
 }> = ({ registro, onEdit, onDelete, compact = false }) => {
   const esAusencia = registro.tipoRegistro === 'AUSENCIA';
-  
+
   // 👈 ESTADOS para manejar la imagen - AQUÍ VAN, AL INICIO DEL COMPONENTE
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
@@ -119,7 +119,7 @@ const RegistroCard: React.FC<{
 
   const getRemunerationBadge = () => {
     if (!esAusencia) return null;
-    
+
     const esRemunerada = registro.ausenciaInfo?.remunerado;
     return (
       <span style={{
@@ -152,9 +152,9 @@ const RegistroCard: React.FC<{
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {/* 👈 MODIFICADO: Avatar con foto */}
-            <div style={{ 
+            <div style={{
               position: 'relative',
-              width: '45px', 
+              width: '45px',
               height: '45px',
               flexShrink: 0
             }}>
@@ -178,7 +178,7 @@ const RegistroCard: React.FC<{
                       <span style={{ fontSize: '16px' }}>⏳</span>
                     </div>
                   )}
-                  <img 
+                  <img
                     src={getImageUrl(registro.imagen_Url)}
                     alt={registro.trabajadorNombre}
                     style={{
@@ -210,7 +210,7 @@ const RegistroCard: React.FC<{
                 }}>
                   <span>{getInitials(registro.trabajadorNombre || 'T')}</span>
                   {imageError && registro.imagen_Url && (
-                    <button 
+                    <button
                       style={{
                         position: 'absolute',
                         bottom: '-4px',
@@ -274,14 +274,14 @@ const RegistroCard: React.FC<{
       transition: 'all 0.3s ease',
       position: 'relative'
     }}
-    onMouseOver={(e) => {
-      e.currentTarget.style.transform = 'translateY(-2px)';
-      e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
-    }}
-    onMouseOut={(e) => {
-      e.currentTarget.style.transform = 'translateY(0)';
-      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-    }}
+      onMouseOver={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+      }}
+      onMouseOut={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+      }}
     >
       {/* Badge de tipo de registro */}
       <div style={{
@@ -305,9 +305,9 @@ const RegistroCard: React.FC<{
         gap: '20px'
       }}>
         {/* 👈 MODIFICADO: Avatar con foto del trabajador */}
-        <div style={{ 
+        <div style={{
           position: 'relative',
-          width: '70px', 
+          width: '70px',
           height: '70px',
           flexShrink: 0
         }}>
@@ -331,7 +331,7 @@ const RegistroCard: React.FC<{
                   <span style={{ fontSize: '24px', animation: 'spin 2s linear infinite' }}>⏳</span>
                 </div>
               )}
-              <img 
+              <img
                 src={getImageUrl(registro.imagen_Url)}
                 alt={registro.trabajadorNombre}
                 style={{
@@ -365,7 +365,7 @@ const RegistroCard: React.FC<{
             }}>
               <span>{getInitials(registro.trabajadorNombre || 'T')}</span>
               {imageError && registro.imagen_Url && (
-                <button 
+                <button
                   style={{
                     position: 'absolute',
                     bottom: '-6px',
@@ -400,7 +400,7 @@ const RegistroCard: React.FC<{
               )}
             </div>
           )}
-          
+
           {/* Icono de tipo en la esquina */}
           <div style={{
             position: 'absolute',
@@ -475,9 +475,9 @@ const RegistroCard: React.FC<{
               <span style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: '600' }}>
                 TOTAL:
               </span>
-              <span style={{ 
-                fontSize: '1.1rem', 
-                fontWeight: '700', 
+              <span style={{
+                fontSize: '1.1rem',
+                fontWeight: '700',
                 marginLeft: '8px',
                 color: esAusencia ? '#d97706' : '#1d4ed8'
               }}>
@@ -574,7 +574,7 @@ const RegistroCard: React.FC<{
                   ✏️ Editar
                 </button>
               )}
-              
+
               {onDelete && (
                 <button
                   onClick={() => onDelete(registro.id)}
@@ -634,7 +634,7 @@ interface EstadisticaDia {
 const RegistrosPage: React.FC = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   const [añoSeleccionado, setAñoSeleccionado] = useState<number>(new Date().getFullYear());
   const [mesSeleccionado, setMesSeleccionado] = useState<number | null>(null);
   const [diaSeleccionado, setDiaSeleccionado] = useState<string | null>(null);
@@ -646,15 +646,15 @@ const RegistrosPage: React.FC = () => {
   const [cargandoEstadisticas, setCargandoEstadisticas] = useState(false);
   const [registrosDelMesCompleto, setRegistrosDelMesCompleto] = useState<Map<string, Registro[]>>(new Map());
 
-  
+
   // 🆕 Estados para ausencias integradas
   const [filtroTipo, setFiltroTipo] = useState<FiltroTipoRegistro>('TODOS');
   const [mostrarEstadisticas, setMostrarEstadisticas] = useState(false);
   const [estadisticasDia, setEstadisticasDia] = useState<EstadisticasDia | null>(null);
-  
+
   // 🆕 Estados para festivos
   const [creandoFestivos, setCreandoFestivos] = useState(false);
-  
+  const [sincronizandoHuellero, setSincronizandoHuellero] = useState(false);
   // Estados para mensajes de éxito
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successType, setSuccessType] = useState<string>('');
@@ -669,10 +669,10 @@ const RegistrosPage: React.FC = () => {
   // 🆕 FUNCIÓN para procesar registros y detectar ausencias
   const procesarRegistrosConTipo = useCallback((registros: Registro[]): RegistroConTipo[] => {
     return registros.map(registro => {
-      const esAusencia = registro.tipoRegistro === 'AUSENCIA' || 
-                        registro.centroId === 'AUSENCIA' ||
-                        registro.nombreCentro?.includes('AUSENCIA');
-      
+      const esAusencia = registro.tipoRegistro === 'AUSENCIA' ||
+        registro.centroId === 'AUSENCIA' ||
+        registro.nombreCentro?.includes('AUSENCIA');
+
       return {
         ...registro,
         tipoRegistro: esAusencia ? 'AUSENCIA' as const : 'TRABAJO' as const,
@@ -691,7 +691,7 @@ const RegistrosPage: React.FC = () => {
   const calcularEstadisticasDia = useCallback((registros: RegistroConTipo[]): EstadisticasDia => {
     const registrosTrabajo = registros.filter(r => r.tipoRegistro === 'TRABAJO');
     const registrosAusencia = registros.filter(r => r.tipoRegistro === 'AUSENCIA');
-    
+
     return {
       fecha: diaSeleccionado || '',
       totalRegistros: registros.length,
@@ -700,8 +700,8 @@ const RegistrosPage: React.FC = () => {
       trabajadoresUnicos: new Set(registros.map(r => r.trabajadorId)).size,
       horasTotales: registros.reduce((sum, r) => sum + r.totalHoras, 0),
       horasNormales: registros.reduce((sum, r) => sum + r.horasNormales, 0),
-      horasExtras: registros.reduce((sum, r) => 
-        sum + r.horasExtrasDiurnas + r.horasExtrasNocturnas + 
+      horasExtras: registros.reduce((sum, r) =>
+        sum + r.horasExtrasDiurnas + r.horasExtrasNocturnas +
         r.extrasDominicalesDiurnas + r.extrasDominicalesNocturnas, 0),
       horasAusenciasRemuneradas: registrosAusencia
         .filter(r => r.ausenciaInfo?.remunerado)
@@ -717,6 +717,31 @@ const RegistrosPage: React.FC = () => {
     if (filtroTipo === 'TODOS') return registros;
     return registros.filter(r => r.tipoRegistro === filtroTipo);
   };
+  const sincronizarDesdeHuellero = async () => {
+    if (!diaSeleccionado) return;
+
+    if (!confirm(`¿Sincronizar registros desde el huellero para ${formatearFecha(diaSeleccionado + 'T00:00:00')}?`)) return;
+
+    setSincronizandoHuellero(true);
+    try {
+      const resultado = await huelleroService.sincronizarAsistencia(diaSeleccionado, true);
+
+      alert(`✅ Sincronización completada!\n\n` +
+        `Completos: ${resultado.registrosCreados}\n` +
+        `Con estimación: ${resultado.registrosConFallback}\n` +
+        `Omitidos: ${resultado.registrosOmitidos}\n` +
+        `Total: ${resultado.resumen.total}`);
+
+      await obtenerRegistrosDelDia(diaSeleccionado);
+      if (mesSeleccionado !== null) {
+        await cargarEstadisticasDelMes();
+      }
+    } catch (error: any) {
+      alert(`❌ Error: ${error?.response?.data?.error || error?.message || "Error desconocido"}`);
+    } finally {
+      setSincronizandoHuellero(false);
+    }
+  };
 
   // 🆕 NUEVA FUNCIÓN: Crear registros festivos
   const crearRegistrosFestivos = async () => {
@@ -725,7 +750,7 @@ const RegistrosPage: React.FC = () => {
     // Primero mostrar información sobre lo que se va a crear
     const mesNombre = meses[mesSeleccionado - 1];
     const confirmMessage = `¿Crear registros festivos para TODOS los trabajadores activos en ${mesNombre} ${añoSeleccionado}?\n\nEsto creará registros automáticos para los días festivos del mes según el calendario oficial.\n\nTrabajadores activos: ${trabajadoresActivos.length}`;
-    
+
     if (!confirm(confirmMessage)) return;
 
     setCreandoFestivos(true);
@@ -739,7 +764,7 @@ const RegistrosPage: React.FC = () => {
 
       // Mostrar la información del preview
       const previewMessage = `Se encontraron ${preview.diasFestivos?.length || 0} día(s) festivo(s) en ${mesNombre}:\n\n${preview.diasFestivos?.map((dia: any) => `• ${dia.fecha} - ${dia.nombre}`).join('\n') || 'No se encontraron días festivos'}\n\nSe crearán aproximadamente ${preview.registrosACrear || 0} registros.\n\n¿Confirmar creación?`;
-      
+
       if (!confirm(previewMessage)) {
         setCreandoFestivos(false);
         return;
@@ -774,83 +799,83 @@ const RegistrosPage: React.FC = () => {
 
   // ✅ FIX: Wrap in useCallback to avoid dependency issues + Added missing dependency
   const cargarEstadisticasDelMes = useCallback(async () => {
-  if (mesSeleccionado === null) return;
+    if (mesSeleccionado === null) return;
 
 
     setCargandoEstadisticas(true);
-  try {
-    // UNA SOLA PETICIÓN para todo el mes
-    const response = await registrosService.obtenerRegistrosMesCompleto(añoSeleccionado, mesSeleccionado);
-    
-    // Agrupar registros por fecha en el frontend
-    const registrosPorFecha = new Map<string, Registro[]>();
-    const estadisticas = new Map<string, EstadisticaDia>();
-    
-    // Inicializar todos los días del mes
-    const diasEnMes = new Date(añoSeleccionado, mesSeleccionado, 0).getDate();
-    for (let dia = 1; dia <= diasEnMes; dia++) {
-      const fechaString = `${añoSeleccionado}-${mesSeleccionado.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
-      registrosPorFecha.set(fechaString, []);
-    }
-    
-    // Agrupar registros por fecha
-    response.registros.forEach(registro => {
-      const fecha = registro.fecha;
-      const registrosDelDia = registrosPorFecha.get(fecha) || [];
-      registrosDelDia.push(registro);
-      registrosPorFecha.set(fecha, registrosDelDia);
-    });
-    
-    // Calcular estadísticas localmente
-    registrosPorFecha.forEach((registros, fecha) => {
-      // Obtener IDs únicos de trabajadores que tienen registro ese día
-      const trabajadoresConRegistro = new Set(registros.map(r => r.trabajadorId));
-      const cantidadConRegistro = trabajadoresConRegistro.size;
-      const totalTrabajadores = trabajadoresActivos.length;
-      const porcentaje = totalTrabajadores > 0 ? (cantidadConRegistro / totalTrabajadores) * 100 : 0;
+    try {
+      // UNA SOLA PETICIÓN para todo el mes
+      const response = await registrosService.obtenerRegistrosMesCompleto(añoSeleccionado, mesSeleccionado);
 
-      estadisticas.set(fecha, {
-        fecha,
-        totalTrabajadores,
-        trabajadoresConRegistro: cantidadConRegistro,
-        porcentaje,
-        registros // Ya tenemos los registros aquí
+      // Agrupar registros por fecha en el frontend
+      const registrosPorFecha = new Map<string, Registro[]>();
+      const estadisticas = new Map<string, EstadisticaDia>();
+
+      // Inicializar todos los días del mes
+      const diasEnMes = new Date(añoSeleccionado, mesSeleccionado, 0).getDate();
+      for (let dia = 1; dia <= diasEnMes; dia++) {
+        const fechaString = `${añoSeleccionado}-${mesSeleccionado.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
+        registrosPorFecha.set(fechaString, []);
+      }
+
+      // Agrupar registros por fecha
+      response.registros.forEach(registro => {
+        const fecha = registro.fecha;
+        const registrosDelDia = registrosPorFecha.get(fecha) || [];
+        registrosDelDia.push(registro);
+        registrosPorFecha.set(fecha, registrosDelDia);
       });
-    });
-    
-    // Guardar tanto las estadísticas como los registros agrupados
-    setEstadisticasMes(estadisticas);
-    setRegistrosDelMesCompleto(registrosPorFecha);
-    
-  } catch (error) {
-    console.error("Error al cargar estadísticas del mes:", error);
-  } finally {
-    setCargandoEstadisticas(false);
-  }
-}, [mesSeleccionado, añoSeleccionado, trabajadoresActivos]);
+
+      // Calcular estadísticas localmente
+      registrosPorFecha.forEach((registros, fecha) => {
+        // Obtener IDs únicos de trabajadores que tienen registro ese día
+        const trabajadoresConRegistro = new Set(registros.map(r => r.trabajadorId));
+        const cantidadConRegistro = trabajadoresConRegistro.size;
+        const totalTrabajadores = trabajadoresActivos.length;
+        const porcentaje = totalTrabajadores > 0 ? (cantidadConRegistro / totalTrabajadores) * 100 : 0;
+
+        estadisticas.set(fecha, {
+          fecha,
+          totalTrabajadores,
+          trabajadoresConRegistro: cantidadConRegistro,
+          porcentaje,
+          registros // Ya tenemos los registros aquí
+        });
+      });
+
+      // Guardar tanto las estadísticas como los registros agrupados
+      setEstadisticasMes(estadisticas);
+      setRegistrosDelMesCompleto(registrosPorFecha);
+
+    } catch (error) {
+      console.error("Error al cargar estadísticas del mes:", error);
+    } finally {
+      setCargandoEstadisticas(false);
+    }
+  }, [mesSeleccionado, añoSeleccionado, trabajadoresActivos]);
 
 
   // 🆕 ACTUALIZAR la función obtenerRegistrosDelDia
   const obtenerRegistrosDelDia = useCallback(async (fecha: string) => {
-  try {
-    setLoading(true);
-    
-    // Usar los datos ya cargados en lugar de hacer otra petición
-    const registros = registrosDelMesCompleto.get(fecha) || [];
-    const registrosConTipo = procesarRegistrosConTipo(registros);
-    setRegistrosDelDia(registrosConTipo);
-    
-    // Calcular estadísticas
-    const estadisticas = calcularEstadisticasDia(registrosConTipo);
-    setEstadisticasDia(estadisticas);
-  } catch (error) {
-    console.error("Error al obtener registros:", error);
-    setRegistrosDelDia([]);
-    setEstadisticasDia(null);
-  } finally {
-    setLoading(false);
-  }
-}, [registrosDelMesCompleto, procesarRegistrosConTipo, calcularEstadisticasDia]);
+    try {
+      setLoading(true);
+
+      // Usar los datos ya cargados en lugar de hacer otra petición
+      const registros = registrosDelMesCompleto.get(fecha) || [];
+      const registrosConTipo = procesarRegistrosConTipo(registros);
+      setRegistrosDelDia(registrosConTipo);
+
+      // Calcular estadísticas
+      const estadisticas = calcularEstadisticasDia(registrosConTipo);
+      setEstadisticasDia(estadisticas);
+    } catch (error) {
+      console.error("Error al obtener registros:", error);
+      setRegistrosDelDia([]);
+      setEstadisticasDia(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [registrosDelMesCompleto, procesarRegistrosConTipo, calcularEstadisticasDia]);
   // 🆕 NUEVAS: Funciones para navegación de edición
   const navigateToEdit = (id: number) => {
     const searchParams = new URLSearchParams();
@@ -873,7 +898,7 @@ const RegistrosPage: React.FC = () => {
   const navigateToEditLoteConFiltros = (trabajadorId?: number, fechaInicio?: string, fechaFin?: string) => {
     const searchParams = new URLSearchParams();
     searchParams.set('return', '/registros');
-    
+
     if (trabajadorId) {
       searchParams.set('trabajadorId', trabajadorId.toString());
     }
@@ -883,7 +908,7 @@ const RegistrosPage: React.FC = () => {
     if (fechaFin) {
       searchParams.set('fechaFin', fechaFin);
     }
-    
+
     navigate(`/registros/editar-lote?${searchParams.toString()}`);
   };
 
@@ -893,12 +918,12 @@ const RegistrosPage: React.FC = () => {
     if (success) {
       setSuccessType(success);
       setShowSuccessMessage(true);
-      
+
       // Limpiar el parámetro de la URL
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('success');
       setSearchParams(newSearchParams, { replace: true });
-      
+
       // Ocultar mensaje después de 4 segundos
       setTimeout(() => setShowSuccessMessage(false), 4000);
 
@@ -937,16 +962,16 @@ const RegistrosPage: React.FC = () => {
   // Función para navegar a los formularios
   const navigateToForm = (tipo: 'individual' | 'lote') => {
     const searchParams = new URLSearchParams();
-    
+
     if (diaSeleccionado) {
       searchParams.set('fecha', diaSeleccionado);
     }
     searchParams.set('return', '/registros');
-    
-    const targetPath = tipo === 'individual' 
+
+    const targetPath = tipo === 'individual'
       ? `/registros/nuevo?${searchParams.toString()}`
       : `/registros/lote?${searchParams.toString()}`;
-      
+
     navigate(targetPath);
   };
 
@@ -959,8 +984,8 @@ const RegistrosPage: React.FC = () => {
       padding: '20px',
       marginBottom: '20px'
     }}>
-      <h4 style={{ 
-        margin: '0 0 15px 0', 
+      <h4 style={{
+        margin: '0 0 15px 0',
         color: '#0c4a6e',
         display: 'flex',
         alignItems: 'center',
@@ -979,7 +1004,7 @@ const RegistrosPage: React.FC = () => {
           {mostrarEstadisticas ? '🔼' : '🔽'}
         </button>
       </h4>
-      
+
       {mostrarEstadisticas && (
         <div style={{
           display: 'grid',
@@ -990,27 +1015,27 @@ const RegistrosPage: React.FC = () => {
             <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#0c4a6e' }}>{estadisticas.totalRegistros}</div>
             <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Total Registros</div>
           </div>
-          
+
           <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px' }}>
             <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#1d4ed8' }}>{estadisticas.registrosTrabajo}</div>
             <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Trabajo</div>
           </div>
-          
+
           <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px' }}>
             <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#f59e0b' }}>{estadisticas.registrosAusencia}</div>
             <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Ausencias</div>
           </div>
-          
+
           <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px' }}>
             <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#059669' }}>{estadisticas.trabajadoresUnicos}</div>
             <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Trabajadores</div>
           </div>
-          
+
           <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px' }}>
             <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#059669' }}>{estadisticas.horasNormales.toFixed(1)}</div>
             <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Horas Normales</div>
           </div>
-          
+
           <div style={{ textAlign: 'center', padding: '10px', background: 'rgba(255,255,255,0.7)', borderRadius: '8px' }}>
             <div style={{ fontSize: '1.5rem', fontWeight: '700', color: '#ea580c' }}>{estadisticas.horasExtras.toFixed(1)}</div>
             <div style={{ fontSize: '0.8rem', color: '#64748b' }}>Horas Extras</div>
@@ -1038,8 +1063,8 @@ const RegistrosPage: React.FC = () => {
           key={tipo}
           onClick={() => setFiltroTipo(tipo)}
           style={{
-            background: filtroTipo === tipo 
-              ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)' 
+            background: filtroTipo === tipo
+              ? 'linear-gradient(135deg, #3b82f6, #1d4ed8)'
               : 'white',
             color: filtroTipo === tipo ? 'white' : '#374151',
             border: `2px solid ${filtroTipo === tipo ? '#1d4ed8' : '#d1d5db'}`,
@@ -1051,12 +1076,12 @@ const RegistrosPage: React.FC = () => {
             transition: 'all 0.3s ease'
           }}
         >
-          {tipo === 'TODOS' ? '📋 Todos' : 
-           tipo === 'TRABAJO' ? '👤 Trabajo' : 
-           '📅 Ausencias'}
+          {tipo === 'TODOS' ? '📋 Todos' :
+            tipo === 'TRABAJO' ? '👤 Trabajo' :
+              '📅 Ausencias'}
         </button>
       ))}
-      
+
       <div style={{ marginLeft: 'auto', fontSize: '0.9rem', color: '#6b7280' }}>
         {filtrarRegistrosPorTipo(registrosDelDia).length} de {registrosDelDia.length} registros
       </div>
@@ -1112,19 +1137,19 @@ const RegistrosPage: React.FC = () => {
   const obtenerDiasDelMes = (año: number, mes: number) => {
     const diasEnMes = new Date(año, mes, 0).getDate();
     const primerDia = new Date(año, mes - 1, 1).getDay();
-    
+
     const dias = [];
-    
+
     // Espacios en blanco para días anteriores al primer día del mes
     for (let i = 0; i < primerDia; i++) {
       dias.push(null);
     }
-    
+
     // Días del mes
     for (let dia = 1; dia <= diasEnMes; dia++) {
       dias.push(dia);
     }
-    
+
     return dias;
   };
 
@@ -1153,7 +1178,7 @@ const RegistrosPage: React.FC = () => {
     setExportandoExcel(true);
     try {
       const registrosDelMes = await obtenerRegistrosDelMes(añoSeleccionado, mesSeleccionado);
-      
+
       if (registrosDelMes.length === 0) {
         alert("No hay registros para exportar en este mes");
         return;
@@ -1190,19 +1215,19 @@ const RegistrosPage: React.FC = () => {
       worksheet.mergeCells('A1:N1');
       const titleCell = worksheet.getCell('A1');
       titleCell.value = '📊 REPORTE MENSUAL DE REGISTROS';
-      titleCell.font = { 
-        size: 18, 
-        bold: true, 
-        color: { argb: 'FFFFFFFF' } 
+      titleCell.font = {
+        size: 18,
+        bold: true,
+        color: { argb: 'FFFFFFFF' }
       };
       titleCell.fill = {
         type: 'pattern',
         pattern: 'solid',
         fgColor: { argb: 'FF228B22' },
       };
-      titleCell.alignment = { 
-        horizontal: 'center', 
-        vertical: 'middle' 
+      titleCell.alignment = {
+        horizontal: 'center',
+        vertical: 'middle'
       };
       titleCell.border = {
         top: { style: 'thick', color: { argb: 'FF32CD32' } },
@@ -1215,10 +1240,10 @@ const RegistrosPage: React.FC = () => {
       worksheet.mergeCells('A3:N3');
       const periodoCell = worksheet.getCell('A3');
       periodoCell.value = `Período: ${meses[mesSeleccionado - 1]} ${añoSeleccionado} | Total de registros: ${registrosDelMes.length}`;
-      periodoCell.font = { 
-        size: 14, 
-        bold: true, 
-        color: { argb: 'FF228B22' } 
+      periodoCell.font = {
+        size: 14,
+        bold: true,
+        color: { argb: 'FF228B22' }
       };
       periodoCell.alignment = { horizontal: 'center' };
 
@@ -1232,26 +1257,26 @@ const RegistrosPage: React.FC = () => {
       worksheet.mergeCells('A4:N4');
       const estadisticasCell = worksheet.getCell('A4');
       estadisticasCell.value = `Total horas: ${totalHorasGenerales.toFixed(2)} | Normales: ${totalHorasNormales.toFixed(2)} | Extras: ${totalHorasExtras.toFixed(2)} | Diurnas: ${totalHorasExtrasDiurnas.toFixed(2)} | Nocturnas: ${totalHorasExtrasNocturnas.toFixed(2)}`;
-      estadisticasCell.font = { 
-        size: 12, 
-        italic: true, 
-        color: { argb: 'FF666666' } 
+      estadisticasCell.font = {
+        size: 12,
+        italic: true,
+        color: { argb: 'FF666666' }
       };
       estadisticasCell.alignment = { horizontal: 'center' };
 
       // Fecha de generación
       worksheet.mergeCells('A5:N5');
       const fechaCell = worksheet.getCell('A5');
-      fechaCell.value = `Generado el: ${new Date().toLocaleDateString('es-ES', { 
-        year: 'numeric', 
-        month: 'long', 
+      fechaCell.value = `Generado el: ${new Date().toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
       })}`;
-      fechaCell.font = { 
-        size: 10, 
-        color: { argb: 'FF666666' } 
+      fechaCell.font = {
+        size: 10,
+        color: { argb: 'FF666666' }
       };
       fechaCell.alignment = { horizontal: 'center' };
 
@@ -1283,8 +1308,8 @@ const RegistrosPage: React.FC = () => {
       const headerRow = worksheet.getRow(startRow);
       headerRow.height = 25;
       headerRow.eachCell((cell) => {
-        cell.font = { 
-          bold: true, 
+        cell.font = {
+          bold: true,
           color: { argb: 'FFFFFFFF' },
           size: 11
         };
@@ -1293,9 +1318,9 @@ const RegistrosPage: React.FC = () => {
           pattern: 'solid',
           fgColor: { argb: 'FF32CD32' },
         };
-        cell.alignment = { 
-          horizontal: 'center', 
-          vertical: 'middle' 
+        cell.alignment = {
+          horizontal: 'center',
+          vertical: 'middle'
         };
         cell.border = {
           top: { style: 'medium', color: { argb: 'FF228B22' } },
@@ -1338,18 +1363,18 @@ const RegistrosPage: React.FC = () => {
           registro.desplazamientoIda ? formatearHora(registro.desplazamientoIda) : "--:--",
           registro.desplazamientoRegreso ? formatearHora(registro.desplazamientoRegreso) : "--:--",
         ];
-        
+
         const currentRow = startRow + 1 + index;
         worksheet.insertRow(currentRow, rowData);
-        
+
         // Estilo para filas de datos
         const dataRow = worksheet.getRow(currentRow);
         dataRow.height = 20;
-        
+
         dataRow.eachCell((cell, colNumber) => {
-          cell.alignment = { 
-            horizontal: colNumber <= 4 ? 'left' : 'center', 
-            vertical: 'middle' 
+          cell.alignment = {
+            horizontal: colNumber <= 4 ? 'left' : 'center',
+            vertical: 'middle'
           };
           cell.border = {
             top: { style: 'thin', color: { argb: 'FFCCCCCC' } },
@@ -1357,7 +1382,7 @@ const RegistrosPage: React.FC = () => {
             left: { style: 'thin', color: { argb: 'FFCCCCCC' } },
             right: { style: 'thin', color: { argb: 'FFCCCCCC' } },
           };
-          
+
           // Colores alternos para las filas
           if (index % 2 === 0) {
             cell.fill = {
@@ -1366,10 +1391,10 @@ const RegistrosPage: React.FC = () => {
               fgColor: { argb: 'FFF8FFF8' },
             };
           }
-          
+
           // Formato para números
           if (colNumber >= 7 && colNumber <= 12) {
-            cell.font = { 
+            cell.font = {
               size: 10,
               color: { argb: 'FF333333' }
             };
@@ -1377,7 +1402,7 @@ const RegistrosPage: React.FC = () => {
               cell.numFmt = '#,##0.00';
             }
           } else {
-            cell.font = { 
+            cell.font = {
               size: 10,
               color: { argb: 'FF333333' }
             };
@@ -1403,13 +1428,13 @@ const RegistrosPage: React.FC = () => {
         '',
         '',
       ];
-      
+
       worksheet.insertRow(totalRow, totales);
       const totalRowObj = worksheet.getRow(totalRow);
       totalRowObj.height = 25;
       totalRowObj.eachCell((cell, colNumber) => {
-        cell.font = { 
-          bold: true, 
+        cell.font = {
+          bold: true,
           color: { argb: 'FFFFFFFF' },
           size: 11
         };
@@ -1418,9 +1443,9 @@ const RegistrosPage: React.FC = () => {
           pattern: 'solid',
           fgColor: { argb: 'FF228B22' },
         };
-        cell.alignment = { 
-          horizontal: 'center', 
-          vertical: 'middle' 
+        cell.alignment = {
+          horizontal: 'center',
+          vertical: 'middle'
         };
         cell.border = {
           top: { style: 'medium', color: { argb: 'FF006400' } },
@@ -1428,7 +1453,7 @@ const RegistrosPage: React.FC = () => {
           left: { style: 'thin', color: { argb: 'FF006400' } },
           right: { style: 'thin', color: { argb: 'FF006400' } },
         };
-        
+
         if (colNumber >= 7 && colNumber <= 12 && typeof cell.value === 'number') {
           cell.numFmt = '#,##0.00';
         }
@@ -1439,10 +1464,10 @@ const RegistrosPage: React.FC = () => {
       worksheet.mergeCells(`A${footerRow}:N${footerRow}`);
       const footerCell = worksheet.getCell(`A${footerRow}`);
       footerCell.value = '© Sistema de Gestión de Horas Extras - Reporte mensual generado automáticamente';
-      footerCell.font = { 
-        size: 9, 
-        italic: true, 
-        color: { argb: 'FF888888' } 
+      footerCell.font = {
+        size: 9,
+        italic: true,
+        color: { argb: 'FF888888' }
       };
       footerCell.alignment = { horizontal: 'center' };
 
@@ -1499,11 +1524,11 @@ const RegistrosPage: React.FC = () => {
 
   const formatearFecha = (fecha: string) => {
     const date = new Date(fecha);
-    const opciones: Intl.DateTimeFormatOptions = { 
-      weekday: 'long', 
-      year: 'numeric', 
-      month: 'long', 
-      day: 'numeric' 
+    const opciones: Intl.DateTimeFormatOptions = {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     };
     return date.toLocaleDateString('es-ES', opciones);
   };
@@ -1566,7 +1591,7 @@ const RegistrosPage: React.FC = () => {
   };
 
   const getSuccessMessage = (type: string) => {
-    switch(type) {
+    switch (type) {
       case 'registro-creado':
         return '✅ Registro individual creado exitosamente';
       case 'lote-creado':
@@ -1626,9 +1651,9 @@ const RegistrosPage: React.FC = () => {
           <p style={{ fontSize: '1.2rem', opacity: 0.9 }}>
             Visualiza todos los registros de todos los trabajadores por día (incluye ausencias)
           </p>
-          <div style={{ 
-            fontSize: '0.95rem', 
-            opacity: 0.8, 
+          <div style={{
+            fontSize: '0.95rem',
+            opacity: 0.8,
             marginTop: '10px',
             display: 'flex',
             justifyContent: 'center',
@@ -1768,10 +1793,10 @@ const RegistrosPage: React.FC = () => {
               }}>
                 📅 {meses[mesSeleccionado - 1]} {añoSeleccionado}
                 {cargandoEstadisticas && (
-                  <span style={{ 
-                    fontSize: '1rem', 
-                    color: '#666', 
-                    marginLeft: '10px' 
+                  <span style={{
+                    fontSize: '1rem',
+                    color: '#666',
+                    marginLeft: '10px'
                   }}>
                     🔄 Cargando...
                   </span>
@@ -1782,8 +1807,8 @@ const RegistrosPage: React.FC = () => {
                   onClick={exportarExcelMes}
                   disabled={exportandoExcel}
                   style={{
-                    background: exportandoExcel 
-                      ? 'linear-gradient(135deg, #94a3b8, #64748b)' 
+                    background: exportandoExcel
+                      ? 'linear-gradient(135deg, #94a3b8, #64748b)'
                       : 'linear-gradient(135deg, #22c55e, #15803d)',
                     color: 'white',
                     border: 'none',
@@ -1798,14 +1823,14 @@ const RegistrosPage: React.FC = () => {
                 >
                   {exportandoExcel ? '⏳ Exportando...' : '📤 Exportar Excel Mes'}
                 </button>
-                
+
                 {/* 🆕 NUEVO: Botón para crear registros festivos */}
                 <button
                   onClick={crearRegistrosFestivos}
                   disabled={creandoFestivos}
                   style={{
-                    background: creandoFestivos 
-                      ? 'linear-gradient(135deg, #94a3b8, #64748b)' 
+                    background: creandoFestivos
+                      ? 'linear-gradient(135deg, #94a3b8, #64748b)'
                       : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
                     color: 'white',
                     border: 'none',
@@ -1821,7 +1846,7 @@ const RegistrosPage: React.FC = () => {
                 >
                   {creandoFestivos ? '⏳ Creando...' : '🎉 Crear Festivos'}
                 </button>
-                
+
                 {/* 🆕 NUEVO: Botón para edición masiva del mes */}
                 <button
                   onClick={() => {
@@ -1843,7 +1868,7 @@ const RegistrosPage: React.FC = () => {
                 >
                   ✏️ Editar Mes
                 </button>
-                
+
                 <button
                   onClick={() => setMesSeleccionado(null)}
                   style={{
@@ -1952,10 +1977,10 @@ const RegistrosPage: React.FC = () => {
                   color: 'transparent',
                   border: 'transparent'
                 };
-                
+
                 return (
-                  <div 
-                    key={index} 
+                  <div
+                    key={index}
                     style={{
                       minHeight: '70px',
                       border: `2px solid ${colores.border}`,
@@ -1995,8 +2020,8 @@ const RegistrosPage: React.FC = () => {
                           {dia}
                         </div>
                         {estadisticasMes.get(`${añoSeleccionado}-${mesSeleccionado.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`) && (
-                          <div style={{ 
-                            fontSize: '0.7rem', 
+                          <div style={{
+                            fontSize: '0.7rem',
                             fontWeight: '600',
                             marginTop: '2px',
                             opacity: 0.8
@@ -2116,6 +2141,23 @@ const RegistrosPage: React.FC = () => {
                     </h4>
                     <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                       <button
+                        onClick={sincronizarDesdeHuellero}
+                        disabled={sincronizandoHuellero}
+                        style={{
+                          background: sincronizandoHuellero ? 'rgba(156, 163, 175, 0.3)' : 'rgba(139, 92, 246, 0.3)',
+                          color: 'white',
+                          border: '2px solid rgba(255,255,255,0.5)',
+                          padding: '8px 16px',
+                          borderRadius: '8px',
+                          cursor: sincronizandoHuellero ? 'not-allowed' : 'pointer',
+                          fontWeight: '600',
+                          fontSize: '0.9rem',
+                          opacity: sincronizandoHuellero ? 0.6 : 1
+                        }}
+                      >
+                        {sincronizandoHuellero ? '⏳ Sincronizando...' : '👆 Huellero'}
+                      </button>
+                      <button
                         onClick={() => navigateToForm('individual')}
                         style={{
                           background: 'rgba(255,255,255,0.2)',
@@ -2169,10 +2211,10 @@ const RegistrosPage: React.FC = () => {
 
                   {/* 🆕 Estadísticas del día */}
                   {estadisticasDia && <EstadisticasDiaComponent estadisticas={estadisticasDia} />}
-                  
+
                   {/* 🆕 Filtros de tipo */}
                   <FiltrosTipoComponent />
-                  
+
                   {/* 🆕 Lista de registros con cards mejoradas */}
                   <div style={{ maxHeight: '500px', overflowY: 'auto' }}>
                     {filtrarRegistrosPorTipo(registrosDelDia).map((registro) => (
@@ -2208,13 +2250,35 @@ const RegistrosPage: React.FC = () => {
                   <p style={{ marginBottom: '25px', color: '#666' }}>
                     Ningún trabajador tiene registros para esta fecha
                   </p>
-                  
+
                   <div style={{
                     display: 'flex',
                     gap: '15px',
                     justifyContent: 'center',
                     flexWrap: 'wrap'
                   }}>
+                    {/* 🆕 BOTÓN DEL HUELLERO - PRIMERO */}
+                    <button
+                      onClick={sincronizarDesdeHuellero}
+                      disabled={sincronizandoHuellero}
+                      style={{
+                        background: sincronizandoHuellero
+                          ? 'linear-gradient(135deg, #94a3b8, #64748b)'
+                          : 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                        color: 'white',
+                        border: 'none',
+                        padding: '15px 25px',
+                        borderRadius: '10px',
+                        cursor: sincronizandoHuellero ? 'not-allowed' : 'pointer',
+                        fontWeight: '600',
+                        fontSize: '1rem',
+                        transition: 'all 0.3s ease',
+                        opacity: sincronizandoHuellero ? 0.7 : 1
+                      }}
+                    >
+                      {sincronizandoHuellero ? '⏳ Sincronizando...' : '👆 Desde Huellero'}
+                    </button>
+
                     <button
                       onClick={() => navigateToForm('individual')}
                       style={{
@@ -2231,6 +2295,7 @@ const RegistrosPage: React.FC = () => {
                     >
                       ➕ Crear Registro
                     </button>
+
                     <button
                       onClick={() => navigateToForm('lote')}
                       style={{
@@ -2247,7 +2312,7 @@ const RegistrosPage: React.FC = () => {
                     >
                       📊 Registros en Lote
                     </button>
-                    {/* 🆕 NUEVO: Botón para ir a edición en lote */}
+
                     <button
                       onClick={navigateToEditLote}
                       style={{
