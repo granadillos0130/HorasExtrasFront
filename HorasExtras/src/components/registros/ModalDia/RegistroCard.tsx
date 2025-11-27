@@ -9,14 +9,14 @@ interface RegistroCardProps {
   compact?: boolean;
 }
 
-export const RegistroCard: React.FC<RegistroCardProps> = ({ 
-  registro, 
-  onEdit, 
-  onDelete, 
-  compact = false 
+export const RegistroCard: React.FC<RegistroCardProps> = ({
+  registro,
+  onEdit,
+  onDelete,
+  compact = false
 }) => {
   const esAusencia = registro.tipoRegistro === 'AUSENCIA';
-  
+
   const [imageError, setImageError] = useState(false);
   const [imageLoading, setImageLoading] = useState(true);
   const [showImage, setShowImage] = useState(true);
@@ -112,7 +112,7 @@ export const RegistroCard: React.FC<RegistroCardProps> = ({
 
   const getRemunerationBadge = () => {
     if (!esAusencia) return null;
-    
+
     const esRemunerada = registro.ausenciaInfo?.remunerado;
     return (
       <span style={{
@@ -144,9 +144,9 @@ export const RegistroCard: React.FC<RegistroCardProps> = ({
           alignItems: 'center'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ 
+            <div style={{
               position: 'relative',
-              width: '45px', 
+              width: '45px',
               height: '45px',
               flexShrink: 0
             }}>
@@ -170,7 +170,7 @@ export const RegistroCard: React.FC<RegistroCardProps> = ({
                       <span style={{ fontSize: '16px' }}>⏳</span>
                     </div>
                   )}
-                  <img 
+                  <img
                     src={getImageUrl(registro.imagen_Url)}
                     alt={registro.trabajadorNombre}
                     style={{
@@ -202,7 +202,7 @@ export const RegistroCard: React.FC<RegistroCardProps> = ({
                 }}>
                   <span>{getInitials(registro.trabajadorNombre || 'T')}</span>
                   {imageError && registro.imagen_Url && (
-                    <button 
+                    <button
                       style={{
                         position: 'absolute',
                         bottom: '-4px',
@@ -266,14 +266,14 @@ export const RegistroCard: React.FC<RegistroCardProps> = ({
       transition: 'all 0.3s ease',
       position: 'relative'
     }}
-    onMouseOver={(e) => {
-      e.currentTarget.style.transform = 'translateY(-2px)';
-      e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
-    }}
-    onMouseOut={(e) => {
-      e.currentTarget.style.transform = 'translateY(0)';
-      e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
-    }}
+      onMouseOver={(e) => {
+        e.currentTarget.style.transform = 'translateY(-2px)';
+        e.currentTarget.style.boxShadow = '0 8px 25px rgba(0,0,0,0.15)';
+      }}
+      onMouseOut={(e) => {
+        e.currentTarget.style.transform = 'translateY(0)';
+        e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.1)';
+      }}
     >
       {/* Badge de tipo de registro */}
       <div style={{
@@ -297,9 +297,9 @@ export const RegistroCard: React.FC<RegistroCardProps> = ({
         gap: '20px'
       }}>
         {/* Avatar con foto del trabajador */}
-        <div style={{ 
+        <div style={{
           position: 'relative',
-          width: '70px', 
+          width: '70px',
           height: '70px',
           flexShrink: 0
         }}>
@@ -323,7 +323,7 @@ export const RegistroCard: React.FC<RegistroCardProps> = ({
                   <span style={{ fontSize: '24px', animation: 'spin 2s linear infinite' }}>⏳</span>
                 </div>
               )}
-              <img 
+              <img
                 src={getImageUrl(registro.imagen_Url)}
                 alt={registro.trabajadorNombre}
                 style={{
@@ -357,7 +357,7 @@ export const RegistroCard: React.FC<RegistroCardProps> = ({
             }}>
               <span>{getInitials(registro.trabajadorNombre || 'T')}</span>
               {imageError && registro.imagen_Url && (
-                <button 
+                <button
                   style={{
                     position: 'absolute',
                     bottom: '-6px',
@@ -392,7 +392,7 @@ export const RegistroCard: React.FC<RegistroCardProps> = ({
               )}
             </div>
           )}
-          
+
           {/* Icono de tipo en la esquina */}
           <div style={{
             position: 'absolute',
@@ -467,9 +467,9 @@ export const RegistroCard: React.FC<RegistroCardProps> = ({
               <span style={{ fontSize: '0.8rem', color: '#6b7280', fontWeight: '600' }}>
                 TOTAL:
               </span>
-              <span style={{ 
-                fontSize: '1.1rem', 
-                fontWeight: '700', 
+              <span style={{
+                fontSize: '1.1rem',
+                fontWeight: '700',
                 marginLeft: '8px',
                 color: esAusencia ? '#d97706' : '#1d4ed8'
               }}>
@@ -531,6 +531,21 @@ export const RegistroCard: React.FC<RegistroCardProps> = ({
                   </div>
                 </div>
               )}
+              {registro.horasDesplazamiento > 0 && (
+                <div style={{
+                  background: 'rgba(255,255,255,0.7)',
+                  padding: '8px 12px',
+                  borderRadius: '8px',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ fontSize: '0.7rem', color: '#6b7280', fontWeight: '600' }}>
+                    DESPLAZAMIENTO 🚗
+                  </div>
+                  <div style={{ fontSize: '1rem', fontWeight: '700', color: '#8b5cf6' }}>
+                    {formatearHoras(registro.horasDesplazamiento)}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -566,7 +581,7 @@ export const RegistroCard: React.FC<RegistroCardProps> = ({
                   ✏️ Editar
                 </button>
               )}
-              
+
               {onDelete && (
                 <button
                   onClick={() => onDelete(registro.id)}
