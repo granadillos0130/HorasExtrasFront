@@ -129,23 +129,18 @@ export const registrosService = {
 
   // 🆕 MEJORADO: Obtener todos los registros por fecha (incluye ausencias)
   async obtenerTodosPorFecha(fecha: string): Promise<Registro[]> {
-    try {
-      const res = await api.get<any>("/registros/porFechaTodos", {
-        params: { fecha },
-      });
-      
-      // El nuevo endpoint devuelve un objeto con estructura mejorada
-      if (res.data && typeof res.data === 'object' && 'registros' in res.data) {
-        return res.data.registros;
-      }
-      
-      // Mantener compatibilidad con la respuesta anterior
-      return Array.isArray(res.data) ? res.data : [];
-    } catch (error) {
-      console.error('Error al obtener registros por fecha:', error);
-      throw error;
-    }
-  },
+  try {
+    const res = await api.get<any>("/registros/porFechaTodos", {
+      params: { fecha },
+    });
+    
+    // ✅ CORRECCIÓN: El backend devuelve directamente un array
+    return Array.isArray(res.data) ? res.data : [];
+  } catch (error) {
+    console.error('Error al obtener registros por fecha:', error);
+    throw error;
+  }
+},
 
   // 🆕 NUEVO: Obtener resumen detallado de un día específico
   async obtenerResumenDia(trabajadorId: number, fecha: string): Promise<{
