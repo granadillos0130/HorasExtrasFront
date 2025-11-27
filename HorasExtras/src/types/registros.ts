@@ -156,6 +156,7 @@ export interface Registro {
   extrasDominicalesDiurnas: number;
   extrasDominicalesNocturnas: number;
   totalHoras: number;
+  horasDesplazamiento: number;
   
   // Información de desplazamiento y conductor
   desplazamientoIda?: string;
@@ -182,6 +183,7 @@ export interface Registro {
 // ===============================
 
 export interface RegistroConTipo extends Omit<Registro, 'tipoRegistro'> {
+  horasDesplazamiento: number;
   tipoRegistro: 'TRABAJO' | 'AUSENCIA';
   ausenciaInfo?: {
     id: number;
