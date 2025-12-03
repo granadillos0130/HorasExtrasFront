@@ -1,3 +1,4 @@
+// MesesView.tsx - Versión Ejecutiva con Tabla
 import React from 'react';
 import type { MesConActividad } from '../../types/centros';
 import { formatearHoras, formatearMoneda, formatearFechaPeriodo } from '../../utils/formatters';
@@ -22,177 +23,278 @@ const MesesView: React.FC<MesesViewProps> = ({
   onVolver
 }) => {
   return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)', padding: '20px' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{
+      minHeight: '100vh',
+      background: '#f8fafc',
+      padding: '20px'
+    }}>
+      <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
+        {/* Header */}
         <div style={{ marginBottom: '30px' }}>
           <button 
             onClick={onVolver}
-            style={{ 
-              marginBottom: '20px', 
-              padding: '12px 24px', 
-              border: 'none', 
-              borderRadius: '10px', 
-              background: 'rgba(255,255,255,0.2)', 
-              color: 'white', 
+            style={{
+              marginBottom: '20px',
+              padding: '10px 20px',
+              border: '1px solid #cbd5e1',
+              borderRadius: '8px',
+              background: '#ffffff',
+              color: '#475569',
               cursor: 'pointer',
-              fontSize: '1rem',
+              fontSize: '0.95rem',
               fontWeight: '600',
-              backdropFilter: 'blur(10px)',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.2s ease'
             }}
+            onMouseOver={(e) => e.currentTarget.style.background = '#f1f5f9'}
+            onMouseOut={(e) => e.currentTarget.style.background = '#ffffff'}
           >
             ← Volver a Centros
           </button>
-          <h1 style={{ 
-            fontSize: '2.5rem', 
-            color: 'white', 
-            marginBottom: '10px', 
-            textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+
+          <h1 style={{
+            fontSize: '1.8rem',
+            color: '#1e293b',
+            marginBottom: '8px',
             fontWeight: '700'
           }}>
-            📈 Información de Ejecución
+            INFORMACIÓN DE EJECUCIÓN
           </h1>
-          <h2 style={{ fontSize: '1.3rem', color: 'rgba(255,255,255,0.9)', margin: 0 }}>
-            Centro: {centroNombre}
-          </h2>
-        </div>
-
-        <div style={{ 
-          background: 'rgba(255,255,255,0.95)', 
-          borderRadius: '20px', 
-          padding: '30px', 
-          marginBottom: '30px', 
-          boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-          backdropFilter: 'blur(10px)'
-        }}>
-          <h3 style={{ marginBottom: '20px', color: '#333', fontSize: '1.3rem', fontWeight: '600' }}>
-            📅 Seleccionar Año
-          </h3>
-          <select
-            value={añoSeleccionado}
-            onChange={(e) => onAñoChange(Number(e.target.value))}
-            style={{ 
-              padding: '12px 20px', 
-              borderRadius: '10px', 
-              border: '2px solid #e5e7eb', 
-              fontSize: '1.1rem', 
-              marginBottom: '20px',
-              background: 'white',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease'
-            }}
-          >
-            {[2023, 2024, 2025, 2026].map(año => (
-              <option key={año} value={año}>{año}</option>
-            ))}
-          </select>
-        </div>
-
-        {loading ? (
-          <div style={{ 
-            background: 'rgba(255,255,255,0.95)', 
-            borderRadius: '20px', 
-            padding: '60px', 
-            textAlign: 'center', 
-            fontSize: '1.2rem', 
-            color: '#666',
-            backdropFilter: 'blur(10px)'
+          <p style={{
+            fontSize: '1.1rem',
+            color: '#64748b',
+            margin: 0,
+            fontWeight: '500'
           }}>
-            <div style={{ marginBottom: '20px' }}>🔄</div>
-            Cargando meses con actividad...
+            Centro: {centroNombre}
+          </p>
+        </div>
+
+        {/* Selector de Año */}
+        <div style={{
+          background: 'white',
+          borderRadius: '8px',
+          padding: '20px 25px',
+          marginBottom: '25px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          border: '1px solid #e2e8f0'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '15px'
+          }}>
+            <label style={{
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              color: '#475569',
+              minWidth: '100px'
+            }}>
+              Seleccionar Año:
+            </label>
+            <select
+              value={añoSeleccionado}
+              onChange={(e) => onAñoChange(Number(e.target.value))}
+              style={{
+                padding: '10px 15px',
+                borderRadius: '6px',
+                border: '1px solid #cbd5e1',
+                fontSize: '0.95rem',
+                background: '#f8fafc',
+                cursor: 'pointer',
+                fontWeight: '500',
+                color: '#1e293b',
+                minWidth: '120px'
+              }}
+            >
+              {[2023, 2024, 2025, 2026, 2027, 2028].map(año => (
+                <option key={año} value={año}>{año}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Tabla de Meses */}
+        {loading ? (
+          <div style={{
+            background: 'white',
+            borderRadius: '8px',
+            padding: '60px',
+            textAlign: 'center',
+            border: '1px solid #e2e8f0'
+          }}>
+            <div style={{
+              fontSize: '1.1rem',
+              color: '#64748b',
+              fontWeight: '500'
+            }}>
+              Cargando meses con actividad...
+            </div>
           </div>
         ) : (
-          <div style={{ 
-            background: 'rgba(255,255,255,0.95)', 
-            borderRadius: '20px', 
-            padding: '30px', 
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-            backdropFilter: 'blur(10px)'
+          <div style={{
+            background: 'white',
+            borderRadius: '8px',
+            boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+            border: '1px solid #e2e8f0',
+            overflow: 'hidden'
           }}>
-            <h3 style={{ 
-              marginBottom: '30px', 
-              color: '#333', 
-              textAlign: 'center', 
-              fontSize: '1.4rem',
-              fontWeight: '600'
+            {/* Título de la tabla */}
+            <div style={{
+              padding: '20px 25px',
+              borderBottom: '2px solid #e2e8f0',
+              background: '#f8fafc'
             }}>
-              📊 Meses con Actividad - {añoSeleccionado}
-            </h3>
+              <h2 style={{
+                margin: 0,
+                fontSize: '1.2rem',
+                fontWeight: '700',
+                color: '#1e293b',
+                textTransform: 'uppercase',
+                letterSpacing: '0.05em'
+              }}>
+                Meses con Actividad - {añoSeleccionado}
+              </h2>
+            </div>
 
             {mesesConActividad.length > 0 ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '20px' }}>
-                {mesesConActividad.map((mes) => (
-                  <div
-                    key={mes.mes}
-                    onClick={() => onSeleccionarMes(mes.mes)}
-                    style={{
-                      background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                      color: 'white',
-                      border: 'none',
-                      padding: '25px',
-                      borderRadius: '15px',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                      position: 'relative' as const,
-                      overflow: 'hidden'
-                    }}
-                  >
-                    <div style={{ position: 'absolute', top: '10px', right: '15px', fontSize: '2rem', opacity: 0.3 }}>
-                      📊
-                    </div>
-                    
-                    <h4 style={{ 
-                      margin: '0 0 15px 0', 
-                      fontSize: '1.4rem', 
-                      fontWeight: '700',
-                      textShadow: '1px 1px 2px rgba(0,0,0,0.2)'
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: '0.9rem'
+                }}>
+                  <thead>
+                    <tr style={{
+                      background: '#f8fafc',
+                      borderBottom: '2px solid #e2e8f0'
                     }}>
-                      {mes.nombreMes}
-                    </h4>
-                    
-                    <div style={{ fontSize: '0.9rem', opacity: 0.9, marginBottom: '15px' }}>
-                      📅 {formatearFechaPeriodo(mes.fechaPrimerRegistro, mes.fechaUltimoRegistro)}
-                    </div>
-                    
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.85rem' }}>
-                      <div style={{ background: 'rgba(255,255,255,0.2)', padding: '8px', borderRadius: '8px' }}>
-                        <div style={{ fontWeight: '600' }}>👥 Trabajadores</div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: '700' }}>{mes.totalTrabajadores}</div>
-                      </div>
-                      <div style={{ background: 'rgba(255,255,255,0.2)', padding: '8px', borderRadius: '8px' }}>
-                        <div style={{ fontWeight: '600' }}>⏱️ Total Horas</div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: '700' }}>{formatearHoras(mes.totalHoras)}</div>
-                      </div>
-                      <div style={{ 
-                        background: 'rgba(255,255,255,0.2)', 
-                        padding: '8px', 
-                        borderRadius: '8px',
-                        gridColumn: '1 / -1'  
-                      }}>
-                        <div style={{ fontWeight: '600' }}>💰 Mano de Obra</div>
-                        <div style={{ fontSize: '1.1rem', fontWeight: '700' }}>{formatearMoneda(mes.manoObraTotal)}</div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                      <th style={headerCellStyle}>MES</th>
+                      <th style={headerCellStyle}>PERÍODO</th>
+                      <th style={headerCellStyle}>TRABAJADORES</th>
+                      <th style={headerCellStyle}>TOTAL HORAS</th>
+                      <th style={headerCellStyle}>MANO DE OBRA</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mesesConActividad.map((mes) => (
+                      <tr
+                        key={mes.mes}
+                        onClick={() => onSeleccionarMes(mes.mes)}
+                        style={{
+                          borderBottom: '1px solid #e2e8f0',
+                          cursor: 'pointer',
+                          transition: 'background 0.2s ease'
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.background = '#f8fafc'}
+                        onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                      >
+                        <td style={cellStyle}>
+                          <span style={{ fontWeight: '600', color: '#1e293b' }}>
+                            {mes.nombreMes}
+                          </span>
+                        </td>
+                        <td style={cellStyle}>
+                          {formatearFechaPeriodo(mes.fechaPrimerRegistro, mes.fechaUltimoRegistro)}
+                        </td>
+                        <td style={{ ...cellStyle, textAlign: 'center' }}>
+                          <span style={{
+                            background: '#eff6ff',
+                            color: '#1e40af',
+                            padding: '4px 12px',
+                            borderRadius: '6px',
+                            fontWeight: '600',
+                            fontSize: '0.85rem'
+                          }}>
+                            {mes.totalTrabajadores}
+                          </span>
+                        </td>
+                        <td style={{ ...cellStyle, textAlign: 'center', fontWeight: '600', color: '#1e40af' }}>
+                          {formatearHoras(mes.totalHoras)}
+                        </td>
+                        <td style={{ ...cellStyle, textAlign: 'right', fontWeight: '600', color: '#059669' }}>
+                          {formatearMoneda(mes.manoObraTotal)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+
+                  {/* Fila de totales */}
+                  <tfoot>
+                    <tr style={{
+                      background: '#f0fdf4',
+                      borderTop: '2px solid #059669',
+                      fontWeight: '700'
+                    }}>
+                      <td style={{ ...totalCellStyle, textAlign: 'left' }}>
+                        TOTALES
+                      </td>
+                      <td style={totalCellStyle}>
+                        {mesesConActividad.length} mes{mesesConActividad.length !== 1 ? 'es' : ''}
+                      </td>
+                      <td style={{ ...totalCellStyle, textAlign: 'center' }}>
+                        {mesesConActividad.reduce((sum, m) => sum + m.totalTrabajadores, 0)}
+                      </td>
+                      <td style={{ ...totalCellStyle, textAlign: 'center', color: '#1e40af' }}>
+                        {formatearHoras(mesesConActividad.reduce((sum, m) => sum + m.totalHoras, 0))}
+                      </td>
+                      <td style={{ ...totalCellStyle, textAlign: 'right', color: '#059669' }}>
+                        {formatearMoneda(mesesConActividad.reduce((sum, m) => sum + m.manoObraTotal, 0))}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
               </div>
             ) : (
-              <div style={{ 
-                textAlign: 'center', 
-                padding: '60px 20px', 
-                color: '#666',
-                background: '#f9fafb',
-                borderRadius: '15px',
-                border: '2px dashed #d1d5db'
+              <div style={{
+                textAlign: 'center',
+                padding: '60px 20px',
+                color: '#64748b'
               }}>
-                <div style={{ fontSize: '3rem', marginBottom: '20px', opacity: 0.5 }}>📅</div>
-                <h3 style={{ fontSize: '1.3rem', marginBottom: '10px', color: '#374151' }}>
+                <div style={{
+                  width: '80px',
+                  height: '80px',
+                  margin: '0 auto 20px',
+                  background: '#f1f5f9',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <div style={{
+                    width: '40px',
+                    height: '40px',
+                    background: '#cbd5e1',
+                    borderRadius: '8px'
+                  }} />
+                </div>
+                <h3 style={{
+                  fontSize: '1.2rem',
+                  marginBottom: '10px',
+                  color: '#475569',
+                  fontWeight: '600'
+                }}>
                   No hay actividad registrada
                 </h3>
-                <p style={{ fontSize: '1rem', lineHeight: 1.6, maxWidth: '400px', margin: '0 auto' }}>
-                  No se encontró actividad laboral para el año {añoSeleccionado} en este centro de trabajo.
+                <p style={{
+                  fontSize: '0.95rem',
+                  margin: 0,
+                  color: '#64748b'
+                }}>
+                  No se encontró actividad laboral para el año {añoSeleccionado} en este centro.
                 </p>
+              </div>
+            )}
+
+            {/* Nota al pie */}
+            {mesesConActividad.length > 0 && (
+              <div style={{
+                padding: '15px 25px',
+                borderTop: '1px solid #e2e8f0',
+                background: '#f8fafc',
+                fontSize: '0.85rem',
+                color: '#64748b'
+              }}>
+                <strong style={{ color: '#475569' }}>Nota:</strong> Haga clic en cualquier fila para ver las estadísticas detalladas del mes.
               </div>
             )}
           </div>
@@ -200,6 +302,29 @@ const MesesView: React.FC<MesesViewProps> = ({
       </div>
     </div>
   );
+};
+
+// Estilos reutilizables
+const headerCellStyle: React.CSSProperties = {
+  padding: '15px 20px',
+  textAlign: 'left',
+  fontSize: '0.8rem',
+  fontWeight: '700',
+  color: '#475569',
+  letterSpacing: '0.05em',
+  textTransform: 'uppercase'
+};
+
+const cellStyle: React.CSSProperties = {
+  padding: '15px 20px',
+  fontSize: '0.9rem',
+  color: '#334155'
+};
+
+const totalCellStyle: React.CSSProperties = {
+  padding: '15px 20px',
+  fontSize: '0.9rem',
+  color: '#15803d'
 };
 
 export default MesesView;
