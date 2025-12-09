@@ -64,7 +64,7 @@ const Sidebar: React.FC<SidebarProps> = ({isCollapsed, setIsCollapsed}) => {
 
   const handleLogout = () => {
     authService.logout();
-    navigate("/login");
+    window.location.href = "/login"
   };
 
   return (
