@@ -1,11 +1,14 @@
-import React, { useState } from "react";
+import React, {  } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { authService } from "../../api/authService";
 
-const Sidebar: React.FC = () => {
+interface SidebarProps{
+    isCollapsed: boolean;
+    setIsCollapsed: (value: boolean) => void;
+}
+const Sidebar: React.FC<SidebarProps> = ({isCollapsed, setIsCollapsed}) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
   const currentUser = authService.getCurrentUser();
 
   const menuItems = [
