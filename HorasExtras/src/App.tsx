@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "./components/shared/Sidebar";
 import PrivateRoute from "./components/auth/PrivateRoute";
 import LoginPage from "./pages/LoginPage";
@@ -72,6 +72,7 @@ const useCacheManager = () => {
 
 export default function App() {
   useCacheManager();
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
     <BrowserRouter>
@@ -94,13 +95,17 @@ export default function App() {
           element={
             <PrivateRoute>
               <div style={{ display: 'flex', minHeight: '100vh' }}>
-                <Sidebar />
+                <Sidebar 
+                  isCollapsed = {sidebarCollapsed}
+                  setIsCollapsed={setSidebarCollapsed}
+                />
                 <main style={{
-                  marginLeft: '280px',
+                  marginLeft: sidebarCollapsed ? '80px' : '280px',
                   flex: 1,
                   background: '#f8fafc',
                   minHeight: '100vh',
-                  transition: 'margin-left 0.3s ease'
+                  transition: 'margin-left 0.3s ease',
+                  padding: 0,
                 }} className="main-content">
                   <Routes>
                     <Route path="/" element={<DashboardPage />} />
