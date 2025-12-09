@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useEffect } from "react";
-import Sidebar from "./components/shared/Navbar";
+import Sidebar from "./components/shared/Sidebar";
 import PrivateRoute from "./components/auth/PrivateRoute";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
