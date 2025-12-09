@@ -4,6 +4,7 @@ import { api } from "./api";
 import type { Registro, RespuestaEdicionLote, RespuestaIntensidadHoraria, RespuestaResumenCompleto, ResumenDia} from "../types/registros";
 import type { RegistroInputDto, RegistroActualizacionDto } from "../types/registros";
 import type { ResumenSemana } from "../types/ResumenSemana";
+import type { RespuestaConsolidadoIntensidad } from "../types/consolidado";
 
 
 export const registrosService = {
@@ -223,4 +224,35 @@ async obtenerRegistrosMesCompleto(año: number, mes: number): Promise<{
     throw error;
   }
 },
+async obtenerConsolidadoRangoFechas(
+    fechaInicio: string,
+    fechaFin: string,
+    estado?: string,
+    busqueda?: string
+  ): Promise<RespuestaConsolidadoIntensidad> {
+    try {
+      const params: any = { 
+        fechaInicio, 
+        fechaFin 
+      };
+      
+      if (estado && estado !== 'todos') {
+        params.estado = estado;
+      }
+      
+      if (busqueda && busqueda.trim() !== '') {
+        params.busqueda = busqueda.trim();
+      }
+
+      const res = await api.get<RespuestaConsolidadoIntensidad>(
+        "/registros/consolidadoRangoFechas",
+        { params }
+      );
+      
+      return res.data;
+    } catch (error) {
+      console.error('Error al obtener consolidado de intensidad horaria:', error);
+      throw error;
+    }
+  },
 };
