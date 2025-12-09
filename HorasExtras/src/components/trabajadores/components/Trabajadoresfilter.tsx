@@ -7,6 +7,7 @@ interface TrabajadoresFiltersProps {
   estadoFiltro: string;
   onEstadoChange: (estado: string) => void;
   onAgregar: () => void;
+  onVerConsolidado: () => void; // 🆕 NUEVA PROP
   onExportar?: () => void;
   totalTrabajadores: number;
 }
@@ -17,6 +18,7 @@ const TrabajadoresFilters: React.FC<TrabajadoresFiltersProps> = ({
   estadoFiltro,
   onEstadoChange,
   onAgregar,
+  onVerConsolidado, // 🆕 NUEVA PROP
   onExportar,
   totalTrabajadores
 }) => {
@@ -53,6 +55,26 @@ const TrabajadoresFilters: React.FC<TrabajadoresFiltersProps> = ({
           onMouseOut={(e) => e.currentTarget.style.background = '#3b82f6'}
         >
           Agregar Nuevo Trabajador
+        </button>
+
+        {/* 🆕 BOTÓN NUEVO - Intensidad Consolidada */}
+        <button
+          onClick={onVerConsolidado}
+          style={{
+            background: '#8b5cf6',
+            color: 'white',
+            border: 'none',
+            padding: '12px 24px',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontSize: '0.95rem',
+            fontWeight: '600',
+            transition: 'background 0.2s ease'
+          }}
+          onMouseOver={(e) => e.currentTarget.style.background = '#7c3aed'}
+          onMouseOut={(e) => e.currentTarget.style.background = '#8b5cf6'}
+        >
+          Intensidad Consolidada
         </button>
 
         {onExportar && totalTrabajadores > 0 && (

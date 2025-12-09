@@ -81,6 +81,10 @@ const TrabajadoresPage: React.FC = () => {
     navigate(`/trabajadores/editar/${id}`);
   };
 
+  const handleVerConsolidado = () =>{
+    navigate('/trabajadores/intensidad-consolidada');
+  }
+
   const handleCambiarEstado = async (id: number, estadoActual: string) => {
     const nuevoEstado = estadoActual === 'Vigente' ? 'No Vigente' : 'Vigente';
     try {
@@ -249,6 +253,7 @@ const TrabajadoresPage: React.FC = () => {
             estadoFiltro={estadoFiltro}
             onEstadoChange={setEstadoFiltro}
             onAgregar={() => setShowForm(true)}
+            onVerConsolidado={handleVerConsolidado}
             totalTrabajadores={trabajadores.length}
           />
         )}
