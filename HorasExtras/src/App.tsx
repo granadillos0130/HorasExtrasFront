@@ -14,6 +14,7 @@ import ClientesPage from "./pages/ClientesPage";
 import EstadisticasPage from "./pages/EstadisticasPage";
 import TrabajadorEditPage from './components/trabajadores/TrabajadorEditPage';
 import TrabajadorIntensidad from "./components/trabajadores/TrabajadorIntensidad";
+import IntensidadConsolidadaPage from "./pages/IntensidadConsolidadaPage"; // 🆕 IMPORTAR
 import RegistroNuevoPage from "./pages/RegistroNuevoPage";
 import RegistroLotePage from "./pages/RegistroLotePage";
 import { AusenciasPage } from "./pages/AusenciasPage";
@@ -31,7 +32,7 @@ import { authService } from "./api/authService";
 // CACHE MANAGER
 const useCacheManager = () => {
   useEffect(() => {
-    const CURRENT_VERSION = '2025-11-25v1'; // Actualizado
+    const CURRENT_VERSION = '2025-11-25v1';
     const lastVersion = localStorage.getItem('app_version');
     
     if (lastVersion !== CURRENT_VERSION) {
@@ -95,39 +96,45 @@ export default function App() {
               <div style={{ display: 'flex', minHeight: '100vh' }}>
                 <Sidebar />
                 <main style={{
-  marginLeft: '280px',
-  flex: 1,
-  background: '#f8fafc',
-  minHeight: '100vh',
-  transition: 'margin-left 0.3s ease'
-}} className="main-content">
-  <Routes>
-    <Route path="/" element={<DashboardPage />} />
-    <Route path="/trabajadores" element={<TrabajadoresPage />} />
-    <Route path="/trabajadores/:id" element={<TrabajadorDetailPage />} />
-    <Route path="/trabajadores/editar/:id" element={<TrabajadorEditPage />} />
-    <Route path="/trabajadores/:id/intensidad" element={<TrabajadorIntensidad />} />
-    <Route path="/trabajadores/:id/ausencias" element={<TrabajadorAusenciasPage />} />
-    <Route path="clientes" element={<ClientesPage/>} />
-    <Route path="/registros" element={<RegistrosPage />} />
-    <Route path="/registros/editar/:id" element={<EditarRegistroPage />} />
-    <Route path="/registros/nuevo" element={<RegistroNuevoPage />} />
-    <Route path="/registros/lote" element={<RegistroLotePage />} />
-    <Route path="/horarios" element={<HorariosPage />} />
-    <Route path="/horarios/crear" element={<HorariosForm />} />
-    <Route path="/centros" element={<CentrosPage />} />
-    <Route path="/centros/crear" element={<CentroForm />} />
-    <Route path="/centros/editar/:id" element={<CentroForm />} />
-    <Route path="/compensados/nueva" element={<CompensadoForm />} />
-    <Route path="/compensados/ver" element={<CompensadosPage />} />
-    <Route path="/estadisticas" element={<EstadisticasPage />} />
-    <Route path="/ausencias" element={<AusenciasPage />} />
-    <Route path="/ausencias/nueva" element={<AusenciasFormPage />} />
-    <Route path="/ausencias/estadisticas" element={<EstadisticaAusenciaPage />} />
-    <Route path="/ausencias/editar/:id" element={<EditarAusenciaPage />} />
-    <Route path="/cursos" element={<CursosPage />} />
-  </Routes>
-</main>
+                  marginLeft: '280px',
+                  flex: 1,
+                  background: '#f8fafc',
+                  minHeight: '100vh',
+                  transition: 'margin-left 0.3s ease'
+                }} className="main-content">
+                  <Routes>
+                    <Route path="/" element={<DashboardPage />} />
+                    <Route path="/trabajadores" element={<TrabajadoresPage />} />
+                    
+                    {/* 🆕 RUTAS ESPECÍFICAS PRIMERO */}
+                    <Route path="/trabajadores/intensidad-consolidada" element={<IntensidadConsolidadaPage />} />
+                    <Route path="/trabajadores/editar/:id" element={<TrabajadorEditPage />} />
+                    <Route path="/trabajadores/:id/intensidad" element={<TrabajadorIntensidad />} />
+                    <Route path="/trabajadores/:id/ausencias" element={<TrabajadorAusenciasPage />} />
+                    
+                    {/* RUTA DINÁMICA AL FINAL */}
+                    <Route path="/trabajadores/:id" element={<TrabajadorDetailPage />} />
+                    
+                    <Route path="clientes" element={<ClientesPage/>} />
+                    <Route path="/registros" element={<RegistrosPage />} />
+                    <Route path="/registros/editar/:id" element={<EditarRegistroPage />} />
+                    <Route path="/registros/nuevo" element={<RegistroNuevoPage />} />
+                    <Route path="/registros/lote" element={<RegistroLotePage />} />
+                    <Route path="/horarios" element={<HorariosPage />} />
+                    <Route path="/horarios/crear" element={<HorariosForm />} />
+                    <Route path="/centros" element={<CentrosPage />} />
+                    <Route path="/centros/crear" element={<CentroForm />} />
+                    <Route path="/centros/editar/:id" element={<CentroForm />} />
+                    <Route path="/compensados/nueva" element={<CompensadoForm />} />
+                    <Route path="/compensados/ver" element={<CompensadosPage />} />
+                    <Route path="/estadisticas" element={<EstadisticasPage />} />
+                    <Route path="/ausencias" element={<AusenciasPage />} />
+                    <Route path="/ausencias/nueva" element={<AusenciasFormPage />} />
+                    <Route path="/ausencias/estadisticas" element={<EstadisticaAusenciaPage />} />
+                    <Route path="/ausencias/editar/:id" element={<EditarAusenciaPage />} />
+                    <Route path="/cursos" element={<CursosPage />} />
+                  </Routes>
+                </main>
               </div>
 
               <style>
