@@ -1,4 +1,4 @@
-// EstadisticasView.tsx - Versión Ejecutiva con Tablas
+// EstadisticasView.tsx - Versión Ejecutiva con Resumen en Footer
 import React from 'react';
 import type { EstadisticasMes, TipoHora } from '../../types/centros';
 import { formatearHoras, formatearMoneda, formatearFecha } from '../../utils/formatters';
@@ -119,77 +119,6 @@ const EstadisticasView: React.FC<EstadisticasViewProps> = ({
           </div>
         ) : estadisticasMes ? (
           <>
-            {/* Tabla de Resumen General */}
-            <div style={{
-              background: 'white',
-              borderRadius: '8px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              border: '1px solid #e2e8f0',
-              overflow: 'hidden',
-              marginBottom: '25px'
-            }}>
-              <div style={{
-                padding: '20px 25px',
-                borderBottom: '2px solid #e2e8f0',
-                background: '#f8fafc'
-              }}>
-                <h2 style={{
-                  margin: 0,
-                  fontSize: '1.2rem',
-                  fontWeight: '700',
-                  color: '#1e293b',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em'
-                }}>
-                  Resumen General del Mes
-                </h2>
-              </div>
-
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  fontSize: '0.9rem'
-                }}>
-                  <thead>
-                    <tr style={{
-                      background: '#f8fafc',
-                      borderBottom: '2px solid #e2e8f0'
-                    }}>
-                      <th style={headerCellStyle}>CONCEPTO</th>
-                      <th style={headerCellStyle}>VALOR</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={labelCellStyle}>Total Horas Hombre</td>
-                      <td style={{ ...valueCellStyle, color: '#1e40af', fontWeight: '700', fontSize: '1.1rem' }}>
-                        {formatearHoras(estadisticasMes.totalHorasHombre)}
-                      </td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={labelCellStyle}>Trabajadores Únicos</td>
-                      <td style={{ ...valueCellStyle, color: '#1e40af', fontWeight: '700', fontSize: '1.1rem' }}>
-                        {estadisticasMes.totalTrabajadoresUnicos}
-                      </td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={labelCellStyle}>Mano de Obra Total</td>
-                      <td style={{ ...valueCellStyle, color: '#059669', fontWeight: '700', fontSize: '1.1rem' }}>
-                        {formatearMoneda(estadisticasMes.manoObraTotal)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style={labelCellStyle}>Período de Actividad</td>
-                      <td style={valueCellStyle}>
-                        {formatearFecha(estadisticasMes.periodoActividad.fechaInicio)} - {formatearFecha(estadisticasMes.periodoActividad.fechaFin)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
             {/* Tabla de Desglose por Tipo de Hora */}
             <div style={{
               background: 'white',
@@ -319,11 +248,131 @@ const EstadisticasView: React.FC<EstadisticasViewProps> = ({
                 </table>
               </div>
 
+              {/* Footer con Resumen General */}
+              <div style={{
+                borderTop: '3px solid #e2e8f0',
+                background: '#f8fafc',
+                padding: '20px 25px'
+              }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                  gap: '20px'
+                }}>
+                  {/* Total Horas Hombre */}
+                  <div style={{
+                    padding: '15px',
+                    background: 'white',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <div style={{
+                      fontSize: '0.8rem',
+                      color: '#64748b',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      marginBottom: '8px'
+                    }}>
+                      Total Horas Hombre
+                    </div>
+                    <div style={{
+                      fontSize: '1.5rem',
+                      color: '#1e40af',
+                      fontWeight: '700'
+                    }}>
+                      {formatearHoras(estadisticasMes.totalHorasHombre)}
+                    </div>
+                  </div>
+
+                  {/* Trabajadores Únicos */}
+                  <div style={{
+                    padding: '15px',
+                    background: 'white',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <div style={{
+                      fontSize: '0.8rem',
+                      color: '#64748b',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      marginBottom: '8px'
+                    }}>
+                      Trabajadores Únicos
+                    </div>
+                    <div style={{
+                      fontSize: '1.5rem',
+                      color: '#1e40af',
+                      fontWeight: '700'
+                    }}>
+                      {estadisticasMes.totalTrabajadoresUnicos}
+                    </div>
+                  </div>
+
+                  {/* Mano de Obra Total */}
+                  <div style={{
+                    padding: '15px',
+                    background: 'white',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <div style={{
+                      fontSize: '0.8rem',
+                      color: '#64748b',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      marginBottom: '8px'
+                    }}>
+                      Mano de Obra Total
+                    </div>
+                    <div style={{
+                      fontSize: '1.5rem',
+                      color: '#059669',
+                      fontWeight: '700'
+                    }}>
+                      {formatearMoneda(estadisticasMes.manoObraTotal)}
+                    </div>
+                  </div>
+
+                  {/* Período de Actividad */}
+                  <div style={{
+                    padding: '15px',
+                    background: 'white',
+                    borderRadius: '8px',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <div style={{
+                      fontSize: '0.8rem',
+                      color: '#64748b',
+                      fontWeight: '600',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.05em',
+                      marginBottom: '8px'
+                    }}>
+                      Período de Actividad
+                    </div>
+                    <div style={{
+                      fontSize: '0.9rem',
+                      color: '#334155',
+                      fontWeight: '600',
+                      lineHeight: '1.4'
+                    }}>
+                      {formatearFecha(estadisticasMes.periodoActividad.fechaInicio)}
+                      <br />
+                      {formatearFecha(estadisticasMes.periodoActividad.fechaFin)}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               {/* Nota al pie */}
               <div style={{
                 padding: '15px 25px',
                 borderTop: '1px solid #e2e8f0',
-                background: '#f8fafc',
+                background: '#f1f5f9',
                 fontSize: '0.85rem',
                 color: '#64748b'
               }}>
@@ -393,20 +442,6 @@ const cellStyle: React.CSSProperties = {
   padding: '15px 20px',
   fontSize: '0.9rem',
   color: '#334155'
-};
-
-const labelCellStyle: React.CSSProperties = {
-  padding: '15px 20px',
-  fontSize: '0.9rem',
-  color: '#64748b',
-  fontWeight: '600'
-};
-
-const valueCellStyle: React.CSSProperties = {
-  padding: '15px 20px',
-  fontSize: '0.9rem',
-  color: '#1e293b',
-  fontWeight: '500'
 };
 
 export default EstadisticasView;
