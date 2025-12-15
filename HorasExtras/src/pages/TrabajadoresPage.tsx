@@ -1,4 +1,4 @@
-// TrabajadoresPage.tsx - Versión Ejecutiva Refactorizada
+// TrabajadoresPage.tsx - Versión Ejecutiva con Estadísticas en Footer
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTrabajadores } from '../hooks/useTrabajadores';
@@ -133,118 +133,6 @@ const TrabajadoresPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Estadísticas */}
-        {!loading && trabajadores.length > 0 && !showForm && (
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '20px',
-            marginBottom: '25px'
-          }}>
-            {/* Total */}
-            <div style={{
-              background: 'white',
-              borderRadius: '8px',
-              padding: '20px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              border: '1px solid #e2e8f0'
-            }}>
-              <div style={{
-                fontSize: '0.85rem',
-                color: '#64748b',
-                fontWeight: '600',
-                marginBottom: '8px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em'
-              }}>
-                Total
-              </div>
-              <div style={{
-                fontSize: '2.5rem',
-                fontWeight: '700',
-                color: '#1e293b'
-              }}>
-                {estadisticas.total}
-              </div>
-              <div style={{
-                fontSize: '0.85rem',
-                color: '#94a3b8',
-                marginTop: '4px'
-              }}>
-                Trabajadores registrados
-              </div>
-            </div>
-
-            {/* Vigentes */}
-            <div style={{
-              background: 'white',
-              borderRadius: '8px',
-              padding: '20px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              border: '1px solid #e2e8f0'
-            }}>
-              <div style={{
-                fontSize: '0.85rem',
-                color: '#64748b',
-                fontWeight: '600',
-                marginBottom: '8px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em'
-              }}>
-                Vigentes
-              </div>
-              <div style={{
-                fontSize: '2.5rem',
-                fontWeight: '700',
-                color: '#059669'
-              }}>
-                {estadisticas.vigentes}
-              </div>
-              <div style={{
-                fontSize: '0.85rem',
-                color: '#94a3b8',
-                marginTop: '4px'
-              }}>
-                Trabajadores activos
-              </div>
-            </div>
-
-            {/* No Vigentes */}
-            <div style={{
-              background: 'white',
-              borderRadius: '8px',
-              padding: '20px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              border: '1px solid #e2e8f0'
-            }}>
-              <div style={{
-                fontSize: '0.85rem',
-                color: '#64748b',
-                fontWeight: '600',
-                marginBottom: '8px',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em'
-              }}>
-                No Vigentes
-              </div>
-              <div style={{
-                fontSize: '2.5rem',
-                fontWeight: '700',
-                color: '#dc2626'
-              }}>
-                {estadisticas.noVigentes}
-              </div>
-              <div style={{
-                fontSize: '0.85rem',
-                color: '#94a3b8',
-                marginTop: '4px'
-              }}>
-                Trabajadores inactivos
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* Filtros */}
         {!showForm && (
           <TrabajadoresFilters
@@ -296,159 +184,276 @@ const TrabajadoresPage: React.FC = () => {
           <>
             <div style={{
               background: 'white',
-              borderRadius: '8px 8px 0 0',
-              padding: '20px 25px',
-              borderBottom: '2px solid #e2e8f0',
+              borderRadius: '8px',
               boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              border: '1px solid #e2e8f0'
+              border: '1px solid #e2e8f0',
+              overflow: 'hidden'
             }}>
-              <h2 style={{
-                margin: 0,
-                fontSize: '1.2rem',
-                fontWeight: '700',
-                color: '#1e293b',
-                textTransform: 'uppercase',
-                letterSpacing: '0.05em'
-              }}>
-                {busqueda || estadoFiltro !== 'todos' ? 'Trabajadores Filtrados' : 'Trabajadores Registrados'} ({trabajadoresFiltrados.length})
-              </h2>
-            </div>
-
-            <TrabajadoresTable
-              trabajadores={trabajadoresPaginados}
-              loading={loading}
-              onVerDetalle={handleVerDetalle}
-              onVerAusencias={handleVerAusencias}
-              onVerIntensidad={handleVerIntensidad}
-              onEditar={handleEditar}
-              onCambiarEstado={handleCambiarEstado}
-              onEliminar={handleEliminar}
-            />
-
-            {/* Paginación */}
-            {!loading && trabajadoresFiltrados.length > 0 && (
               <div style={{
-                background: 'white',
-                borderRadius: '0 0 8px 8px',
                 padding: '20px 25px',
-                borderTop: '1px solid #e2e8f0',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                border: '1px solid #e2e8f0',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                flexWrap: 'wrap',
-                gap: '15px'
+                borderBottom: '2px solid #e2e8f0',
+                background: '#f8fafc'
               }}>
-                {/* Info de registros */}
-                <div style={{
-                  fontSize: '0.9rem',
-                  color: '#64748b',
-                  fontWeight: '500'
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '1.2rem',
+                  fontWeight: '700',
+                  color: '#1e293b',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em'
                 }}>
-                  Mostrando <strong style={{ color: '#1e40af' }}>{(paginaActual - 1) * itemsPorPagina + 1}</strong> a{' '}
-                  <strong style={{ color: '#1e40af' }}>{Math.min(paginaActual * itemsPorPagina, trabajadoresFiltrados.length)}</strong> de{' '}
-                  <strong style={{ color: '#1e40af' }}>{trabajadoresFiltrados.length}</strong> trabajador{trabajadoresFiltrados.length !== 1 ? 'es' : ''}
-                </div>
-
-                {/* Controles */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px'
-                }}>
-                  <button
-                    onClick={() => setPaginaActual(1)}
-                    disabled={paginaActual === 1}
-                    style={{
-                      ...buttonStyle,
-                      opacity: paginaActual === 1 ? 0.4 : 1,
-                      cursor: paginaActual === 1 ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    ⟪
-                  </button>
-                  <button
-                    onClick={() => setPaginaActual(Math.max(1, paginaActual - 1))}
-                    disabled={paginaActual === 1}
-                    style={{
-                      ...buttonStyle,
-                      opacity: paginaActual === 1 ? 0.4 : 1,
-                      cursor: paginaActual === 1 ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    ‹
-                  </button>
-                  <div style={{
-                    padding: '8px 20px',
-                    background: '#eff6ff',
-                    borderRadius: '8px',
-                    fontSize: '0.9rem',
-                    fontWeight: '600',
-                    color: '#1e40af',
-                    minWidth: '120px',
-                    textAlign: 'center'
-                  }}>
-                    Página {paginaActual} de {totalPaginas}
-                  </div>
-                  <button
-                    onClick={() => setPaginaActual(Math.min(totalPaginas, paginaActual + 1))}
-                    disabled={paginaActual === totalPaginas}
-                    style={{
-                      ...buttonStyle,
-                      opacity: paginaActual === totalPaginas ? 0.4 : 1,
-                      cursor: paginaActual === totalPaginas ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    ›
-                  </button>
-                  <button
-                    onClick={() => setPaginaActual(totalPaginas)}
-                    disabled={paginaActual === totalPaginas}
-                    style={{
-                      ...buttonStyle,
-                      opacity: paginaActual === totalPaginas ? 0.4 : 1,
-                      cursor: paginaActual === totalPaginas ? 'not-allowed' : 'pointer'
-                    }}
-                  >
-                    ⟫
-                  </button>
-                </div>
-
-                {/* Selector de items */}
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  fontSize: '0.9rem',
-                  color: '#64748b'
-                }}>
-                  <label>Mostrar:</label>
-                  <select
-                    value={itemsPorPagina}
-                    onChange={(e) => {
-                      setItemsPorPagina(Number(e.target.value));
-                      setPaginaActual(1);
-                    }}
-                    style={{
-                      padding: '6px 10px',
-                      border: '1px solid #cbd5e1',
-                      borderRadius: '6px',
-                      fontSize: '0.9rem',
-                      background: '#f8fafc',
-                      cursor: 'pointer',
-                      fontWeight: '500'
-                    }}
-                  >
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                    <option value={50}>50</option>
-                    <option value={100}>100</option>
-                  </select>
-                  <span>por página</span>
-                </div>
+                  {busqueda || estadoFiltro !== 'todos' ? 'Trabajadores Filtrados' : 'Trabajadores Registrados'} ({trabajadoresFiltrados.length})
+                </h2>
               </div>
-            )}
+
+              <TrabajadoresTable
+                trabajadores={trabajadoresPaginados}
+                loading={loading}
+                onVerDetalle={handleVerDetalle}
+                onVerAusencias={handleVerAusencias}
+                onVerIntensidad={handleVerIntensidad}
+                onEditar={handleEditar}
+                onCambiarEstado={handleCambiarEstado}
+                onEliminar={handleEliminar}
+              />
+
+              {/* Footer con Estadísticas */}
+              {!loading && trabajadores.length > 0 && (
+                <div style={{
+                  borderTop: '3px solid #e2e8f0',
+                  background: '#f8fafc',
+                  padding: '20px 25px'
+                }}>
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '20px',
+                    marginBottom: '20px'
+                  }}>
+                    {/* Total */}
+                    <div style={{
+                      padding: '15px',
+                      background: 'white',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0'
+                    }}>
+                      <div style={{
+                        fontSize: '0.8rem',
+                        color: '#64748b',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        marginBottom: '8px'
+                      }}>
+                        Total Trabajadores
+                      </div>
+                      <div style={{
+                        fontSize: '1.5rem',
+                        fontWeight: '700',
+                        color: '#1e293b'
+                      }}>
+                        {estadisticas.total}
+                      </div>
+                      <div style={{
+                        fontSize: '0.75rem',
+                        color: '#94a3b8',
+                        marginTop: '4px'
+                      }}>
+                        Registrados en el sistema
+                      </div>
+                    </div>
+
+                    {/* Vigentes */}
+                    <div style={{
+                      padding: '15px',
+                      background: 'white',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0'
+                    }}>
+                      <div style={{
+                        fontSize: '0.8rem',
+                        color: '#64748b',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        marginBottom: '8px'
+                      }}>
+                        Vigentes
+                      </div>
+                      <div style={{
+                        fontSize: '1.5rem',
+                        fontWeight: '700',
+                        color: '#059669'
+                      }}>
+                        {estadisticas.vigentes}
+                      </div>
+                      <div style={{
+                        fontSize: '0.75rem',
+                        color: '#94a3b8',
+                        marginTop: '4px'
+                      }}>
+                        Trabajadores activos
+                      </div>
+                    </div>
+
+                    {/* No Vigentes */}
+                    <div style={{
+                      padding: '15px',
+                      background: 'white',
+                      borderRadius: '8px',
+                      border: '1px solid #e2e8f0'
+                    }}>
+                      <div style={{
+                        fontSize: '0.8rem',
+                        color: '#64748b',
+                        fontWeight: '600',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        marginBottom: '8px'
+                      }}>
+                        No Vigentes
+                      </div>
+                      <div style={{
+                        fontSize: '1.5rem',
+                        fontWeight: '700',
+                        color: '#dc2626'
+                      }}>
+                        {estadisticas.noVigentes}
+                      </div>
+                      <div style={{
+                        fontSize: '0.75rem',
+                        color: '#94a3b8',
+                        marginTop: '4px'
+                      }}>
+                        Trabajadores inactivos
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Paginación */}
+              {!loading && trabajadoresFiltrados.length > 0 && (
+                <div style={{
+                  padding: '20px 25px',
+                  borderTop: '1px solid #e2e8f0',
+                  background: '#f1f5f9',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: '15px'
+                }}>
+                  {/* Info de registros */}
+                  <div style={{
+                    fontSize: '0.9rem',
+                    color: '#64748b',
+                    fontWeight: '500'
+                  }}>
+                    Mostrando <strong style={{ color: '#1e40af' }}>{(paginaActual - 1) * itemsPorPagina + 1}</strong> a{' '}
+                    <strong style={{ color: '#1e40af' }}>{Math.min(paginaActual * itemsPorPagina, trabajadoresFiltrados.length)}</strong> de{' '}
+                    <strong style={{ color: '#1e40af' }}>{trabajadoresFiltrados.length}</strong> trabajador{trabajadoresFiltrados.length !== 1 ? 'es' : ''}
+                  </div>
+
+                  {/* Controles */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}>
+                    <button
+                      onClick={() => setPaginaActual(1)}
+                      disabled={paginaActual === 1}
+                      style={{
+                        ...buttonStyle,
+                        opacity: paginaActual === 1 ? 0.4 : 1,
+                        cursor: paginaActual === 1 ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      ⟪
+                    </button>
+                    <button
+                      onClick={() => setPaginaActual(Math.max(1, paginaActual - 1))}
+                      disabled={paginaActual === 1}
+                      style={{
+                        ...buttonStyle,
+                        opacity: paginaActual === 1 ? 0.4 : 1,
+                        cursor: paginaActual === 1 ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      ‹
+                    </button>
+                    <div style={{
+                      padding: '8px 20px',
+                      background: '#eff6ff',
+                      borderRadius: '8px',
+                      fontSize: '0.9rem',
+                      fontWeight: '600',
+                      color: '#1e40af',
+                      minWidth: '120px',
+                      textAlign: 'center'
+                    }}>
+                      Página {paginaActual} de {totalPaginas}
+                    </div>
+                    <button
+                      onClick={() => setPaginaActual(Math.min(totalPaginas, paginaActual + 1))}
+                      disabled={paginaActual === totalPaginas}
+                      style={{
+                        ...buttonStyle,
+                        opacity: paginaActual === totalPaginas ? 0.4 : 1,
+                        cursor: paginaActual === totalPaginas ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      ›
+                    </button>
+                    <button
+                      onClick={() => setPaginaActual(totalPaginas)}
+                      disabled={paginaActual === totalPaginas}
+                      style={{
+                        ...buttonStyle,
+                        opacity: paginaActual === totalPaginas ? 0.4 : 1,
+                        cursor: paginaActual === totalPaginas ? 'not-allowed' : 'pointer'
+                      }}
+                    >
+                      ⟫
+                    </button>
+                  </div>
+
+                  {/* Selector de items */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    fontSize: '0.9rem',
+                    color: '#64748b'
+                  }}>
+                    <label>Mostrar:</label>
+                    <select
+                      value={itemsPorPagina}
+                      onChange={(e) => {
+                        setItemsPorPagina(Number(e.target.value));
+                        setPaginaActual(1);
+                      }}
+                      style={{
+                        padding: '6px 10px',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '6px',
+                        fontSize: '0.9rem',
+                        background: 'white',
+                        cursor: 'pointer',
+                        fontWeight: '500'
+                      }}
+                    >
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                      <option value={50}>50</option>
+                      <option value={100}>100</option>
+                    </select>
+                    <span>por página</span>
+                  </div>
+                </div>
+              )}
+            </div>
           </>
         )}
       </div>
