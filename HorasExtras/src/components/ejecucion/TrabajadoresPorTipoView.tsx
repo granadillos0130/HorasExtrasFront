@@ -1,4 +1,4 @@
-// TrabajadoresPorTipoView.tsx - Versión Ejecutiva con Tablas y Paginación
+// TrabajadoresPorTipoView.tsx - Versión Ejecutiva con Resumen en Footer
 import React, { useState } from 'react';
 import type { TrabajadoresPorTipoHora, TipoHora } from '../../types/centros';
 import { formatearHoras, formatearMoneda, formatearFecha } from '../../utils/formatters';
@@ -168,71 +168,6 @@ const TrabajadoresPorTipoView: React.FC<TrabajadoresPorTipoViewProps> = ({
           </div>
         ) : trabajadoresPorTipo ? (
           <>
-            {/* Tabla de Resumen */}
-            <div style={{
-              background: 'white',
-              borderRadius: '8px',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-              border: '1px solid #e2e8f0',
-              overflow: 'hidden',
-              marginBottom: '25px'
-            }}>
-              <div style={{
-                padding: '20px 25px',
-                borderBottom: '2px solid #e2e8f0',
-                background: '#f8fafc'
-              }}>
-                <h2 style={{
-                  margin: 0,
-                  fontSize: '1.2rem',
-                  fontWeight: '700',
-                  color: '#1e293b',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em'
-                }}>
-                  Resumen de {config.nombre}
-                </h2>
-              </div>
-
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{
-                  width: '100%',
-                  borderCollapse: 'collapse',
-                  fontSize: '0.9rem'
-                }}>
-                  <thead>
-                    <tr style={{
-                      background: '#f8fafc',
-                      borderBottom: '2px solid #e2e8f0'
-                    }}>
-                      <th style={headerCellStyle}>CONCEPTO</th>
-                      <th style={headerCellStyle}>VALOR</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={labelCellStyle}>Total Trabajadores</td>
-                      <td style={{ ...valueCellStyle, color: '#1e40af', fontWeight: '700', fontSize: '1.1rem' }}>
-                        {trabajadoresPorTipo.totalTrabajadores}
-                      </td>
-                    </tr>
-                    <tr style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={labelCellStyle}>Total Horas Trabajadas</td>
-                      <td style={{ ...valueCellStyle, color: '#1e40af', fontWeight: '700', fontSize: '1.1rem' }}>
-                        {formatearHoras(trabajadoresPorTipo.totalHoras)}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td style={labelCellStyle}>Mano de Obra Total</td>
-                      <td style={{ ...valueCellStyle, color: '#059669', fontWeight: '700', fontSize: '1.1rem' }}>
-                        {formatearMoneda(trabajadoresPorTipo.totalManoObra)}
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
             {/* Tabla de Trabajadores */}
             <div style={{
               background: 'white',
@@ -463,6 +398,98 @@ const TrabajadoresPorTipoView: React.FC<TrabajadoresPorTipoViewProps> = ({
                     </table>
                   </div>
 
+                  {/* Footer con Resumen */}
+                  <div style={{
+                    borderTop: '3px solid #e2e8f0',
+                    background: '#f8fafc',
+                    padding: '20px 25px'
+                  }}>
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                      gap: '20px',
+                      marginBottom: '20px'
+                    }}>
+                      {/* Total Trabajadores */}
+                      <div style={{
+                        padding: '15px',
+                        background: 'white',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0'
+                      }}>
+                        <div style={{
+                          fontSize: '0.8rem',
+                          color: '#64748b',
+                          fontWeight: '600',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          marginBottom: '8px'
+                        }}>
+                          Total Trabajadores
+                        </div>
+                        <div style={{
+                          fontSize: '1.5rem',
+                          color: '#1e40af',
+                          fontWeight: '700'
+                        }}>
+                          {trabajadoresPorTipo.totalTrabajadores}
+                        </div>
+                      </div>
+
+                      {/* Total Horas */}
+                      <div style={{
+                        padding: '15px',
+                        background: 'white',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0'
+                      }}>
+                        <div style={{
+                          fontSize: '0.8rem',
+                          color: '#64748b',
+                          fontWeight: '600',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          marginBottom: '8px'
+                        }}>
+                          Total Horas
+                        </div>
+                        <div style={{
+                          fontSize: '1.5rem',
+                          color: '#1e40af',
+                          fontWeight: '700'
+                        }}>
+                          {formatearHoras(trabajadoresPorTipo.totalHoras)}
+                        </div>
+                      </div>
+
+                      {/* Mano de Obra Total */}
+                      <div style={{
+                        padding: '15px',
+                        background: 'white',
+                        borderRadius: '8px',
+                        border: '1px solid #e2e8f0'
+                      }}>
+                        <div style={{
+                          fontSize: '0.8rem',
+                          color: '#64748b',
+                          fontWeight: '600',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.05em',
+                          marginBottom: '8px'
+                        }}>
+                          Mano de Obra Total
+                        </div>
+                        <div style={{
+                          fontSize: '1.5rem',
+                          color: '#059669',
+                          fontWeight: '700'
+                        }}>
+                          {formatearMoneda(trabajadoresPorTipo.totalManoObra)}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Paginación */}
                   {trabajadores.length > 0 && (
                     <div style={{
@@ -471,7 +498,7 @@ const TrabajadoresPorTipoView: React.FC<TrabajadoresPorTipoViewProps> = ({
                       justifyContent: 'space-between',
                       padding: '20px 25px',
                       borderTop: '1px solid #e2e8f0',
-                      background: '#f8fafc',
+                      background: '#f1f5f9',
                       flexWrap: 'wrap',
                       gap: '15px'
                     }}>
@@ -574,7 +601,7 @@ const TrabajadoresPorTipoView: React.FC<TrabajadoresPorTipoViewProps> = ({
                             border: '1px solid #cbd5e1',
                             borderRadius: '6px',
                             fontSize: '0.9rem',
-                            background: '#f8fafc',
+                            background: 'white',
                             cursor: 'pointer',
                             fontWeight: '500'
                           }}
@@ -693,20 +720,6 @@ const cellStyle: React.CSSProperties = {
   padding: '15px 20px',
   fontSize: '0.9rem',
   color: '#334155'
-};
-
-const labelCellStyle: React.CSSProperties = {
-  padding: '15px 20px',
-  fontSize: '0.9rem',
-  color: '#64748b',
-  fontWeight: '600'
-};
-
-const valueCellStyle: React.CSSProperties = {
-  padding: '15px 20px',
-  fontSize: '0.9rem',
-  color: '#1e293b',
-  fontWeight: '500'
 };
 
 const subHeaderCellStyle: React.CSSProperties = {
