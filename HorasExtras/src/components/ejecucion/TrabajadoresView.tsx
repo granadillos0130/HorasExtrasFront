@@ -1,4 +1,4 @@
-// TrabajadoresView.tsx - Versión Ejecutiva con Tabla y Paginación
+// TrabajadoresView.tsx - Versión Ejecutiva con Resumen en Footer
 import React, { useState } from 'react';
 import type { TrabajadorInfo, TrabajadorManoObra, ManoObraData } from '../../types/ejecucion';
 import { formatearMoneda } from '../../utils/formatters';
@@ -146,50 +146,6 @@ const TrabajadoresView: React.FC<TrabajadoresViewProps> = ({
           </div>
         ) : (
           <>
-            {/* Card de Mano de Obra Total */}
-            {manoObraData && (
-              <div style={{
-                background: 'white',
-                borderRadius: '8px',
-                padding: '25px 30px',
-                marginBottom: '25px',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                border: '1px solid #e2e8f0',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '15px'
-              }}>
-                <div>
-                  <div style={{
-                    fontSize: '0.9rem',
-                    color: '#64748b',
-                    fontWeight: '600',
-                    marginBottom: '8px',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em'
-                  }}>
-                    Mano de Obra Total del Centro
-                  </div>
-                  <div style={{
-                    fontSize: '2rem',
-                    fontWeight: '700',
-                    color: '#059669'
-                  }}>
-                    {formatearMoneda(manoObraData.manoObraTotal)}
-                  </div>
-                </div>
-                <div style={{
-                  fontSize: '0.9rem',
-                  color: '#64748b',
-                  textAlign: 'right'
-                }}>
-                  <div>Total de trabajadores: <strong style={{ color: '#1e293b' }}>{trabajadores.length}</strong></div>
-                </div>
-              </div>
-            )}
-
             {/* Tabla de Trabajadores */}
             <div style={{
               background: 'white',
@@ -301,6 +257,74 @@ const TrabajadoresView: React.FC<TrabajadoresViewProps> = ({
                     </table>
                   </div>
 
+                  {/* Footer con Resumen */}
+                  {manoObraData && (
+                    <div style={{
+                      borderTop: '3px solid #e2e8f0',
+                      background: '#f8fafc',
+                      padding: '20px 25px'
+                    }}>
+                      <div style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                        gap: '20px',
+                        marginBottom: '20px'
+                      }}>
+                        {/* Total Trabajadores */}
+                        <div style={{
+                          padding: '15px',
+                          background: 'white',
+                          borderRadius: '8px',
+                          border: '1px solid #e2e8f0'
+                        }}>
+                          <div style={{
+                            fontSize: '0.8rem',
+                            color: '#64748b',
+                            fontWeight: '600',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            marginBottom: '8px'
+                          }}>
+                            Total Trabajadores
+                          </div>
+                          <div style={{
+                            fontSize: '1.5rem',
+                            color: '#1e40af',
+                            fontWeight: '700'
+                          }}>
+                            {trabajadores.length}
+                          </div>
+                        </div>
+
+                        {/* Mano de Obra Total */}
+                        <div style={{
+                          padding: '15px',
+                          background: 'white',
+                          borderRadius: '8px',
+                          border: '1px solid #e2e8f0'
+                        }}>
+                          <div style={{
+                            fontSize: '0.8rem',
+                            color: '#64748b',
+                            fontWeight: '600',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.05em',
+                            marginBottom: '8px'
+                          }}>
+                            Mano de Obra Total
+                          </div>
+                          <div style={{
+                            fontSize: '1.5rem',
+                            color: '#059669',
+                            fontWeight: '700'
+                          }}>
+                            {formatearMoneda(manoObraData.manoObraTotal)}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Paginación */}
                   {trabajadores.length > 0 && (
                     <div style={{
@@ -309,7 +333,7 @@ const TrabajadoresView: React.FC<TrabajadoresViewProps> = ({
                       justifyContent: 'space-between',
                       padding: '20px 25px',
                       borderTop: '1px solid #e2e8f0',
-                      background: '#f8fafc',
+                      background: '#f1f5f9',
                       flexWrap: 'wrap',
                       gap: '15px'
                     }}>
@@ -421,7 +445,7 @@ const TrabajadoresView: React.FC<TrabajadoresViewProps> = ({
                             border: '1px solid #cbd5e1',
                             borderRadius: '6px',
                             fontSize: '0.9rem',
-                            background: '#f8fafc',
+                            background: 'white',
                             cursor: 'pointer',
                             fontWeight: '500'
                           }}
