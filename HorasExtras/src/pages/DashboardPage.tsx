@@ -70,6 +70,14 @@ const DashboardPage: React.FC = () => {
   icon: "🎓",
   path:"/cursos",
   className: "cursos"  
+},
+{
+  id: "preoperacionales",
+  title:"Preoperacionales",
+  description: "Revise los preoperacionales echos en la aplicacion movil",
+  icon:"🚗",
+  path:"/preoperacionales",
+  className:"preoperacionales"
 }
 
   ];
