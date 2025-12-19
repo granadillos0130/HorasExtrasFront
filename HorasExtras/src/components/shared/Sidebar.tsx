@@ -2,6 +2,7 @@ import React, {  } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { authService } from "../../api/authService";
 
+
 interface SidebarProps{
     isCollapsed: boolean;
     setIsCollapsed: (value: boolean) => void;
@@ -59,6 +60,12 @@ const Sidebar: React.FC<SidebarProps> = ({isCollapsed, setIsCollapsed}) => {
       title: "Cursos",
       icon: "🎓",
       path: "/cursos"
+    },
+    {
+      id:"preoperacionales",
+      title:"Preoperacionales",
+      Icon:"🚗",
+      path: "/preoperacionales"
     }
   ];
 
