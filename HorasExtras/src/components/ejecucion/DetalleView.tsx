@@ -41,6 +41,9 @@ const DetalleView: React.FC<DetalleViewProps> = ({
     extrasNocturnas: detalle.detalleDias.reduce((sum, d) => sum + d.extrasNocturnas, 0),
     dominicalesDiurnas: detalle.detalleDias.reduce((sum, d) => sum + d.dominicalesDiurnas, 0),
     dominicalesNocturnas: detalle.detalleDias.reduce((sum, d) => sum + d.dominicalesNocturnas, 0),
+    desplazamientoNormal: detalle.detalleDias.reduce((sum, d) => sum + d.desplazamientoNormal, 0),
+    desplazamientoExtraDiurno: detalle.detalleDias.reduce((sum, d) => sum + d.desplazamientoExtraDiurno, 0),
+    desplazamientoExtraNocturno: detalle.detalleDias.reduce((sum, d) => sum + d.desplazamientoExtraNocturno, 0),
     totalHoras: detalle.detalleDias.reduce((sum, d) => sum + d.totalHoras, 0)
   } : null;
 
@@ -53,7 +56,7 @@ const DetalleView: React.FC<DetalleViewProps> = ({
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{ marginBottom: '30px' }}>
-          <button 
+          <button
             onClick={onVolver}
             style={{
               marginBottom: '20px',
@@ -105,9 +108,9 @@ const DetalleView: React.FC<DetalleViewProps> = ({
                 {centroNombre} - {mesNombre} {año}
               </p>
             </div>
-            
+
             {detalle && detalle.detalleDias.length > 0 && (
-              <button 
+              <button
                 onClick={exportarExcel}
                 style={{
                   background: '#059669',
@@ -197,7 +200,7 @@ const DetalleView: React.FC<DetalleViewProps> = ({
                     <tbody>
                       {detalle.detalleDias.map((dia, index) => {
                         const expandida = filaExpandida === index;
-                        
+
                         return (
                           <React.Fragment key={index}>
                             {/* Fila principal */}
@@ -344,7 +347,7 @@ const DetalleView: React.FC<DetalleViewProps> = ({
                                             <span style={labelStyle}>Centro de Trabajo:</span>
                                             <span style={valueStyle}>{dia.centroDia}</span>
                                           </div>
-                                          
+
                                           {dia.esConductor && (
                                             <>
                                               <div style={detailRowStyle}>
@@ -355,156 +358,156 @@ const DetalleView: React.FC<DetalleViewProps> = ({
                                                 <span style={labelStyle}>Desplazamiento Regreso:</span>
                                                 <span style={valueStyle}>{dia.desplazamientoRegreso}</span>
                                               </div>
+                                              {/* ✅ AGREGAR ESTA SECCIÓN COMPLETA AQUÍ */}
+                                              {(dia.desplazamientoNormal > 0 || dia.desplazamientoExtraDiurno > 0 || dia.desplazamientoExtraNocturno > 0) && (
+                                                <div style={{
+                                                  marginTop: '12px',
+                                                  paddingTop: '12px',
+                                                  borderTop: '1px solid #e2e8f0'
+                                                }}>
+                                                  <div style={{
+                                                    fontSize: '0.8rem',
+                                                    fontWeight: '700',
+                                                    color: '#475569',
+                                                    marginBottom: '8px',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.05em'
+                                                  }}>
+                                                    Desplazamiento Clasificado
+                                                  </div>
+                                                  {dia.desplazamientoNormal > 0 && (
+                                                    <div style={detailRowStyle}>
+                                                      <span style={labelStyle}>Normal (1.0x):</span>
+                                                      <span style={{ ...valueStyle, color: '#06b6d4' }}>
+                                                        {formatearHoras(dia.desplazamientoNormal)}
+                                                      </span>
+                                                    </div>
+                                                  )}
+                                                  {dia.desplazamientoExtraDiurno > 0 && (
+                                                    <div style={detailRowStyle}>
+                                                      <span style={labelStyle}>Extra Diurno (1.25x):</span>
+                                                      <span style={{ ...valueStyle, color: '#f97316' }}>
+                                                        {formatearHoras(dia.desplazamientoExtraDiurno)}
+                                                      </span>
+                                                    </div>
+                                                  )}
+                                                  {dia.desplazamientoExtraNocturno > 0 && (
+                                                    <div style={detailRowStyle}>
+                                                      <span style={labelStyle}>Extra Nocturno (1.75x):</span>
+                                                      <span style={{ ...valueStyle, color: '#7c3aed' }}>
+                                                        {formatearHoras(dia.desplazamientoExtraNocturno)}
+                                                      </span>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              )}
                                             </>
                                           )}
-
-                                          {/* Badges de estado */}
-                                          <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                            {dia.esCompensado && (
-                                              <div style={{
-                                                padding: '8px 12px',
-                                                background: '#fef3c7',
-                                                border: '1px solid #fde047',
-                                                borderRadius: '6px',
-                                                fontSize: '0.85rem',
-                                                fontWeight: '600',
-                                                color: '#854d0e'
-                                              }}>
-                                                Día Compensado
-                                              </div>
-                                            )}
-                                            {dia.esFestivo && (
-                                              <div style={{
-                                                padding: '8px 12px',
-                                                background: '#dbeafe',
-                                                border: '1px solid #93c5fd',
-                                                borderRadius: '6px',
-                                                fontSize: '0.85rem',
-                                                fontWeight: '600',
-                                                color: '#1e40af'
-                                              }}>
-                                                Día Festivo
-                                              </div>
-                                            )}
-                                            {dia.esAusencia && (
-                                              <div style={{
-                                                padding: '8px 12px',
-                                                background: '#fee2e2',
-                                                border: '1px solid #fca5a5',
-                                                borderRadius: '6px',
-                                                fontSize: '0.85rem',
-                                                fontWeight: '600',
-                                                color: '#991b1b'
-                                              }}>
-                                                Ausencia Registrada
-                                              </div>
-                                            )}
-                                          </div>
+                                        {/* Badges de estado */}
+                                        <div style={{ marginTop: '12px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                          {dia.esCompensado && (
+                                            <div style={{
+                                              padding: '8px 12px',
+                                              background: '#fef3c7',
+                                              border: '1px solid #fde047',
+                                              borderRadius: '6px',
+                                              fontSize: '0.85rem',
+                                              fontWeight: '600',
+                                              color: '#854d0e'
+                                            }}>
+                                              Día Compensado
+                                            </div>
+                                          )}
+                                          {dia.esFestivo && (
+                                            <div style={{
+                                              padding: '8px 12px',
+                                              background: '#dbeafe',
+                                              border: '1px solid #93c5fd',
+                                              borderRadius: '6px',
+                                              fontSize: '0.85rem',
+                                              fontWeight: '600',
+                                              color: '#1e40af'
+                                            }}>
+                                              Día Festivo
+                                            </div>
+                                          )}
+                                          {dia.esAusencia && (
+                                            <div style={{
+                                              padding: '8px 12px',
+                                              background: '#fee2e2',
+                                              border: '1px solid #fca5a5',
+                                              borderRadius: '6px',
+                                              fontSize: '0.85rem',
+                                              fontWeight: '600',
+                                              color: '#991b1b'
+                                            }}>
+                                              Ausencia Registrada
+                                            </div>
+                                          )}
                                         </div>
                                       </div>
                                     </div>
                                   </div>
-                                </td>
+                                </div>
+                              </td>
                               </tr>
-                            )}
+                        )
+                      }
                           </React.Fragment>
-                        );
+                    );
                       })}
-                    </tbody>
+                  </tbody>
 
-                    {/* Footer con totales */}
-                    {totales && (
-                      <tfoot>
-                        <tr style={{
-                          background: '#f0fdf4',
-                          borderTop: '2px solid #059669'
-                        }}>
-                          <td style={totalCellStyle} colSpan={2}>
-                            TOTALES ({totales.totalDias} días)
-                          </td>
-                          <td style={{ ...totalCellStyle, textAlign: 'center' }}>
-                            {formatearHoras(totales.horasNormales)}
-                          </td>
-                          <td style={{ ...totalCellStyle, textAlign: 'center' }}>
-                            {formatearHoras(totales.extrasDiurnas)}
-                          </td>
-                          <td style={{ ...totalCellStyle, textAlign: 'center' }}>
-                            {formatearHoras(totales.extrasNocturnas)}
-                          </td>
-                          <td style={{ ...totalCellStyle, textAlign: 'center' }}>
-                            {formatearHoras(totales.dominicalesDiurnas)}
-                          </td>
-                          <td style={{ ...totalCellStyle, textAlign: 'center' }}>
-                            {formatearHoras(totales.dominicalesNocturnas)}
-                          </td>
-                          <td style={{ ...totalCellStyle, textAlign: 'center', fontSize: '1rem' }}>
-                            {formatearHoras(totales.totalHoras)}
-                          </td>
-                        </tr>
-                      </tfoot>
-                    )}
-                  </table>
-                </div>
-
-                {/* Nota al pie */}
-                <div style={{
-                  padding: '15px 25px',
-                  borderTop: '1px solid #e2e8f0',
-                  background: '#f8fafc',
-                  fontSize: '0.85rem',
-                  color: '#64748b'
-                }}>
-                  <strong style={{ color: '#475569' }}>Nota:</strong> Haga clic en cualquier fila para ver el detalle completo del día trabajado.
-                </div>
-              </>
-            ) : (
-              <div style={{
-                textAlign: 'center',
-                padding: '60px 20px',
-                color: '#64748b'
-              }}>
-                <div style={{
-                  width: '80px',
-                  height: '80px',
-                  margin: '0 auto 20px',
-                  background: '#f1f5f9',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  <div style={{
-                    width: '40px',
-                    height: '40px',
-                    background: '#cbd5e1',
-                    borderRadius: '8px'
-                  }} />
-                </div>
-                <h3 style={{
-                  fontSize: '1.2rem',
-                  marginBottom: '10px',
-                  color: '#475569',
-                  fontWeight: '600'
-                }}>
-                  No hay registros
-                </h3>
-                <p style={{
-                  fontSize: '0.95rem',
-                  margin: 0,
-                  color: '#64748b'
-                }}>
-                  No se encontraron días trabajados para este trabajador.
-                </p>
+                  {/* Footer con totales */}
+                  {totales && (
+                    <tfoot>
+                      <tr style={{
+                        background: '#f0fdf4',
+                        borderTop: '2px solid #059669'
+                      }}>
+                        <td style={totalCellStyle} colSpan={2}>
+                          TOTALES ({totales.totalDias} días)
+                        </td>
+                        <td style={{ ...totalCellStyle, textAlign: 'center' }}>
+                          {formatearHoras(totales.horasNormales)}
+                        </td>
+                        <td style={{ ...totalCellStyle, textAlign: 'center' }}>
+                          {formatearHoras(totales.extrasDiurnas)}
+                        </td>
+                        <td style={{ ...totalCellStyle, textAlign: 'center' }}>
+                          {formatearHoras(totales.extrasNocturnas)}
+                        </td>
+                        <td style={{ ...totalCellStyle, textAlign: 'center' }}>
+                          {formatearHoras(totales.dominicalesDiurnas)}
+                        </td>
+                        <td style={{ ...totalCellStyle, textAlign: 'center' }}>
+                          {formatearHoras(totales.dominicalesNocturnas)}
+                        </td>
+                        <td style={{ ...totalCellStyle, textAlign: 'center', fontSize: '1rem' }}>
+                          {formatearHoras(totales.totalHoras)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
               </div>
-            )}
-          </div>
+
+            {/* Nota al pie */}
+            <div style={{
+              padding: '15px 25px',
+              borderTop: '1px solid #e2e8f0',
+              background: '#f8fafc',
+              fontSize: '0.85rem',
+              color: '#64748b'
+            }}>
+              <strong style={{ color: '#475569' }}>Nota:</strong> Haga clic en cualquier fila para ver el detalle completo del día trabajado.
+            </div>
+          </>
         ) : (
           <div style={{
-            background: 'white',
-            borderRadius: '8px',
-            padding: '60px',
             textAlign: 'center',
-            border: '1px solid #e2e8f0'
+            padding: '60px 20px',
+            color: '#64748b'
           }}>
             <div style={{
               width: '80px',
@@ -529,19 +532,62 @@ const DetalleView: React.FC<DetalleViewProps> = ({
               color: '#475569',
               fontWeight: '600'
             }}>
-              No se pudo cargar el detalle
+              No hay registros
             </h3>
             <p style={{
               fontSize: '0.95rem',
               margin: 0,
               color: '#64748b'
             }}>
-              Intente nuevamente o contacte al administrador.
+              No se encontraron días trabajados para este trabajador.
             </p>
           </div>
         )}
       </div>
+      ) : (
+      <div style={{
+        background: 'white',
+        borderRadius: '8px',
+        padding: '60px',
+        textAlign: 'center',
+        border: '1px solid #e2e8f0'
+      }}>
+        <div style={{
+          width: '80px',
+          height: '80px',
+          margin: '0 auto 20px',
+          background: '#f1f5f9',
+          borderRadius: '50%',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            background: '#cbd5e1',
+            borderRadius: '8px'
+          }} />
+        </div>
+        <h3 style={{
+          fontSize: '1.2rem',
+          marginBottom: '10px',
+          color: '#475569',
+          fontWeight: '600'
+        }}>
+          No se pudo cargar el detalle
+        </h3>
+        <p style={{
+          fontSize: '0.95rem',
+          margin: 0,
+          color: '#64748b'
+        }}>
+          Intente nuevamente o contacte al administrador.
+        </p>
+      </div>
+        )}
     </div>
+    </div >
   );
 };
 
