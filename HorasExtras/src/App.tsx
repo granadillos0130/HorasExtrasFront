@@ -28,6 +28,7 @@ import { CursosPage } from "./pages/CursosPage";
 import CompensadoForm from "./components/compensado/CompensadoForm";
 import { CompensadosPage } from "./pages/CompensadosPage";
 import { authService } from "./api/authService";
+import { PreoperacionalesPage } from "./pages/PreoperacionalesPage";
 
 // CACHE MANAGER
 const useCacheManager = () => {
@@ -138,6 +139,7 @@ export default function App() {
                     <Route path="/ausencias/estadisticas" element={<EstadisticaAusenciaPage />} />
                     <Route path="/ausencias/editar/:id" element={<EditarAusenciaPage />} />
                     <Route path="/cursos" element={<CursosPage />} />
+                    <Route path="/preoperacionales" element={<PreoperacionalesPage/>}></Route>
                   </Routes>
                 </main>
               </div>
