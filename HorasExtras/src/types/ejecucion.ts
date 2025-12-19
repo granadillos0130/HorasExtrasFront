@@ -12,7 +12,7 @@ export interface TrabajadorManoObra {
 
 export interface DetalleDias {
   centroId: string;
-  centroNombre: string;  // ✅ Cambia esto (quita el "centro" duplicado)
+  centroNombre: string;
   trabajadorId: number;
   nombreTrabajador: string;
   totalDias: number;
@@ -38,6 +38,10 @@ export interface DetalleDias {
     desplazamientoIda: string;
     desplazamientoRegreso: string;
     esConductor: boolean;
+    // ✅ AGREGAR ESTOS 3
+    desplazamientoNormal: number;
+    desplazamientoExtraDiurno: number;
+    desplazamientoExtraNocturno: number;
     // Indicadores
     esCompensado: boolean;
     esFestivo: boolean;
