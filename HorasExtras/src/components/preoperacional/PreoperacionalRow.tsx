@@ -30,7 +30,7 @@ export const PreoperacionalRow: React.FC<PreoperacionalRowProps> =({
         display: 'inline-block',
         ...(preoperacional.estado === 'OK'
             ?{backgroundColor: '#d4edda', color: '#155724'}
-            : preoperacional.estado === 'Con fallas'
+            : preoperacional.estado === 'Con Fallas'
             ? {backgroundColor: '#f8d7da', color:'#721c24'}
             : {backgroundColor: '#fff3cd', color: '#856404'}
         )
