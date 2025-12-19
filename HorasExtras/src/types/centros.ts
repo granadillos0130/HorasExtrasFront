@@ -115,7 +115,10 @@ export type TipoHora =
   | 'extrasdiurnas' 
   | 'extrasnocturnas' 
   | 'dominicalesdiurnas' 
-  | 'dominicalesnocturnas';
+  | 'dominicalesnocturnas'
+  | 'desplazamientonormal'
+  | 'desplazamientoextradiurno'
+  | 'desplazamientoextranocturno';
 
 // Estadísticas por tipo de hora
 export interface EstadisticasTipoHora {
@@ -138,6 +141,10 @@ export interface EstadisticasMes {
     extrasNocturnas: EstadisticasTipoHora;
     dominicalesDiurnas: EstadisticasTipoHora;
     dominicalesNocturnas: EstadisticasTipoHora;
+    // ✅ AGREGAR ESTOS 3
+    desplazamientoNormal: EstadisticasTipoHora;
+    desplazamientoExtraDiurno: EstadisticasTipoHora;
+    desplazamientoExtraNocturno: EstadisticasTipoHora;
   };
   manoObraTotal: number;
   totalTrabajadoresUnicos: number;
@@ -190,6 +197,7 @@ export interface ConfigTipoHora {
 }
 
 // Constantes para los tipos de horas
+// Constantes para los tipos de horas
 export const TIPOS_HORAS_CONFIG: Record<TipoHora, ConfigTipoHora> = {
   normales: {
     key: 'normales',
@@ -225,6 +233,28 @@ export const TIPOS_HORAS_CONFIG: Record<TipoHora, ConfigTipoHora> = {
     icono: '🌜',
     color: '#8b5cf6',
     descripcion: 'Horas trabajadas domingos de noche (x2.1)'
+  },
+  // ✅ AGREGAR ESTOS 3
+  desplazamientonormal: {
+    key: 'desplazamientonormal',
+    nombre: 'Desplazamiento Normal',
+    icono: '🚗',
+    color: '#06b6d4',
+    descripcion: 'Horas de desplazamiento dentro de jornada (x1.0)'
+  },
+  desplazamientoextradiurno: {
+    key: 'desplazamientoextradiurno',
+    nombre: 'Desplazamiento Extra Diurno',
+    icono: '🚙',
+    color: '#f97316',
+    descripcion: 'Horas de desplazamiento extra diurno (x1.25)'
+  },
+  desplazamientoextranocturno: {
+    key: 'desplazamientoextranocturno',
+    nombre: 'Desplazamiento Extra Nocturno',
+    icono: '🚕',
+    color: '#7c3aed',
+    descripcion: 'Horas de desplazamiento extra nocturno (x1.75)'
   }
 };
 // Agregar este tipo a tu archivo types/centros.ts
