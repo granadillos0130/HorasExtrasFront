@@ -34,7 +34,7 @@ const EstadisticasView: React.FC<EstadisticasViewProps> = ({
       <div style={{ maxWidth: '1400px', margin: '0 auto' }}>
         {/* Header */}
         <div style={{ marginBottom: '30px' }}>
-          <button 
+          <button
             onClick={onVolver}
             style={{
               marginBottom: '20px',
@@ -79,8 +79,8 @@ const EstadisticasView: React.FC<EstadisticasViewProps> = ({
                 Centro: {centroNombre}
               </p>
             </div>
-            
-            <button 
+
+            <button
               onClick={onVerTrabajadores}
               style={{
                 background: '#3b82f6',
@@ -165,12 +165,17 @@ const EstadisticasView: React.FC<EstadisticasViewProps> = ({
                   </thead>
                   <tbody>
                     {Object.entries(estadisticasMes.estadisticasPorTipo).map(([key, stats]) => {
-                      const tipoKey = key === 'horasNormales' ? 'normales' : 
-                                     key === 'extrasDiurnas' ? 'extrasdiurnas' :
-                                     key === 'extrasNocturnas' ? 'extrasnocturnas' :
-                                     key === 'dominicalesDiurnas' ? 'dominicalesdiurnas' :
-                                     key === 'dominicalesNocturnas' ? 'dominicalesnocturnas' : 'normales';
-                      
+                      const tipoKey = key === 'horasNormales' ? 'normales' :
+                        key === 'extrasDiurnas' ? 'extrasdiurnas' :
+                          key === 'extrasNocturnas' ? 'extrasnocturnas' :
+                            key === 'dominicalesDiurnas' ? 'dominicalesdiurnas' :
+                              key === 'dominicalesNocturnas' ? 'dominicalesnocturnas' :
+                                // ✅ AGREGAR ESTAS 3 LÍNEAS
+                                key === 'desplazamientoNormal' ? 'desplazamientonormal' :
+                                  key === 'desplazamientoExtraDiurno' ? 'desplazamientoextradiurno' :
+                                    key === 'desplazamientoExtraNocturno' ? 'desplazamientoextranocturno' :
+                                      'normales';
+
                       const config = TIPOS_HORAS_CONFIG[tipoKey as TipoHora];
                       const tieneHoras = stats.totalHoras > 0;
 
