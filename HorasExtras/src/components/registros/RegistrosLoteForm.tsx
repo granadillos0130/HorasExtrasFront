@@ -7,6 +7,8 @@ import TrabajadorBuscador from "../shared/TrabajadorBuscador";
 import type { Trabajador } from "../../types/trabajadores";
 import type { Centro } from "../../types/centros";
 import type { RegistroInputDto } from "../../types/registros";
+import { convertirATimeSpan } from "../../utils/registros/timeUtils";
+import { useCargarCatalogos } from "../../hooks/useCargarCatalogos";
 import "../../styles/components/registros/RegistrosLoteForm.css";
 
 interface Props {
@@ -16,10 +18,18 @@ interface Props {
 }
 
 const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial }) => {
-  const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
-  const [centros, setCentros] = useState<Centro[]>([]);
-  const [loadingData, setLoadingData] = useState(true);
-  const [analistas, setAnalistas] = useState<{ id: number; nombreCompleto: string }[]>([]);
+  const { data: catalogos, loading: loadingData } = useCargarCatalogos<{
+    trabajadores: () => Promise<Trabajador[]>;
+    centros: () => Promise<Centro[]>;
+    analistas: () => Promise<{ id: number; nombreCompleto: string }[]>;
+  }>({
+    trabajadores: () => trabajadoresService.getAll(),
+    centros: () => centrosService.getAll(),
+    analistas: () => trabajadoresService.getAnalistas(),
+  });
+  const trabajadores = catalogos.trabajadores ?? [];
+  const centros = catalogos.centros ?? [];
+  const analistas = catalogos.analistas ?? [];
 
   const { loading, error, crearLote, reset } = useRegistrosLote();
 
@@ -45,20 +55,6 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
       EsConductor: false, // 🆕 NUEVO CAMPO
     }
   ]);
-
-  const convertirATimeSpan = (valor: string | null): string => {
-    if (!valor) return ""; // Manejar null o string vacío
-
-    const parts = valor.trim().split(":");
-    if (parts.length === 1 && /^\d+$/.test(parts[0])) {
-      return `00:${parts[0].padStart(2, "0")}:00`;
-    } else if (parts.length === 2) {
-      return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}:00`;
-    } else if (parts.length === 3) {
-      return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}:${parts[2].padStart(2, "0")}`;
-    }
-    return "";
-  };
 
   const generarFechasDelRango = (): string[] => {
     const fechas: string[] = [];
@@ -107,28 +103,6 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
       })));
     }
   }, [fechaInicial]);
-
-  useEffect(() => {
-    const cargarDatos = async () => {
-      try {
-        setLoadingData(true);
-        const [trabajadoresData, centrosData, analistasData] = await Promise.all([
-          trabajadoresService.getAll(),
-          centrosService.getAll(),
-          trabajadoresService.getAnalistas(),
-        ]);
-        setTrabajadores(trabajadoresData);
-        setCentros(centrosData);
-        setAnalistas(analistasData);
-      } catch (error) {
-        console.error("Error al cargar datos:", error);
-      } finally {
-        setLoadingData(false);
-      }
-    };
-
-    cargarDatos();
-  }, []);
 
   const agregarRegistro = () => {
     const ultimoRegistro = registros[registros.length - 1];
@@ -256,7 +230,9 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
 
     const registrosNormalizados = registros.map(registro => ({
       ...registro,
-      Tiempo_Almuerzo: normalizarHora(registro.Tiempo_Almuerzo || "01:00:00"), // Agregar || con valor por defecto
+      Tiempo_Almuerzo: !registro.Tiempo_Almuerzo || registro.Tiempo_Almuerzo === ""
+        ? null // Enviar null para "sin almuerzo"
+        : normalizarHora(registro.Tiempo_Almuerzo),
       desplazamientoIda: registro.desplazamientoIda?.trim()
         ? convertirATimeSpan(registro.desplazamientoIda)
         : undefined,
@@ -587,7 +563,7 @@ const RegistrosLoteForm: React.FC<Props> = ({ onSuccess, onCancel, fechaInicial 
                       className="form-select"
                       required
                     >
-                      <option value="00:00:00">Sin almuerzo</option>
+                      <option value="">Sin almuerzo</option>
                       <option value="00:30:00">30 minutos</option>
                       <option value="01:00:00">1 hora</option>
                       <option value="01:30:00">1 hora 30 minutos</option>

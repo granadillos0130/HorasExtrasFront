@@ -147,11 +147,6 @@
   margin: 0 auto 24px;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 .loading-state h2, .error-state h2 {
   margin: 0 0 8px 0;
   color: #1f2937;

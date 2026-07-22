@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/hooks/useRegistrosLote.ts
 import { useState } from "react";
 import { registrosLoteService } from "../api/registrosLoteService";
 import type { RegistroInputDto } from "../types/registros";
 import type { RegistroLoteResponse } from "../api/registrosLoteService";
+import { getApiErrorField, getApiErrorData } from "../utils/errorUtils";
 
 export const useRegistrosLote = () => {
   const [loading, setLoading] = useState(false);
@@ -17,9 +17,9 @@ export const useRegistrosLote = () => {
       const response = await registrosLoteService.crearLote(registros);
       setResultado(response);
       return true;
-    } catch (err: any) {
-      const errorMessage = err.response?.data?.message || 
-                          err.response?.data || 
+    } catch (err: unknown) {
+      const errorMessage = getApiErrorField(err, "message") ||
+                          getApiErrorData(err) ||
                           "Error al crear registros en lote";
       setError(errorMessage);
       console.error("Error al crear registros en lote:", err);

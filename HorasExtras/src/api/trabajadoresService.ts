@@ -21,12 +21,6 @@ export const trabajadoresService = {
     return res.data;
   },
 
-  // Crear trabajador (con posibilidad de incluir imagen)
-  async create(data: CrearTrabajadorDto): Promise<Trabajador> {
-    const res = await api.post<Trabajador>("/trabajadores", data);
-    return res.data;
-  },
-
   // ✅ CORREGIDO: Crear trabajador con imagen usando FormData
   async createWithImage(data: CrearTrabajadorDto, imagen?: File): Promise<CrearTrabajadorResponse> {
     const formData = new FormData();
@@ -88,12 +82,6 @@ export const trabajadoresService = {
     return res.data;
   },
 
-  // ✅ NUEVO: Obtener trabajadores no vigentes
-  async getNoVigentes(): Promise<Trabajador[]> {
-    const res = await api.get<Trabajador[]>("/trabajadores/novigentes");
-    return res.data;
-  },
-  
   // Eliminar un trabajador
   async delete(id: number): Promise<void> {
     await api.delete(`/trabajadores/${id}`);

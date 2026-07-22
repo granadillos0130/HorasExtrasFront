@@ -1,17 +1,14 @@
 import { api } from "./api";
-import type { 
-  Ausencia, 
-  AusenciaDto, 
-  EstadisticaDiagnostico, 
-  EstadisticaDiagnosticoDetallado, 
-  EstadisticaHoras, 
-  EstadisticaHorasArea, 
-  EstadisticaMensual, 
-  EstadisticasTrabajador, 
-  EstadisticaTipoDetallado, 
-  ResumenEjecutivo, 
-  ResumenTrabajador, 
-  TendenciaAusencia, 
+import type {
+  Ausencia,
+  AusenciaDto,
+  EstadisticaDiagnosticoDetallado,
+  EstadisticaHoras,
+  EstadisticaHorasArea,
+  EstadisticaMensual,
+  EstadisticasTrabajador,
+  EstadisticaTipoDetallado,
+  ResumenTrabajador,
   ValidacionVacacionesResponse,
   ValidarVacacionesDto
 } from "../types/ausencia";
@@ -41,11 +38,6 @@ export async function crearAusencia(data: AusenciaDto) {
   };
 
   const response = await api.post<AusenciaDto>("/ausencias", ausenciaDto);
-  return response.data;
-}
-
-export async function getAll() {
-  const response = await api.get<Ausencia[]>("/ausencias");
   return response.data;
 }
 
@@ -102,11 +94,6 @@ export async function buscarDiagnosticos(termino: string) {
   return response.data;
 }
 
-export async function getEstadisticasPorDiagnostico() {
-  const response = await api.get<EstadisticaDiagnostico[]>("/ausencias/estadisticas/por-diagnostico");
-  return response.data;
-}
-
 // ===== 🆕 NUEVAS FUNCIONES PARA ESTADÍSTICAS AVANZADAS =====
 
 // Obtener estadísticas mensuales de un año
@@ -125,103 +112,6 @@ export async function getEstadisticasTiposDetallado() {
 export async function getEstadisticasDiagnosticosDetallado() {
   const response = await api.get<EstadisticaDiagnosticoDetallado[]>("/ausencias/estadisticas/diagnosticos-detallado");
   return response.data;
-}
-
-// Obtener tendencias de ausencias por período
-export async function getTendenciasAusencias(anioInicio: number, anioFin: number) {
-  const response = await api.get<TendenciaAusencia[]>("/ausencias/estadisticas/tendencias", {
-    params: { anioInicio, anioFin }
-  });
-  return response.data;
-}
-
-// Obtener resumen ejecutivo de ausencias
-export async function getResumenEjecutivo(anio?: number) {
-  const response = await api.get<ResumenEjecutivo>("/ausencias/estadisticas/resumen-ejecutivo", {
-    params: anio ? { anio } : {}
-  });
-  return response.data;
-}
-
-// 🆕 Función para calcular métricas adicionales en el frontend
-export function calcularMetricasAusencias(ausencias: Ausencia[]) {
-  const totalHoras = ausencias.reduce((total, ausencia) => {
-    if (ausencia.horaInicio && ausencia.horaFin) {
-      const inicio = new Date(`1970-01-01T${ausencia.horaInicio}`);
-      const fin = new Date(`1970-01-01T${ausencia.horaFin}`);
-      return total + (fin.getTime() - inicio.getTime()) / (1000 * 60 * 60);
-    }
-    return total;
-  }, 0);
-
-  const trabajadoresUnicos = new Set(ausencias.map(a => a.trabajadorNombre)).size;
-  
-  const ausenciasRemuneradas = ausencias.filter(a => a.remunerado).length;
-  const ausenciasNoRemuneradas = ausencias.filter(a => !a.remunerado).length;
-
-  const diagnosticosUnicos = new Set(
-    ausencias
-      .filter(a => a.diagnosticoCodigo)
-      .map(a => a.diagnosticoCodigo)
-  ).size;
-
-  return {
-    totalAusencias: ausencias.length,
-    totalHoras: Math.round(totalHoras * 100) / 100,
-    trabajadoresAfectados: trabajadoresUnicos,
-    ausenciasRemuneradas,
-    ausenciasNoRemuneradas,
-    diagnosticosUnicos,
-    promedioDuracion: ausencias.length > 0 ? Math.round((totalHoras / ausencias.length) * 100) / 100 : 0
-  };
-}
-
-// 🆕 Función para exportar datos de ausencias a CSV
-export function exportarAusenciasCSV(ausencias: Ausencia[], filename: string = 'ausencias') {
-  const headers = [
-    'Fecha',
-    'Trabajador',
-    'Cargo',
-    'Tipo Ausencia',
-    'Descripción',
-    'Fecha Inicio',
-    'Fecha Fin',
-    'Hora Inicio',
-    'Hora Fin',
-    'Remunerado',
-    'Diagnóstico Código',
-    'Diagnóstico Descripción'
-  ];
-
-  const csvContent = [
-    headers.join(','),
-    ...ausencias.map((ausencia: Ausencia) => [
-      ausencia.fecha,
-      `"${ausencia.trabajadorNombre}"`,
-      `"${ausencia.cargo || ''}"`,
-      `"${ausencia.tipoAusencia || ''}"`,
-      `"${ausencia.descripcion || ''}"`,
-      ausencia.fechaInicio,
-      ausencia.fechaFin,
-      ausencia.horaInicio || '',
-      ausencia.horaFin || '',
-      ausencia.remunerado ? 'Sí' : 'No',
-      ausencia.diagnosticoCodigo || '',
-      `"${ausencia.diagnosticoDescripcion || ''}"`
-    ].join(','))
-  ].join('\n');
-
-  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  if (link.download !== undefined) {
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', `${filename}_${new Date().toISOString().split('T')[0]}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
 }
 
 // 🆕 FUNCIONES PARA ESTADÍSTICAS DE TRABAJADORES
@@ -307,18 +197,6 @@ export function calcularFechaRegreso(fechaFin: Date): Date {
   return fechaRegreso;
 }
 
-// 🆕 Función para obtener el próximo día laboral
-export function obtenerProximoDiaLaboral(fecha: Date): Date {
-  const proximoDia = new Date(fecha);
-  proximoDia.setDate(proximoDia.getDate() + 1);
-  
-  // Si es sábado (6) o domingo (0), avanzar al lunes
-  while (proximoDia.getDay() === 0 || proximoDia.getDay() === 6) {
-    proximoDia.setDate(proximoDia.getDate() + 1);
-  }
-  
-  return proximoDia;
-}
 export const calcularFechaFinVacaciones = async (data: {
   fechaInicio: Date;
   diasVacaciones: number;
@@ -336,7 +214,6 @@ export const ausenciasService = {
   // Funciones existentes
   getPorMes,
   crearAusencia,
-  getAll,
   getById,
   actualizarAusencia,
   eliminarAusencia,
@@ -345,17 +222,11 @@ export const ausenciasService = {
   getAllDiagnosticos,
   crearDiagnostico,
   buscarDiagnosticos,
-  getEstadisticasPorDiagnostico,
   getEstadisticasMensuales,
   getEstadisticasTiposDetallado,
   getEstadisticasDiagnosticosDetallado,
-  getTendenciasAusencias,
-  getResumenEjecutivo,
-  calcularMetricasAusencias,
-  exportarAusenciasCSV,
 validarDiasVacaciones,
   calcularFechaRegreso,
-  obtenerProximoDiaLaboral,
   // 🆕 Nuevas funciones para trabajadores
   getEstadisticasTrabajador,
   getResumenTrabajador,

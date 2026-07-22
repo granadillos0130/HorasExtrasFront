@@ -1,10 +1,10 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useState } from "react";
 import { horariosRotativosService } from "../../api/horariosRotativosService";
 import { trabajadoresService } from "../../api/trabajadoresService";
 import TrabajadorBuscador from "../shared/TrabajadorBuscador";
 import type { Trabajador } from "../../types/trabajadores";
 import type { HorarioRotativo, AsignarHorarioDto } from "../../types/horariosRotativos";
+import { getApiErrorField } from "../../utils/errorUtils";
 import "../../styles/components/horario/Modal.css";
 
 interface Props {
@@ -67,8 +67,8 @@ const AsignarHorarioModal: React.FC<Props> = ({ onClose, onSuccess }) => {
       await horariosRotativosService.asignarHorarioATrabajador(formData);
       alert("Horario asignado correctamente");
       onSuccess();
-    } catch (err: any) {
-      const errorMsg = err.response?.data?.mensaje || "Error al asignar el horario";
+    } catch (err: unknown) {
+      const errorMsg = getApiErrorField(err, "mensaje") || "Error al asignar el horario";
       setError(errorMsg);
       console.error("Error:", err);
     } finally {

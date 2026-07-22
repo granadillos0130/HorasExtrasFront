@@ -5,6 +5,7 @@ import type { Trabajador } from "../../types/trabajadores";
 import { trabajadoresService } from "../../api/trabajadoresService";
 import "../../styles/components/trabajador/TrabajadorDetailPage.css";
 import { getImageUrl } from "../../utils/imageUtils";
+import { formatearMoneda, getInitials } from "../../utils/formatters";
 
 const TrabajadorDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -36,28 +37,9 @@ const TrabajadorDetailPage: React.FC = () => {
     };
     fetchData();
   }, [id]);
-useEffect(() => {
-  if (trabajador?.imagen_Url) {
-    console.log('Imagen original:', trabajador.imagen_Url);
-    console.log('URL construida:', getImageUrl(trabajador.imagen_Url));
-  }
-}, [trabajador]);
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
-  };
-
   const formatSalary = (salary?: number) => {
     if (!salary) return 'No especificado';
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0
-    }).format(salary);
+    return formatearMoneda(salary);
   };
 
   const formatDate = (dateString: string | null | undefined) => {

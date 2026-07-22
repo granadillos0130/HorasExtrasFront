@@ -476,12 +476,6 @@
   }
 }
 
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
 /* RESPONSIVE */
 @media (max-width: 768px) {
   .editar-ausencia-container {

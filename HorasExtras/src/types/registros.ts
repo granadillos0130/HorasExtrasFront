@@ -1,11 +1,24 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Curso } from "./curso";
+import type { Centro } from "./centros";
 
 export type TipoDestino = 'centro' | 'curso';
 
 export type FiltroTipoRegistro = 'TODOS' | 'TRABAJO' | 'AUSENCIA';
 
 export type TipoRegistro = 'CENTRO' | 'CURSO' | 'AUSENCIA' | 'FESTIVO';
+
+export interface DesgloseSemana {
+  semana: string;
+  horasTrabajadas: number;
+  horasBase: number;
+  balance: number;
+  estado: string;
+  horasNormales?: number;
+  horasExtrasDiurnas?: number;
+  horasExtrasNocturnas?: number;
+  extrasDominicalesDiurnas?: number;
+  extrasDominicalesNocturnas?: number;
+}
 
 
 export interface RegistroInputDto {
@@ -60,14 +73,8 @@ export interface RegistroInputDto {
       mensaje: string;
     };
     // Para vista mensual
-    bancoHoras?: any;
-    desgloseSemanas?: Array<{
-      semana: string;
-      horasTrabajadas: number;
-      horasBase: number;
-      balance: number;
-      estado: string;
-    }>;
+    bancoHoras?: unknown;
+    desgloseSemanas?: DesgloseSemana[];
     resumenPeriodo?: {
       balanceTotal: number;
       estadoTotal: string;
@@ -459,7 +466,7 @@ export interface OpcionDestino {
 
 export interface FormularioRegistroState {
   tipoDestino: TipoDestino;
-  centroSeleccionado?: any; // Importarás el type Centro desde types/centros.ts
+  centroSeleccionado?: Centro;
   cursoSeleccionado?: Curso;
 }
 
@@ -636,45 +643,29 @@ export interface CompensadosInfo {
   detalle: CompensadoDetalle[];
 }
 
-export interface ResumenDia {
-  fecha: string;
-  jornadaEsperada: number;
-  registrosNormales: number;
-  ausencias: number;
-  totalHorasTrabajadas: number;
-  totalHorasAusencias: number;
-  horasAusenciasRemuneradas: number;
-  horasAusenciasNoRemuneradas: number;
-  totalHorasNormales: number;
-  totalHorasExtras: number;
-  cumplioJornada: boolean;
-}
-
-// 🆕 NUEVO: Interfaz para respuesta del resumen completo
-export interface RespuestaResumenCompleto {
-  fechaInicio: string;
-  fechaFin: string;
-  trabajadorId?: number;
-  totalRegistros: number;
-  datos: Registro[];
-}
-
-// 🆕 NUEVO: Interfaz para respuesta de edición en lote
-export interface RespuestaEdicionLote {
+export interface BancoHorasSemanal {
+  tipo: "semanal";
+  horasBase: number;
+  horasTrabajadas: number;
+  excesoDeficit: number;
+  estado: string;
+  totalSegunExcel: number;
+  horasSobrantes: number;
+  horasFaltantes: number;
   mensaje: string;
-  registrosActualizados: number;
-  totalProcesados: number;
-  errores: string[];
-  detalleResultados: Array<{
-    id: number;
-    exito: boolean;
+}
+
+export interface BancoHorasMensual {
+  tipo: "mensual";
+  bancoHoras: unknown;
+  desgloseSemanas?: DesgloseSemana[];
+  resumenPeriodo?: {
+    balanceTotal: number;
+    estadoTotal: string;
     mensaje: string;
-  }>;
+  };
 }
-export interface RegistroExistente {
-  id: number;
-  trabajadorId: number;
-  fecha: string;
-}
+
+export type BancoHorasInfoData = BancoHorasSemanal | BancoHorasMensual | null;
 
 export type { Curso, RespuestaIntensidadHoraria };

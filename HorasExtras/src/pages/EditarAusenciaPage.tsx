@@ -1,418 +1,45 @@
-import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { 
-  ausenciasService,
-  validarDiasVacaciones,
-  calcularFechaRegreso 
-} from "../api/ausenciasService"; // 🆕 Usar funciones del servicio existente
-import { trabajadoresService } from "../api/trabajadoresService";
+import { calcularFechaRegreso } from "../api/ausenciasService";
+import { calcularHorasTotales } from "../utils/ausencias/ausenciaUtils";
 import TrabajadorBuscador from "../components/shared/TrabajadorBuscador";
 import DiagnosticoBuscador from "../components/shared/DiagnosticoBuscador";
-import type { 
-  Ausencia, 
-  AusenciaDto, 
-  ValidacionVacacionesResponse
-} from "../types/ausencia"; // 🆕 Usar tipos existentes (removido ValidarVacacionesDto)
-import type { Trabajador } from "../types/trabajadores";
-import type { Diagnostico } from "../types/diagnostico";
+import { ValidacionVacacionesInfo } from "../components/ausencias/ValidacionVacacionesInfo";
+import { useEditarAusencia } from "../hooks/ausencias/useEditarAusencia";
 import "../styles/pages/EditarAusenciaPage.css";
 
-// 🆕 Usar el tipo ValidacionVacacionesResponse del servicio
-type ValidacionVacaciones = ValidacionVacacionesResponse;
+// Lista de tipos de ausencia (incluye Vacaciones)
+const tiposAusencia = [
+  "Vacaciones",
+  "Cita médica general",
+  "Cita Seguimiento EO",
+  "Enfermedad común",
+  "Enfermedad Laboral",
+  "Accidente laboral",
+  "Accidente Origen Comun",
+  "Diligencias personales"
+];
 
 export function EditarAusenciaPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [guardando, setGuardando] = useState(false);
-  const [ausencia, setAusencia] = useState<Ausencia | null>(null);
-  const [error, setError] = useState<string>("");
-  const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
-  const [trabajadorSeleccionadoId, setTrabajadorSeleccionadoId] = useState<number>(0);
 
-  // 🆕 Estados para validación de vacaciones
-  const [validacionVacaciones, setValidacionVacaciones] = useState<ValidacionVacaciones | null>(null);
-  const [loadingValidacion, setLoadingValidacion] = useState(false);
-
-  // Estados del formulario
-  const [formData, setFormData] = useState({
-    fecha: "",
-    tipoAusencia: "",
-    descripcion: "",
-    trabajadorNombre: "",
-    cargo: "",
-    fechaInicio: "",
-    fechaFin: "",
-    horaInicio: "",
-    horaFin: "",
-    remunerado: false,
-    // 🆕 Campos de diagnóstico actualizados
-    diagnosticoId: undefined as number | undefined,
-    diagnosticoCodigo: "",
-    diagnosticoDescripcion: ""
-  });
-
-  // 🆕 Función para verificar si es vacaciones (memoizada)
-  const esVacaciones = useCallback(() => {
-    return formData.tipoAusencia.toLowerCase().includes("vacacion");
-  }, [formData.tipoAusencia]);
-
-  // 🆕 Función para validar vacaciones cuando cambien fechas o trabajador (memoizada)
-  const validarVacacionesSiAplica = useCallback(async () => {
-    if (!esVacaciones() || !trabajadorSeleccionadoId || !formData.fechaInicio || !formData.fechaFin) {
-      setValidacionVacaciones(null);
-      return;
-    }
-
-    setLoadingValidacion(true);
-    try {
-      const validacion = await validarDiasVacaciones({
-        fechaInicio: new Date(formData.fechaInicio),
-        fechaFin: new Date(formData.fechaFin),
-        tipoAusencia: formData.tipoAusencia,
-        trabajadorId: trabajadorSeleccionadoId
-      });
-      setValidacionVacaciones(validacion);
-    } catch (error) {
-      console.error("Error al validar vacaciones:", error);
-      setValidacionVacaciones(null);
-    } finally {
-      setLoadingValidacion(false);
-    }
-  }, [esVacaciones, trabajadorSeleccionadoId, formData.fechaInicio, formData.fechaFin, formData.tipoAusencia]);
-
-  // 🆕 Effect para validar vacaciones cuando cambien las dependencias
-  useEffect(() => {
-    if (esVacaciones() && trabajadorSeleccionadoId && formData.fechaInicio && formData.fechaFin) {
-      const timeoutId = setTimeout(() => {
-        validarVacacionesSiAplica();
-      }, 500);
-      
-      return () => clearTimeout(timeoutId);
-    } else {
-      setValidacionVacaciones(null);
-    }
-  }, [esVacaciones, validarVacacionesSiAplica, trabajadorSeleccionadoId, formData.fechaInicio, formData.fechaFin]);
-
-  // 🆕 Función para determinar si mostrar el campo diagnóstico
-  const mostrarCampoDiagnostico = () => {
-    const tiposConDiagnostico = [
-      "Cita médica general",
-      "Cita Seguimiento EO", 
-      "Enfermedad común",
-      "Enfermedad Laboral"
-    ];
-    
-    return tiposConDiagnostico.includes(formData.tipoAusencia);
-  };
-
-  // Cargar trabajadores al montar el componente
-  useEffect(() => {
-    const cargarTrabajadores = async () => {
-      try {
-        const data = await trabajadoresService.getAll();
-        setTrabajadores(data);
-      } catch (error) {
-        console.error("Error al cargar trabajadores:", error);
-      }
-    };
-
-    cargarTrabajadores();
-  }, []);
-
-  // Cargar datos de la ausencia al montar el componente
-  useEffect(() => {
-    const cargarAusencia = async () => {
-      if (!id) {
-        setError("ID de ausencia no válido");
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const ausenciaData = await ausenciasService.getById(parseInt(id));
-        setAusencia(ausenciaData);
-        
-        // Buscar el trabajador para obtener el ID
-        const trabajador = trabajadores.find(t => t.nombre === ausenciaData.trabajadorNombre);
-        if (trabajador) {
-          setTrabajadorSeleccionadoId(trabajador.id);
-        }
-        
-        // Llenar el formulario con los datos existentes
-        setFormData({
-          fecha: ausenciaData.fecha.split('T')[0],
-          tipoAusencia: ausenciaData.tipoAusencia,
-          descripcion: ausenciaData.descripcion,
-          trabajadorNombre: ausenciaData.trabajadorNombre,
-          cargo: ausenciaData.cargo,
-          fechaInicio: ausenciaData.fechaInicio.split('T')[0],
-          fechaFin: ausenciaData.fechaFin.split('T')[0],
-          horaInicio: ausenciaData.horaInicio,
-          horaFin: ausenciaData.horaFin,
-          remunerado: ausenciaData.remunerado,
-          // 🆕 Campos de diagnóstico actualizados
-          diagnosticoId: ausenciaData.diagnosticoId,
-          diagnosticoCodigo: ausenciaData.diagnosticoCodigo || "",
-          diagnosticoDescripcion: ausenciaData.diagnosticoDescripcion || ""
-        });
-      } catch (error) {
-        console.error("Error al cargar ausencia:", error);
-        setError("Error al cargar los datos de la ausencia");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (trabajadores.length > 0) {
-      cargarAusencia();
-    }
-  }, [id, trabajadores]);
-
-  // Manejar cambios en los inputs
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-    const { name, value, type } = e.target;
-    
-    if (name === "tipoAusencia") {
-      // 🆕 Cuando cambie el tipo de ausencia, ajustar horarios
-      const nuevasHoras = value.toLowerCase().includes("vacacion") 
-        ? { horaInicio: "08:00", horaFin: "17:00" } // Día completo para vacaciones
-        : { horaInicio: formData.horaInicio, horaFin: formData.horaFin }; // Mantener horas actuales para otras
-
-      setFormData(prev => ({
-        ...prev,
-        tipoAusencia: value,
-        // Limpiar diagnóstico cuando cambia el tipo
-        diagnosticoId: undefined,
-        diagnosticoCodigo: "",
-        diagnosticoDescripcion: "",
-        ...nuevasHoras
-      }));
-      return;
-    }
-
-    setFormData(prev => ({
-      ...prev,
-      [name]: type === 'checkbox' ? (e.target as HTMLInputElement).checked : value
-    }));
-  };
-
-  // Manejar selección de trabajador
-  const handleTrabajadorSelect = (trabajadorId: number, trabajador?: Trabajador) => {
-    setTrabajadorSeleccionadoId(trabajadorId);
-    
-    if (trabajador) {
-      setFormData(prev => ({
-        ...prev,
-        trabajadorNombre: trabajador.nombre,
-        cargo: trabajador.cargo || ""
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        trabajadorNombre: "",
-        cargo: ""
-      }));
-    }
-  };
-
-  // 🆕 Manejar selección de diagnóstico
-  const handleDiagnosticoSelect = (diagnosticoId: number | undefined, diagnostico?: Diagnostico) => {
-    setFormData(prev => ({
-      ...prev,
-      diagnosticoId: diagnosticoId,
-      diagnosticoCodigo: diagnostico?.codigo || "",
-      diagnosticoDescripcion: diagnostico?.descripcion || ""
-    }));
-  };
-
-  // 🆕 Componente para mostrar validación de vacaciones
-  const ValidacionVacacionesComponent = () => {
-    if (!esVacaciones() || !validacionVacaciones) return null;
-
-    const fechaRegreso = calcularFechaRegreso(new Date(formData.fechaFin));
-
-    return (
-      <div style={{
-        background: 'linear-gradient(135deg, #fefbf3, #fef3c7)',
-        border: '2px solid #f59e0b',
-        borderRadius: '12px',
-        padding: '20px',
-        margin: '15px 0',
-        animation: 'slideIn 0.3s ease-out'
-      }}>
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          marginBottom: '15px',
-          color: '#92400e',
-          fontSize: '1.1rem',
-          fontWeight: '600'
-        }}>
-          <span>🏖️</span>
-          <strong>Validación de Vacaciones</strong>
-        </div>
-        
-        <div style={{ color: '#78350f', lineHeight: '1.6' }}>
-          <p style={{ marginBottom: '15px', fontWeight: '600' }}>
-            {validacionVacaciones.mensaje}
-          </p>
-          
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '15px',
-            margin: '15px 0'
-          }}>
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.8)',
-              padding: '12px',
-              borderRadius: '8px',
-              borderLeft: '4px solid #f59e0b'
-            }}>
-              <strong style={{ display: 'block', color: '#92400e', fontSize: '0.9rem', marginBottom: '4px' }}>
-                Total de días
-              </strong>
-              <span style={{ fontSize: '1.1rem', fontWeight: '600', color: '#78350f' }}>
-                {validacionVacaciones.totalDias}
-              </span>
-            </div>
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.8)',
-              padding: '12px',
-              borderRadius: '8px',
-              borderLeft: '4px solid #f59e0b'
-            }}>
-              <strong style={{ display: 'block', color: '#92400e', fontSize: '0.9rem', marginBottom: '4px' }}>
-                Días laborables
-              </strong>
-              <span style={{ fontSize: '1.1rem', fontWeight: '600', color: '#78350f' }}>
-                {validacionVacaciones.diasLaborables}
-              </span>
-            </div>
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.8)',
-              padding: '12px',
-              borderRadius: '8px',
-              borderLeft: '4px solid #f59e0b'
-            }}>
-              <strong style={{ display: 'block', color: '#92400e', fontSize: '0.9rem', marginBottom: '4px' }}>
-                Se descontarán
-              </strong>
-              <span style={{ fontSize: '1.1rem', fontWeight: '600', color: '#78350f' }}>
-                {validacionVacaciones.diasADescontar} días
-              </span>
-            </div>
-          </div>
-
-          <div style={{
-            background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
-            border: '2px solid #22c55e',
-            borderRadius: '10px',
-            padding: '15px',
-            marginTop: '15px',
-            textAlign: 'center'
-          }}>
-            <div style={{ color: '#15803d', fontWeight: '600', marginBottom: '8px', fontSize: '1rem' }}>
-              📅 Fecha de regreso al trabajo:
-            </div>
-            <div style={{ color: '#166534', fontSize: '1.3rem', fontWeight: '700' }}>
-              {fechaRegreso.toLocaleDateString('es-ES', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </div>
-          </div>
-
-          {validacionVacaciones.detalleDias && validacionVacaciones.detalleDias.length > 0 && (
-            <div style={{
-              background: 'rgba(255, 255, 255, 0.9)',
-              borderRadius: '8px',
-              padding: '15px',
-              marginTop: '15px',
-              maxHeight: '200px',
-              overflowY: 'auto'
-            }}>
-              <h5 style={{ margin: '0 0 10px 0', color: '#92400e', fontSize: '0.95rem' }}>
-                📋 Detalle por días:
-              </h5>
-              {validacionVacaciones.detalleDias.map((dia, index) => (
-                <div key={index} style={{
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  padding: '6px 0',
-                  borderBottom: '1px solid #f3f4f6',
-                  fontSize: '0.85rem'
-                }}>
-                  <span style={{ fontWeight: '600', color: '#374151' }}>
-                    {new Date(dia.fecha).toLocaleDateString('es-ES')} - {dia.diaSemana}
-                  </span>
-                  <span style={{ color: '#6b7280' }}>{dia.motivo}</span>
-                  <span style={{
-                    color: dia.esLaborable ? '#059669' : '#dc2626',
-                    fontWeight: '600'
-                  }}>
-                    {dia.esLaborable ? "✅ Se descuenta" : "⭕ No se descuenta"}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Manejar envío del formulario
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!id || !ausencia) return;
-
-    setGuardando(true);
-    setError("");
-
-    try {
-      const ausenciaDto: AusenciaDto = {
-        id: ausencia.id,
-        fecha: new Date(formData.fecha),
-        tipoAusencia: formData.tipoAusencia,
-        descripcion: formData.descripcion,
-        trabajadorNombre: formData.trabajadorNombre,
-        cargo: formData.cargo,
-        fechaInicio: new Date(formData.fechaInicio),
-        fechaFin: new Date(formData.fechaFin),
-        horaInicio: formData.horaInicio,
-        horaFin: formData.horaFin,
-        remunerado: formData.remunerado,
-        // 🆕 Campos de diagnóstico actualizados
-        diagnosticoId: formData.diagnosticoId,
-        diagnosticoCodigo: formData.diagnosticoCodigo,
-        diagnosticoDescripcion: formData.diagnosticoDescripcion
-      };
-
-      await ausenciasService.actualizarAusencia(parseInt(id), ausenciaDto);
-      
-      console.log("✅ Ausencia actualizada correctamente");
-      navigate("/ausencias", { 
-        state: { 
-          message: esVacaciones() 
-            ? "Vacaciones actualizadas correctamente" 
-            : "Ausencia actualizada correctamente",
-          type: "success"
-        }
-      });
-    } catch (error) {
-      console.error("Error al actualizar ausencia:", error);
-      setError("Error al actualizar la ausencia. Por favor, intenta de nuevo.");
-    } finally {
-      setGuardando(false);
-    }
-  };
+  const {
+    loading,
+    guardando,
+    ausencia,
+    error,
+    trabajadores,
+    trabajadorSeleccionadoId,
+    validacionVacaciones,
+    loadingValidacion,
+    formData,
+    esVacaciones,
+    mostrarCampoDiagnostico,
+    handleInputChange,
+    handleTrabajadorSelect,
+    handleDiagnosticoSelect,
+    handleSubmit,
+  } = useEditarAusencia(id);
 
   if (loading) {
     return (
@@ -449,23 +76,11 @@ export function EditarAusenciaPage() {
     );
   }
 
-  // 🆕 Lista actualizada de tipos de ausencia (incluye Vacaciones)
-  const tiposAusencia = [
-    "Vacaciones", // 🆕 Agregado
-    "Cita médica general",
-    "Cita Seguimiento EO",
-    "Enfermedad común",
-    "Enfermedad Laboral",
-    "Accidente laboral",
-    "Accidente Origen Comun",
-    "Diligencias personales"
-  ];
-
   return (
     <div className="editar-ausencia-container">
       <div className="ausencia-header">
         <h1>✏️ Editar {esVacaciones() ? 'Vacaciones' : 'Ausencia'}</h1>
-        <button 
+        <button
           onClick={() => navigate("/ausencias")}
           className="btn-volver"
         >
@@ -484,13 +99,13 @@ export function EditarAusenciaPage() {
             <div className="info-item">
               <span className="info-label">Fecha de solicitud:</span>
               <span className="info-value">
-                {ausencia.fechaSolicitud ? 
-                  new Date(ausencia.fechaSolicitud).toLocaleDateString('es-ES') 
+                {ausencia.fechaSolicitud ?
+                  new Date(ausencia.fechaSolicitud).toLocaleDateString('es-ES')
                   : 'N/A'
                 }
               </span>
             </div>
-            {/* 🆕 Mostrar diagnóstico actual si existe */}
+            {/* Mostrar diagnóstico actual si existe */}
             {ausencia.diagnosticoCodigo && (
               <div className="info-item full-width">
                 <span className="info-label">🏥 Diagnóstico actual:</span>
@@ -559,7 +174,7 @@ export function EditarAusenciaPage() {
             <span className="section-icon">📅</span>
             Detalles de la {esVacaciones() ? 'Vacaciones' : 'Ausencia'}
           </h3>
-          
+
           <div className="form-grid">
             <div className="form-group">
               <label htmlFor="fecha">📅 Fecha de {esVacaciones() ? 'Solicitud' : 'Ausencia'}</label>
@@ -613,7 +228,7 @@ export function EditarAusenciaPage() {
               />
             </div>
 
-            {/* 🆕 CAMPOS DE HORA SOLO SI NO ES VACACIONES */}
+            {/* CAMPOS DE HORA SOLO SI NO ES VACACIONES */}
             {!esVacaciones() && (
               <>
                 <div className="form-group">
@@ -642,7 +257,7 @@ export function EditarAusenciaPage() {
               </>
             )}
 
-            {/* 🆕 MOSTRAR INFORMACIÓN ESPECIAL PARA VACACIONES */}
+            {/* MOSTRAR INFORMACIÓN ESPECIAL PARA VACACIONES */}
             {esVacaciones() && (
               <div className="form-group full-width">
                 <div style={{
@@ -673,14 +288,14 @@ export function EditarAusenciaPage() {
               onChange={handleInputChange}
               required
               rows={3}
-              placeholder={esVacaciones() 
-                ? "Describa el motivo de las vacaciones (ej: Vacaciones anuales programadas, descanso familiar, etc.)" 
+              placeholder={esVacaciones()
+                ? "Describa el motivo de las vacaciones (ej: Vacaciones anuales programadas, descanso familiar, etc.)"
                 : "Describe la razón de la ausencia..."
               }
             />
           </div>
 
-          {/* 🆕 CAMPO DIAGNÓSTICO CON BUSCADOR */}
+          {/* CAMPO DIAGNÓSTICO CON BUSCADOR */}
           {mostrarCampoDiagnostico() && (
             <div className="form-group full-width">
               <div className="diagnostico-section">
@@ -688,7 +303,7 @@ export function EditarAusenciaPage() {
                   <span style={{ fontSize: '1.5rem' }}>🏥</span>
                   <strong>Diagnóstico Médico (CIE-10)</strong>
                 </div>
-                
+
                 <DiagnosticoBuscador
                   value={formData.diagnosticoId}
                   onChange={handleDiagnosticoSelect}
@@ -697,12 +312,12 @@ export function EditarAusenciaPage() {
                   required={false}
                   showSelectedInfo={true}
                 />
-                
+
                 <small className="diagnostico-help">
-                  💡 <strong>Ayuda:</strong> Puedes buscar por código CIE-10 (ejemplo: "A09") o por descripción (ejemplo: "diarrea", "cefalea"). 
+                  💡 <strong>Ayuda:</strong> Puedes buscar por código CIE-10 (ejemplo: "A09") o por descripción (ejemplo: "diarrea", "cefalea").
                   Este campo es opcional pero recomendado para {
-                    formData.tipoAusencia === "Cita médica general" || formData.tipoAusencia === "Cita Seguimiento EO" 
-                      ? "citas médicas" 
+                    formData.tipoAusencia === "Cita médica general" || formData.tipoAusencia === "Cita Seguimiento EO"
+                      ? "citas médicas"
                       : "casos de enfermedad"
                   }.
                 </small>
@@ -720,22 +335,22 @@ export function EditarAusenciaPage() {
               />
               <span className="checkbox-text">💰 {esVacaciones() ? 'Vacaciones' : 'Ausencia'} Remunerada</span>
             </label>
-            <small style={{ 
-              display: 'block', 
-              marginTop: '5px', 
-              color: '#6b7280', 
+            <small style={{
+              display: 'block',
+              marginTop: '5px',
+              color: '#6b7280',
               fontSize: '0.8rem',
               fontStyle: 'italic'
             }}>
-              {formData.remunerado 
-                ? '💰 Contará como horas normales trabajadas' 
+              {formData.remunerado
+                ? '💰 Contará como horas normales trabajadas'
                 : '🚫 Se marcará como horas ausentes'
               }
             </small>
           </div>
         </div>
 
-        {/* 🆕 MOSTRAR VALIDACIÓN DE VACACIONES */}
+        {/* MOSTRAR VALIDACIÓN DE VACACIONES */}
         {loadingValidacion && esVacaciones() && (
           <div style={{
             display: 'flex',
@@ -762,9 +377,9 @@ export function EditarAusenciaPage() {
           </div>
         )}
 
-        <ValidacionVacacionesComponent />
+        <ValidacionVacacionesInfo validacionVacaciones={validacionVacaciones} fechaFin={formData.fechaFin} />
 
-        {/* 🆕 Vista previa de cálculos actualizados */}
+        {/* Vista previa de cálculos actualizados */}
         {formData.fechaInicio && formData.fechaFin && (
           <div style={{
             background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
@@ -776,9 +391,9 @@ export function EditarAusenciaPage() {
             <h4 style={{ margin: '0 0 10px 0', color: '#15803d', fontSize: '1rem' }}>
               📊 Vista Previa {esVacaciones() ? 'de Vacaciones' : 'de la Ausencia'}
             </h4>
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', 
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
               gap: '10px',
               fontSize: '0.9rem',
               color: '#166534'
@@ -795,11 +410,15 @@ export function EditarAusenciaPage() {
               )}
               <div>
                 <strong>Total horas:</strong> {
-                  esVacaciones() 
+                  esVacaciones()
                     ? (validacionVacaciones ? validacionVacaciones.diasADescontar * 8 : 'Calculando...')
-                    : formData.horaInicio && formData.horaFin 
-                      ? ((new Date(`1970-01-01T${formData.horaFin}`).getTime() - new Date(`1970-01-01T${formData.horaInicio}`).getTime()) / (1000 * 60 * 60) * 
-                        (Math.ceil((new Date(formData.fechaFin).getTime() - new Date(formData.fechaInicio).getTime()) / (1000 * 60 * 60 * 24)) + 1)).toFixed(2)
+                    : formData.horaInicio && formData.horaFin
+                      ? calcularHorasTotales(
+                          formData.horaInicio,
+                          formData.horaFin,
+                          Math.ceil((new Date(formData.fechaFin).getTime() - new Date(formData.fechaInicio).getTime()) / (1000 * 60 * 60 * 24)) + 1,
+                          false
+                        ).toFixed(2)
                       : '0'
                 }
               </div>
@@ -813,11 +432,11 @@ export function EditarAusenciaPage() {
               )}
               {esVacaciones() && validacionVacaciones && (
                 <div style={{ gridColumn: '1 / -1', marginTop: '10px', padding: '10px', background: 'rgba(255,255,255,0.8)', borderRadius: '6px' }}>
-                  <strong>📅 Regresa el:</strong> {calcularFechaRegreso(new Date(formData.fechaFin)).toLocaleDateString('es-ES', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                  <strong>📅 Regresa el:</strong> {calcularFechaRegreso(new Date(formData.fechaFin)).toLocaleDateString('es-ES', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
                   })}
                 </div>
               )}

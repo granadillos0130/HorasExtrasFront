@@ -57,3 +57,12 @@ export const formatearFechaPeriodo = (fechaInicio: string, fechaFin: string) => 
 export const formatearPorcentaje = (valor: number): string => {
   return `${valor.toFixed(1)}%`;
 };
+
+export const getInitials = (name: string): string => {
+  return name
+    .split(' ')
+    .map(word => word[0])
+    .join('')
+    .toUpperCase()
+    .substring(0, 2);
+};

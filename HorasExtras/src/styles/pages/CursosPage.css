@@ -326,11 +326,6 @@
   margin: 0 auto;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 .loading-text {
   color: #6b7280;
   margin-top: 1rem;

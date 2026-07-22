@@ -1,34 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { api } from "./api";
 import type { Curso } from "../types/curso";
+
+const mapCurso = (c: any): Curso => ({
+  id: c.idCurso,
+  nombre: c.nombreCurso,
+  descripcion: c.descripcion
+});
+
 export const cursosService = {
-  
+
   async getAll(): Promise<Curso[]> {
     try {
       const res = await api.get("/cursos");
-      return res.data.map((c: any) => ({
-        id: c.idCurso,
-        nombre: c.nombreCurso,
-        descripcion: c.descripcion
-      }));
+      return res.data.map(mapCurso);
     } catch (error) {
       console.error("Error al obtener cursos:", error);
-      throw error;
-    }
-  },
-
-  // Obtener curso por ID
-  async getById(id: number): Promise<Curso> {
-    try {
-      const res = await api.get(`/cursos/${id}`);
-      const c = res.data;
-      return {
-        id: c.idCurso,
-        nombre: c.nombreCurso,
-        descripcion: c.descripcion
-      };
-    } catch (error) {
-      console.error("Error al obtener curso por ID:", error);
       throw error;
     }
   },
@@ -37,11 +24,7 @@ export const cursosService = {
   async buscarPorNombre(nombre: string): Promise<Curso[]> {
     try {
       const res = await api.get("/cursos/buscar", { params: { nombre } });
-      return res.data.map((c: any) => ({
-        id: c.idCurso,
-        nombre: c.nombreCurso,
-        descripcion: c.descripcion
-      }));
+      return res.data.map(mapCurso);
     } catch (error) {
       console.error("Error al buscar cursos por nombre:", error);
       throw error;
@@ -55,12 +38,7 @@ export const cursosService = {
         nombreCurso: curso.nombre,
         descripcion: curso.descripcion
       });
-      const c = res.data;
-      return {
-        id: c.idCurso,
-        nombre: c.nombreCurso,
-        descripcion: c.descripcion
-      };
+      return mapCurso(res.data);
     } catch (error) {
       console.error("Error al crear curso:", error);
       throw error;
@@ -74,12 +52,7 @@ export const cursosService = {
         nombreCurso: curso.nombre,
         descripcion: curso.descripcion
       });
-      const c = res.data;
-      return {
-        id: c.idCurso,
-        nombre: c.nombreCurso,
-        descripcion: c.descripcion
-      };
+      return mapCurso(res.data);
     } catch (error) {
       console.error("Error al actualizar curso:", error);
       throw error;
@@ -116,24 +89,13 @@ export const cursosService = {
     }
   },
 
-  // Obtener resumen rápido de cursos
-  async getResumenRapido() {
-    try {
-      const res = await api.get("/cursos/estadisticas/resumen");
-      return res.data;
-    } catch (error) {
-      console.error("Error al obtener resumen rápido:", error);
-      throw error;
-    }
-  },
-
   // Obtener total de horas de un curso
   async getHorasCurso(idCurso: number, fechaInicio?: string, fechaFin?: string) {
     try {
       const params: any = {};
       if (fechaInicio) params.fechaInicio = fechaInicio;
       if (fechaFin) params.fechaFin = fechaFin;
-      
+
       const res = await api.get(`/cursos/${idCurso}/horas`, { params });
       return res.data;
     } catch (error) {
@@ -143,14 +105,10 @@ export const cursosService = {
   },
 
   // Obtener todos los cursos para el selector
-  async getAllCursos() {
+  async getAllCursos(): Promise<Curso[]> {
     try {
       const res = await api.get("/cursos");
-      return res.data.map((c: any) => ({
-        id: c.idCurso,
-        nombre: c.nombreCurso,
-        descripcion: c.descripcion
-      }));
+      return res.data.map(mapCurso);
     } catch (error) {
       console.error("Error al obtener cursos:", error);
       throw error;

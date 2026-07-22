@@ -21,6 +21,7 @@ export interface EstadisticaTrabajador {
   horasExtrasNocturnas: number;
   extrasDominicalesDiurnas: number;
   extrasDominicalesNocturnas: number;
+  cargo?: string;
 }
 
 export interface CentroEstadisticas {

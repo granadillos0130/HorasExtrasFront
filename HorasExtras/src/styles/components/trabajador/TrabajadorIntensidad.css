@@ -1229,11 +1229,6 @@
   margin-bottom: 1.5rem;
 }
 
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
 .loading-state h3 {
   font-size: 1.25rem;
   font-weight: 600;
