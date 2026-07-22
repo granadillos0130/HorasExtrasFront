@@ -1,69 +1,79 @@
-# React + TypeScript + Vite
+# HorasExtrasFront
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend en React + TypeScript para el sistema de gestión de horas extra,
+ausencias, compensados, turnos rotativos y control biométrico de asistencia.
+Consume la API de [AppHorasExtrasApi](https://github.com/granadillos0130/AppHorasExtrasApi).
 
-Currently, two official plugins are available:
+Proyecto de portafolio construido originalmente durante una pasantía y luego
+reestructurado para separar lógica de negocio de presentación, eliminar
+código muerto y quedar libre de datos/URLs de la empresa original.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Stack
 
-## Expanding the ESLint configuration
+- **React 19** + **TypeScript**
+- **Vite** como bundler y servidor de desarrollo
+- **React Router** para navegación
+- **Axios** para consumo de la API
+- **Chart.js** para visualización de estadísticas
+- **ExcelJS / SheetJS** para exportación de reportes
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Arquitectura
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+api/          → servicios de conexión a la API (uno por dominio: centros,
+                trabajadores, ausencias, compensados, registros, etc.)
+components/   → componentes reutilizables organizados por dominio
+hooks/        → lógica de fetching y estado extraída de los componentes
+                (patrón: el componente queda con JSX, el hook con la lógica)
+pages/        → páginas/rutas de la aplicación
+types/        → contratos TypeScript compartidos con las respuestas de la API
+utils/        → funciones puras de formato y cálculo (fechas, horas, etc.)
+styles/       → CSS organizado por página/componente
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+La convención del proyecto: los componentes y páginas no hacen fetching
+directo ni cálculos de negocio — esa lógica vive en un hook custom
+(`hooks/`), dejando el componente enfocado solo en JSX y presentación.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Dominios principales
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+- **Trabajadores** — datos personales, EPS/ARL/pensión/banco/clínica (con
+  historial de vigencia), edición completa desde la UI.
+- **Centros de trabajo** — asignación de trabajadores, estadísticas de mano
+  de obra por centro/mes.
+- **Registros de trabajo diario** — creación individual y por lote, cálculo
+  de horas normales/extras/dominicales, vista de calendario y consolidados.
+- **Ausencias** — vacaciones, incapacidades y permisos.
+- **Compensados** — tiempo libre pagado con horas de un banco de horas.
+- **Horarios** — catálogo de horarios rotativos y asignación por trabajador.
+- **Cursos y diagnósticos** — catálogos de apoyo para otros módulos.
+
+## Configuración local
+
+1. Clona el repo e instala dependencias:
+   ```bash
+   cd HorasExtras
+   npm install
+   ```
+2. Crea un archivo `.env.local` en la raíz de `HorasExtras/` con la URL de
+   tu backend local:
+   ```
+   VITE_API_URL=http://localhost:5117/api
+   ```
+   (ajusta el puerto al que use tu instancia de
+   [AppHorasExtrasApi](https://github.com/granadillos0130/AppHorasExtrasApi))
+3. Corre el servidor de desarrollo:
+   ```bash
+   npm run dev
+   ```
+4. Abre `http://localhost:5173`.
+
+Necesitas el backend corriendo (con su propia base de datos configurada)
+para que las llamadas a la API funcionen — este frontend no incluye datos
+mock.
+
+## Scripts
+
+- `npm run dev` — servidor de desarrollo con hot reload
+- `npm run build` — build de producción
+- `npm run lint` — ESLint sobre todo el proyecto
