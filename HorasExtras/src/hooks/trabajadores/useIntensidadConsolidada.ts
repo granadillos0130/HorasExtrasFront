@@ -1,12 +1,12 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // hooks/trabajadores/useIntensidadConsolidada.ts
 import { useState, useEffect } from 'react';
 import { registrosService } from '../../api/registrosService';
-import type { 
+import type {
   RespuestaConsolidadoIntensidad,
   TrabajadorConsolidado,
-  TotalesHoras 
+  TotalesHoras
 } from '../../types/consolidado'; // o de donde los hayas puesto
+import { getErrorMessage } from '../../utils/errorUtils';
 
 interface UseIntensidadConsolidadaReturn {
   trabajadores: TrabajadorConsolidado[];
@@ -58,9 +58,9 @@ export const useIntensidadConsolidada = (
       } else {
         setError('No se pudieron obtener los datos consolidados');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error en useIntensidadConsolidada:', err);
-      setError(err?.message || 'Error al cargar datos consolidados');
+      setError(getErrorMessage(err) || 'Error al cargar datos consolidados');
       setTrabajadores([]);
       setTotalesGenerales(null);
     } finally {

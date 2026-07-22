@@ -1,9 +1,9 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { PreoperacionalFilters } from '../components/preoperacional/PreoperacionalFilters';
 import { PreoperacionalTable } from '../components/preoperacional/PreoperacionalTable';
 import { preoperacionalApi } from '../api/preoperacionalService';
 import type { Preoperacional, PreoperacionalFilters as PreoperacionalFiltersType } from '../types/preoperacional';
+import { getErrorMessage } from '../utils/errorUtils';
 
 export const PreoperacionalesPage: React.FC = () => {
   const [preoperacionales, setPreoperacionales] = useState<Preoperacional[]>([]);
@@ -87,8 +87,8 @@ export const PreoperacionalesPage: React.FC = () => {
       const data = await preoperacionalApi.getAll();
       setPreoperacionales(data);
       setFilteredPreoperacionales(data);
-    } catch (err: any) {
-      setError(err.message || 'Error al cargar preoperacionales');
+    } catch (err: unknown) {
+      setError(getErrorMessage(err) || 'Error al cargar preoperacionales');
       console.error('Error cargando preoperacionales:', err);
     } finally {
       setLoading(false);

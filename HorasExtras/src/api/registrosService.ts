@@ -1,19 +1,13 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/api/registrosService.ts - VERSIÓN ACTUALIZADA
 import { api } from "./api";
-import type { Registro, RespuestaEdicionLote, RespuestaIntensidadHoraria, RespuestaResumenCompleto, ResumenDia} from "../types/registros";
-import type { RegistroInputDto, RegistroActualizacionDto } from "../types/registros";
+import type { Registro, RespuestaIntensidadHoraria, ResumenDia} from "../types/registros";
+import type { RegistroInputDto } from "../types/registros";
 import type { ResumenSemana } from "../types/ResumenSemana";
 import type { RespuestaConsolidadoIntensidad } from "../types/consolidado";
 
 
 export const registrosService = {
-  // Obtener todos los registros
-  async obtenerTodos(): Promise<Registro[]> {
-    const res = await api.get<Registro[]>("/registros");
-    return res.data;
-  },
-
   // 🆕 NUEVO: Obtener un registro por ID
   async obtenerPorId(id: number): Promise<Registro> {
     try {
@@ -41,17 +35,6 @@ export const registrosService = {
       return res.data;
     } catch (error) {
       console.error('Error al actualizar registro:', error);
-      throw error;
-    }
-  },
-
-  // 🆕 NUEVO: Actualizar registros en lote
-  async actualizarLote(registros: RegistroActualizacionDto[]): Promise<RespuestaEdicionLote> {
-    try {
-      const res = await api.put<RespuestaEdicionLote>("/registros/lote", registros);
-      return res.data;
-    } catch (error) {
-      console.error('Error al actualizar registros en lote:', error);
       throw error;
     }
   },
@@ -143,71 +126,6 @@ export const registrosService = {
   }
 },
 
-  // 🆕 NUEVO: Obtener resumen detallado de un día específico
-  async obtenerResumenDia(trabajadorId: number, fecha: string): Promise<{
-    resumen: ResumenDia;
-    detalleRegistros: any[];
-  }> {
-    try {
-      const res = await api.get("/registros/resumenDia", {
-        params: { trabajadorId, fecha },
-      });
-      return res.data;
-    } catch (error) {
-      console.error('Error al obtener resumen del día:', error);
-      throw error;
-    }
-  },
-
-  // 🆕 NUEVO: Obtener resumen completo (registros + ausencias) para un rango
-  async obtenerResumenCompleto(
-    fechaInicio: string,
-    fechaFin: string,
-    trabajadorId?: number
-  ): Promise<RespuestaResumenCompleto> {
-    try {
-      const params: any = { fechaInicio, fechaFin };
-      if (trabajadorId) {
-        params.trabajadorId = trabajadorId;
-      }
-
-      const res = await api.get<RespuestaResumenCompleto>("/registros/resumenCompleto", {
-        params,
-      });
-      return res.data;
-    } catch (error) {
-      console.error('Error al obtener resumen completo:', error);
-      throw error;
-    }
-  },
-
-  // 🆕 NUEVO: Obtener múltiples registros por IDs (para edición en lote)
-  async obtenerPorIds(ids: number[]): Promise<Registro[]> {
-    try {
-      const promesas = ids.map(id => this.obtenerPorId(id));
-      const registros = await Promise.all(promesas);
-      return registros;
-    } catch (error) {
-      console.error('Error al obtener registros por IDs:', error);
-      throw error;
-    }
-  },
-  // 🆕 NUEVO: Crear registros festivos para TODOS los trabajadores
-async crearRegistrosFestivosTodosTrabajadores(
-  año: number,
-  mes?: number,
-  confirmar: boolean = false
-): Promise<any> {
-  try {
-    const res = await api.post("/registros/crear-registros-festivos-todos-trabajadores", null, {
-      params: { año, mes, confirmar },
-    });
-    return res.data;
-  } catch (error) {
-    console.error("Error al crear registros festivos para todos los trabajadores:", error);
-    throw error;
-  }
-},
 async obtenerRegistrosMesCompleto(año: number, mes: number): Promise<{
   año: number;
   mes: number;

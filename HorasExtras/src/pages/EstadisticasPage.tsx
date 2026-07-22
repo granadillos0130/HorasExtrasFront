@@ -53,7 +53,6 @@ const EstadisticasPage: React.FC = () => {
   });
   const [filtrosAusencias, setFiltrosAusencias] = useState({
     anio: new Date().getFullYear(),
-    mes: new Date().getMonth() + 1,
   });
   const [loadingAusencias, setLoadingAusencias] = useState(false);
   const [subvistaAusencias, setSubvistaAusencias] = useState<'resumen' | 'diagnosticos' | 'tipos' | 'mensual'>('resumen');

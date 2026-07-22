@@ -1,4 +1,5 @@
 // Utilidades de fechas para trabajadores
+import { formatearHoras } from "../formatters";
 
 export const formatDateForInput = (date: Date): string => {
   return date.toISOString().split('T')[0];
@@ -89,12 +90,7 @@ export const getDiasEnRango = (fechaInicio: string, fechaFin: string): number =>
   return diffDays;
 };
 
-export const formatHours = (hours: number): string => {
-  if (hours === 0) return "0:00";
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
-  return `${h}:${m.toString().padStart(2, "0")}`;
-};
+export const formatHours = formatearHoras;
 
 export const safeSubstring = (
   str: string | null | undefined, 

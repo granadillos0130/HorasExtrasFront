@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { authService } from "../api/authService";
+import { getApiErrorField } from "../utils/errorUtils";
 import "../styles/pages/LoginPage.css";
 
 export default function LoginPage() {
@@ -25,8 +25,8 @@ export default function LoginPage() {
       } else {
         setError(response.message || "Error al iniciar sesión");
       }
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Error de conexión con el servidor");
+    } catch (err: unknown) {
+      setError(getApiErrorField(err, "message") || "Error de conexión con el servidor");
     } finally {
       setLoading(false);
     }

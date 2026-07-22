@@ -20,22 +20,11 @@ export const centrosService = {
     return api.put(`/centros/${id}`, data);
   },
 
-  eliminar(id: string): Promise<void> {
-    return api.delete(`/centros/${id}`);
-  },
-
-  asignarTrabajador(centroId: string, trabajadorId: number): Promise<void> {
-    return api.post(`/centros/${centroId}/asignarTrabajador/${trabajadorId}`);
-  },
-
   getEstadisticas(params: { centroId?: string; nombre?: string }): Promise<unknown> {
     return api.get(`/centros/estadisticas`, { params }).then(res => res.data);
   },
   obtenerPorCliente(clienteId: string): Promise<Centro[]> {
     return api.get(`/centros/por-cliente/${clienteId}`).then(res => res.data);
-  },
-  crearLote(data: Centro[]): Promise<void> {
-    return api.post("/centros/lote", data);
   },
   // Nuevo método para obtener centros por mes
   obtenerPorMes(anio: number, mes: number): Promise<CentroPorMesCompleto[]> {

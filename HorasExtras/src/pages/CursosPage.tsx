@@ -70,6 +70,10 @@ export const CursosPage: React.FC = () => {
     cargarCursos();
   };
 
+  // Filtro client-side intencional: filtra en vivo mientras se escribe, sobre
+  // la última lista cargada (todos los cursos o el resultado de buscarCursos).
+  // La búsqueda real contra el backend (buscarCursos) solo se dispara al
+  // presionar Enter o el botón de buscar; este filtro no la reemplaza.
   const cursosFiltrados = cursos.filter(curso =>
     curso.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (curso.descripcion && curso.descripcion.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -519,17 +523,6 @@ export const CursosPage: React.FC = () => {
               </div>
               <div style={styles.statInfo}>
                 <p style={styles.statLabel}>Total Cursos</p>
-                <p style={styles.statValue}>{cursos.length}</p>
-              </div>
-            </div>
-          </div>
-          <div style={styles.statCard}>
-            <div style={styles.statContent}>
-              <div style={{...styles.statIcon, ...styles.statIconGreen}}>
-                <span>✅</span>
-              </div>
-              <div style={styles.statInfo}>
-                <p style={styles.statLabel}>Cursos Activos</p>
                 <p style={styles.statValue}>{cursos.length}</p>
               </div>
             </div>

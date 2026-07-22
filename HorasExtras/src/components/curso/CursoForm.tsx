@@ -1,7 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState, useEffect } from 'react';
 import { cursosService } from '../../api/cursoService';
 import type { Curso } from '../../types/curso';
+import { getApiErrorField, getErrorMessage } from '../../utils/errorUtils';
 
 interface CursosFormProps {
   curso?: Curso | null;
@@ -94,15 +94,15 @@ export const CursosForm: React.FC<CursosFormProps> = ({ curso, onSuccess, onCanc
       }
 
       onSuccess();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Error al guardar curso:', error);
-      
+
       let errorMessage = 'Ocurrió un error inesperado';
-      
-      if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.message) {
-        errorMessage = error.message;
+
+      if (getApiErrorField(error, "message")) {
+        errorMessage = getApiErrorField(error, "message")!;
+      } else if (getErrorMessage(error)) {
+        errorMessage = getErrorMessage(error)!;
       }
 
       setErrors({ general: errorMessage });

@@ -1,15 +1,8 @@
-import { AxiosError } from "axios";
-import React, { useState, useEffect, useRef, useCallback } from "react";
-import { trabajadoresService } from "../../api/trabajadoresService";
-import { centrosService } from "../../api/centrosService";
-import { cursosService } from "../../api/cursoService"; // 🆕 NUEVO IMPORT
-import { registrosService } from "../../api/registrosService";
+import React from "react";
 import CentroBuscador from "../shared/CentroBuscador";
-import CursoBuscador from "../shared/CursoBuscador"; // 🆕 NUEVO IMPORT
+import CursoBuscador from "../shared/CursoBuscador";
 import TrabajadorBuscador from "../shared/TrabajadorBuscador";
-import type { Trabajador } from "../../types/trabajadores";
-import type { Centro } from "../../types/centros";
-import type { Curso, RegistroInputDto, TipoDestino } from "../../types/registros"; // 🆕 NUEVOS IMPORTS
+import { useRegistroForm } from "../../hooks/useRegistroForm";
 import "../../styles/components/registros/RegistroForm.css";
 
 interface Props {
@@ -17,340 +10,26 @@ interface Props {
   fechaInicial?: string;
 }
 
-// TIPO ESPECÍFICO PARA REGISTROS EXISTENTES
-interface RegistroExistente {
-  id: number;
-  trabajadorId: number;
-  fecha: string;
-}
-
 const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
-  // Estados principales
-  const [trabajadores, setTrabajadores] = useState<Trabajador[]>([]);
-  const [centros, setCentros] = useState<Centro[]>([]);
-  const [cursos, setCursos] = useState<Curso[]>([]); // 🆕 NUEVO ESTADO
-  const [loading, setLoading] = useState(false);
-  const [analistas, setAnalistas] = useState<{ id: number; nombreCompleto: string }[]>([]);
-
-  // 🆕 NUEVO: Estado para tipo de destino (centro o curso)
-  const [tipoDestino, setTipoDestino] = useState<TipoDestino>('centro');
-
-  // TIPOS ESPECÍFICOS PARA REGISTROS EXISTENTES
-  const [registrosExistentes, setRegistrosExistentes] = useState<RegistroExistente[]>([]);
-  const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
-
-  // NUEVOS ESTADOS PARA CONTROL DE VERIFICACIÓN
-  const [verificandoRegistros, setVerificandoRegistros] = useState(false);
-
-  // REFS PARA CONTROL DE MONTAJE Y TIMEOUTS
-  const isMountedRef = useRef(true);
-  const verificacionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Estado del formulario
-  const [formData, setFormData] = useState<RegistroInputDto>({
-    Trabajador_ID: 0,
-    Centro_ID: "",
-    Nombr_Centro: "",
-    CursoId: undefined, // 🆕 NUEVO CAMPO
-    CursoNombre: undefined, // 🆕 NUEVO CAMPO
-    CursoDescripcion: undefined, // 🆕 NUEVO CAMPO
-    Fecha: fechaInicial || new Date().toISOString().split("T")[0],
-    FechaSalida: undefined,
-    Hora_Ingreso: "08:00",
-    Hora_Salida: "17:00",
-    Tiempo_Almuerzo: "01:00",
-    desplazamientoIda: "",
-    desplazamientoRegreso: "",
-    EsConductor: false,
-  });
-
-  // CONTROL DE MONTAJE DEL COMPONENTE
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-      if (verificacionTimeoutRef.current) {
-        clearTimeout(verificacionTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Sincronizar fecha inicial
-  useEffect(() => {
-    if (fechaInicial) {
-      setFormData((prev) => ({
-        ...prev,
-        Fecha: fechaInicial,
-      }));
-    }
-  }, [fechaInicial]);
-
-  // 🆕 ACTUALIZADO: Cargar datos iniciales incluyendo cursos
-  useEffect(() => {
-    const cargarDatos = async () => {
-      try {
-        const [trabajadoresData, centrosData, cursosData, analistasData] = await Promise.all([
-          trabajadoresService.getAll(),
-          centrosService.getAll(),
-          cursosService.getAll(), // 🆕 NUEVO: Cargar cursos
-          trabajadoresService.getAnalistas(),
-        ]);
-
-        // Verificar que cada trabajador tenga las propiedades necesarias
-        const trabajadoresValidos = trabajadoresData.filter(t =>
-          t && t.id && t.nombre && t.cedula
-        );
-
-        setTrabajadores(trabajadoresValidos);
-        setCentros(centrosData);
-        setCursos(cursosData); // 🆕 NUEVO
-        setAnalistas(analistasData);
-
-      } catch (error) {
-        console.error("Error al cargar datos:", error);
-      }
-    };
-
-    cargarDatos();
-  }, []);
-
-  // 🆕 NUEVO: Limpiar selección al cambiar tipo de destino
-  useEffect(() => {
-    setFormData((prev) => ({
-      ...prev,
-      Centro_ID: "",
-      Nombr_Centro: "",
-      CursoId: undefined,
-      CursoNombre: undefined,
-      CursoDescripcion: undefined,
-    }));
-  }, [tipoDestino]);
-
-  // FUNCIÓN MEMOIZADA PARA VERIFICAR REGISTROS EXISTENTES
-  const verificarRegistrosExistentes = useCallback(async (trabajadorId: number, fecha: string) => {
-    if (!isMountedRef.current || !trabajadorId || !fecha) return;
-
-    if (trabajadorId > 0 && fecha) {
-      setVerificandoRegistros(true);
-      try {
-        const registros = await registrosService.obtenerTodosPorFecha(fecha);
-        const registrosDelTrabajador = registros
-          .filter((r: unknown) => {
-            return r &&
-              typeof r === 'object' &&
-              'trabajadorId' in r &&
-              (r as { trabajadorId: number }).trabajadorId === trabajadorId;
-          })
-          .map((r: unknown) => r as RegistroExistente);
-
-        if (isMountedRef.current) {
-          setRegistrosExistentes(registrosDelTrabajador);
-          setShowDuplicateWarning(registrosDelTrabajador.length > 0);
-        }
-      } catch (error) {
-        console.error("Error al verificar registros existentes:", error);
-        if (isMountedRef.current) {
-          setRegistrosExistentes([]);
-          setShowDuplicateWarning(false);
-        }
-      } finally {
-        if (isMountedRef.current) {
-          setVerificandoRegistros(false);
-        }
-      }
-    } else {
-      if (isMountedRef.current) {
-        setRegistrosExistentes([]);
-        setShowDuplicateWarning(false);
-        setVerificandoRegistros(false);
-      }
-    }
-  }, []);
-
-  // USEEFFECT MEJORADO CON DEBOUNCING Y CONTROL DE MONTAJE
-  useEffect(() => {
-    if (verificacionTimeoutRef.current) {
-      clearTimeout(verificacionTimeoutRef.current);
-    }
-
-    if (formData.Trabajador_ID > 0 && formData.Fecha && isMountedRef.current) {
-      verificacionTimeoutRef.current = setTimeout(() => {
-        verificarRegistrosExistentes(formData.Trabajador_ID, formData.Fecha);
-      }, 300);
-    }
-
-    return () => {
-      if (verificacionTimeoutRef.current) {
-        clearTimeout(verificacionTimeoutRef.current);
-      }
-    };
-  }, [formData.Trabajador_ID, formData.Fecha, verificarRegistrosExistentes]);
-
-  const convertirATimeSpan = (valor: string): string => {
-    const parts = valor.trim().split(":");
-    if (parts.length === 1 && /^\d+$/.test(parts[0])) {
-      return `00:${parts[0].padStart(2, "0")}:00`;
-    } else if (parts.length === 2) {
-      return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}:00`;
-    } else if (parts.length === 3) {
-      return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}:${parts[2].padStart(2, "0")}`;
-    }
-    return "";
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // 🆕 NUEVA VALIDACIÓN: Verificar que tenga centro O curso
-    const tieneCentro = formData.Centro_ID && formData.Nombr_Centro;
-    const tieneCurso = formData.CursoId && formData.CursoId > 0;
-
-    if (!formData.Trabajador_ID) {
-      alert("Por favor seleccione un trabajador");
-      return;
-    }
-
-    if (!tieneCentro && !tieneCurso) {
-      alert(`Por favor seleccione un ${tipoDestino === 'centro' ? 'centro' : 'curso'}`);
-      return;
-    }
-
-    if (tieneCentro && tieneCurso) {
-      alert("No puede seleccionar tanto centro como curso. Elija uno.");
-      return;
-    }
-
-    if (showDuplicateWarning) {
-      const trabajadorNombre = trabajadores.find(t => t.id === formData.Trabajador_ID)?.nombre || "este trabajador";
-      const tipoTrabajador = formData.EsConductor ? "conductor" : "trabajador";
-      const tipoDestinoTexto = tieneCurso ? "curso" : "centro";
-      const nombreDestino = tieneCurso ? formData.CursoNombre : formData.Nombr_Centro;
-
-      const confirmMessage = `⚠️ ATENCIÓN: Ya existe${registrosExistentes.length > 1 ? 'n' : ''} ${registrosExistentes.length} registro${registrosExistentes.length > 1 ? 's' : ''} para ${trabajadorNombre} en la fecha ${new Date(formData.Fecha).toLocaleDateString('es-ES')}.\n\n` +
-        `${formData.EsConductor
-          ? '🚛 CONDUCTOR: Los desplazamientos se incluirán como tiempo de trabajo.'
-          : '👷 NO CONDUCTOR: Los desplazamientos se restarán del tiempo trabajado.'
-        }\n\n` +
-        `${registrosExistentes.length === 1 ? 'El tiempo de almuerzo NO se descontará de este nuevo registro.' : 'El tiempo de almuerzo ya fue descontado en el primer registro del día.'}\n\n` +
-        `¿Está seguro que desea continuar creando este registro adicional de ${tipoDestinoTexto} "${nombreDestino}" para ${tipoTrabajador}?`;
-
-      if (!confirm(confirmMessage)) {
-        return;
-      }
-    }
-
-    setLoading(true);
-
-    try {
-      const normalizarHora = (hora: string) =>
-        hora.length === 5 ? `${hora}:00` : hora;
-
-      // 🆕 NUEVO: Preparar payload según tipo de destino
-      const payload: RegistroInputDto = {
-        ...formData,
-        Tiempo_Almuerzo: !formData.Tiempo_Almuerzo || formData.Tiempo_Almuerzo === ""
-          ? null  // Enviar null para "sin almuerzo"
-          : normalizarHora(formData.Tiempo_Almuerzo),
-        desplazamientoIda: formData.desplazamientoIda?.trim()
-          ? convertirATimeSpan(formData.desplazamientoIda)
-          : undefined,
-        desplazamientoRegreso: formData.desplazamientoRegreso?.trim()
-          ? convertirATimeSpan(formData.desplazamientoRegreso)
-          : undefined,
-      };
-
-      // 🆕 NUEVO: Limpiar campos según el tipo seleccionado
-      if (tipoDestino === 'centro') {
-        // Si es centro, limpiar campos de curso
-        payload.CursoId = undefined;
-        payload.CursoNombre = undefined;
-        payload.CursoDescripcion = undefined;
-      } else {
-        // Si es curso, limpiar campos de centro
-        payload.Centro_ID = "";
-        payload.Nombr_Centro = "";
-      }
-
-      await registrosService.crear(payload);
-
-      const tipoDestinoTexto = tieneCurso ? "curso" : "centro";
-      const nombreDestino = tieneCurso ? formData.CursoNombre : formData.Nombr_Centro;
-      const tipoMensaje = formData.EsConductor
-        ? `Registro de ${tipoDestinoTexto} "${nombreDestino}" creado correctamente para conductor (desplazamientos incluidos)`
-        : `Registro de ${tipoDestinoTexto} "${nombreDestino}" creado correctamente (desplazamientos descontados)`;
-
-      alert(tipoMensaje);
-      onSuccess();
-    } catch (error: unknown) {
-      console.error("Error al crear registro:", error);
-      if (error instanceof AxiosError && error.response?.data) {
-        alert(
-          "Error del servidor:\n" +
-          JSON.stringify(error.response.data, null, 2)
-        );
-      } else {
-        alert("Error al crear el registro");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handler para campos del formulario
-  const handleInputChange = (field: keyof RegistroInputDto, value: string | number | boolean | undefined) => {
-  setFormData((prev) => ({
-    ...prev,
-    [field]: value,
-  }));
-};
-
-  // Handler para trabajador
-  const handleTrabajadorChange = (trabajadorId: number) => {
-    setFormData((prev) => ({
-      ...prev,
-      Trabajador_ID: trabajadorId,
-    }));
-  };
-
-  // 🆕 ACTUALIZADO: Handler para centro
-  const handleCentroChange = (centroId: string) => {
-    const centroSeleccionado = centros.find((c) => c.id === centroId);
-    setFormData((prev) => ({
-      ...prev,
-      Centro_ID: centroId,
-      Nombr_Centro: centroSeleccionado?.nombreCentro || "",
-      // Limpiar campos de curso al seleccionar centro
-      CursoId: undefined,
-      CursoNombre: undefined,
-      CursoDescripcion: undefined,
-    }));
-  };
-
-  // 🆕 NUEVO: Handler para curso
-  const handleCursoChange = (cursoId: number, curso?: Curso) => {
-    setFormData((prev) => ({
-      ...prev,
-      CursoId: cursoId > 0 ? cursoId : undefined,
-      CursoNombre: curso?.nombre || undefined,
-      CursoDescripcion: curso?.descripcion || undefined,
-      // Limpiar campos de centro al seleccionar curso
-      Centro_ID: "",
-      Nombr_Centro: "",
-    }));
-  };
-
-  // 🆕 NUEVO: Handler para cambio de tipo de destino
-  const handleTipoDestinoChange = (tipo: TipoDestino) => {
-    setTipoDestino(tipo);
-  };
-
-  // 🆕 NUEVO: Función para validar si hay selección válida
-  const tieneSeleccionValida = () => {
-    if (tipoDestino === 'centro') {
-      return formData.Centro_ID && formData.Nombr_Centro;
-    } else {
-      return formData.CursoId && formData.CursoId > 0;
-    }
-  };
+  const {
+    loading,
+    trabajadores,
+    centros,
+    cursos,
+    analistas,
+    tipoDestino,
+    formData,
+    registrosExistentes,
+    showDuplicateWarning,
+    verificandoRegistros,
+    handleSubmit,
+    handleInputChange,
+    handleTrabajadorChange,
+    handleCentroChange,
+    handleCursoChange,
+    handleTipoDestinoChange,
+    tieneSeleccionValida,
+  } = useRegistroForm(onSuccess, fechaInicial);
 
   // Función para mostrar información sobre el cálculo de horas
   const mostrarInfoCalculoHoras = () => {
@@ -544,7 +223,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           </div>
         )}
 
-        {/* 🆕 NUEVO: Selector de tipo de destino */}
+        {/* Selector de tipo de destino */}
         <div className="form-row">
           <div className="form-group" style={{ gridColumn: '1 / -1' }}>
             <label style={{ display: 'block', marginBottom: '10px', fontWeight: '600' }}>
@@ -607,7 +286,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           </div>
         </div>
 
-        {/* 🆕 NUEVO: Selector dinámico de centro o curso */}
+        {/* Selector dinámico de centro o curso */}
         {tipoDestino === 'centro' ? (
           <div className="form-row">
             <div className="form-group">
@@ -716,7 +395,6 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
             <select
               value={formData.Tiempo_Almuerzo || ""}
               onChange={(e) => handleInputChange("Tiempo_Almuerzo", e.target.value)}
-              // required  // <-- QUITAR ESTA LÍNEA
               style={showDuplicateWarning ? { borderColor: '#ff6b35' } : {}}
             >
               <option value="">Sin almuerzo</option>
@@ -839,7 +517,7 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           </div>
         </div>
 
-        {/* 🆕 NUEVO: Información contextual según tipo seleccionado */}
+        {/* Información contextual según tipo seleccionado */}
         {tieneSeleccionValida() && (
           <div style={{
             background: tipoDestino === 'curso' ?
@@ -909,14 +587,14 @@ const RegistrosForm: React.FC<Props> = ({ onSuccess, fechaInicial }) => {
           0% { transform: rotate(0deg); }
           100% { transform: rotate(360deg); }
         }
-        
+
         .form-row {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 20px;
           margin-bottom: 20px;
         }
-        
+
         @media (max-width: 768px) {
           .form-row {
             grid-template-columns: 1fr;

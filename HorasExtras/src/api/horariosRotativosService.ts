@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { api } from "./api";
 import type {
   HorarioRotativo,
@@ -43,11 +42,6 @@ export const horariosRotativosService = {
     await api.post("/horarios/asignar-trabajador", data);
   },
 
-  async obtenerHorarioVigente(trabajadorId: number, fecha?: string): Promise<any> {
-    const params = fecha ? { fecha } : {};
-    const res = await api.get(`/horarios/trabajador/${trabajadorId}/vigente`, { params });
-    return res.data;
-  },
 async cerrarAsignacion(asignacionId: number, fechaFin: string): Promise<void> {
   await api.put(`/horarios/asignacion/${asignacionId}/cerrar`, {
     fechaFin: fechaFin

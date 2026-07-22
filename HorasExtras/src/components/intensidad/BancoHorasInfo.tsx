@@ -1,16 +1,16 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useState } from 'react';
 import { formatFechaCompensado, formatPeriodoOrigen, formatHours } from '../../utils/trabajadores/fechaUtils';
+import type { BancoHorasInfoData, CompensadosInfo } from '../../types/registros';
 
 interface BancoHorasInfoProps {
   metadatosVista: {
     tipoVista: string;
     trabajadorUsaBanco: boolean;
     valoresMostrados: string;
-    informacionAdicional?: any;
+    informacionAdicional?: unknown;
   };
-  bancoInfo: any;
-  compensadosInfo: any;
+  bancoInfo: BancoHorasInfoData;
+  compensadosInfo: CompensadosInfo | null;
 }
 
 const getEstadoStyle = (estado: string): React.CSSProperties => {
@@ -89,7 +89,7 @@ export const BancoHorasInfo: React.FC<BancoHorasInfoProps> = ({
           )}
 
           {/* Vista Mensual */}
-          {bancoInfo.tipo === "mensual" && bancoInfo.bancoHoras && (
+          {bancoInfo.tipo === "mensual" && Boolean(bancoInfo.bancoHoras) && (
             <div style={sectionStyle}>
               <div style={sectionTitleStyle}>🏦 Estado del Banco de Horas</div>
 
@@ -118,7 +118,7 @@ export const BancoHorasInfo: React.FC<BancoHorasInfoProps> = ({
 
                   {compensadosExpandido && (
                     <div style={{ padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                      {compensadosInfo.detalle.map((comp: any) => (
+                      {compensadosInfo.detalle.map((comp) => (
                         <div key={comp.id} style={cardStyle}>
                           <div style={cardHeaderStyle}>
                             <div style={{ display: 'flex', gap: '16px', fontSize: '0.85rem', flexWrap: 'wrap' }}>
@@ -205,7 +205,7 @@ export const BancoHorasInfo: React.FC<BancoHorasInfoProps> = ({
                 <div style={{ marginTop: '20px' }}>
                   <h4 style={{ margin: '0 0 12px 0', fontSize: '0.95rem', fontWeight: '700' }}>Desglose Semanal</h4>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '12px' }}>
-                    {bancoInfo.desgloseSemanas.map((sem: any, idx: number) => (
+                    {bancoInfo.desgloseSemanas.map((sem, idx: number) => (
                       <div key={idx} style={cardStyle}>
                         <div
                           style={clickableHeaderStyle}

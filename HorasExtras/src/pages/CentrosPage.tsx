@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 // CentrosPage.tsx - Versión Refactorizada y Ejecutiva
 import React, { useState, useEffect, useCallback } from "react";
 import { centrosService } from "../api/centrosService";
@@ -120,8 +119,8 @@ const CentrosPage: React.FC = () => {
       if (estadisticas && estadisticas.trabajadores) {
         const cargosSet = new Set<string>();
         estadisticas.trabajadores.forEach((t: EstadisticaTrabajador) => {
-          if ((t as any).cargo && (t as any).cargo !== 'No especificado') {
-            cargosSet.add((t as any).cargo);
+          if (t.cargo && t.cargo !== 'No especificado') {
+            cargosSet.add(t.cargo);
           }
         });
         if (cargosSet.size === 0) {

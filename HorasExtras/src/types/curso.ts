@@ -48,12 +48,6 @@ export interface OpcionesCursos {
   ordenarPor?: 'nombre' | 'id' | 'fechaCreacion';
   orden?: 'asc' | 'desc';
 }
-export interface Curso {
-  id: number;
-  nombre: string;
-  descripcion?: string;
-}
-
 export interface CursoCompleto extends Curso {
   trabajadores?: Trabajador[];
 }
@@ -156,15 +150,4 @@ export interface EstadisticasCurso {
     estado: string;
     area: string;
   }[];
-}
-
-export interface HorasCurso {
-  idCurso: number;
-  nombreCurso: string;
-  cantidadTrabajadores: number;
-  totalHorasCurso: number;
-  periodoConsultado: {
-    fechaInicio: string;
-    fechaFin: string;
-  };
 }

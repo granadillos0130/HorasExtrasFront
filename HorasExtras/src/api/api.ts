@@ -2,7 +2,7 @@ import axios from "axios";
 import { authService } from "./authService";
 
 export const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || "https://localhost:7042/api",
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5117/api",
   headers: {
     "Content-Type": "application/json",
     "ngrok-skip-browser-warning": "true"
